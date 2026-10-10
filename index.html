@@ -22,7 +22,7 @@ nav{display:flex;flex-wrap:wrap;gap:8px}
 .pill.p{background:var(--pr);color:var(--on)}
 .pill.d{background:#0A1128;color:var(--tx)}
 .pill:focus-visible,input:focus-visible{outline:3px solid #fff;outline-offset:2px}
-main{max-width:1120px;margin:0 auto;padding:40px 24px;display:flex;flex-direction:column;gap:48px}
+main{max-width:1480px;margin:0 auto;padding:40px 24px;display:flex;flex-direction:column;gap:48px}
 section{display:flex;flex-direction:column;gap:24px}
 h1,h2,h3,p{margin:0}
 .hero{background:#1E3A78;color:#D9E2FF;border-radius:48px;padding:56px;display:flex;flex-direction:column;gap:24px}
@@ -86,9 +86,12 @@ main{padding:32px 16px}.card{padding:24px}
 #calisma>.grid{grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr));align-items:start}.study-tools{display:flex;flex-direction:column;gap:16px;min-width:0}.timer{align-self:start;width:100%;box-sizing:border-box}.room-card{gap:16px}.room-total{display:flex;flex-direction:column;gap:6px;padding:16px;border-radius:18px;background:rgba(0,0,0,.2)}.room-total strong{font-size:26px;font-variant-numeric:tabular-nums}
 .forest-small{width:100%;border-top:1px solid #ffffff30;padding-top:16px}.forest-small summary{cursor:pointer;font-weight:700}.forest-small .forest{display:flex;gap:16px;padding-top:12px}.forest-small .fi{min-width:0;gap:6px}.forest-small p{font-size:13px}.forest-small #fo{max-height:90px;overflow:auto}
 #roomMembers{list-style:none;padding:0;display:grid;gap:8px}#roomMembers li{display:grid;gap:4px;padding:12px;border-radius:16px;background:rgba(0,0,0,.2)}#roomMembers .member-clock{font-variant-numeric:tabular-nums}#roomMembers small{opacity:.85}
-.room-chat{border-top:1px solid #ffffff30;padding-top:16px}.chat-note{font-size:12px;opacity:.8}#chatMessages{max-height:360px;overflow-y:auto;overflow-wrap:anywhere;display:flex;flex-direction:column;gap:10px;margin:12px 0}.chat-message{background:rgba(0,0,0,.2);border-radius:16px;padding:12px}.chat-message p{white-space:pre-wrap;margin:6px 0}.chat-message small{opacity:.7}.chat-image{max-width:100%;max-height:240px;object-fit:contain;display:block;border-radius:12px;cursor:zoom-in}.chat-image-button{border:0;background:transparent;padding:0;text-align:left;cursor:zoom-in;width:100%}
+.room-chat{min-width:0;gap:12px}.room-chat .pill{font-size:14px;padding:10px 14px}.room-card .row>input{min-width:0;width:100%;flex:1 1 170px}.room-card .row>.pill{flex-shrink:0}#chatMessages:empty::before{content:"Odaya katıldığında mesajlar burada görünecek.";font-size:14px;color:var(--mu);padding:16px 0}.chat-note{font-size:12px;opacity:.8}#chatMessages{max-height:360px;overflow-y:auto;overflow-wrap:anywhere;display:flex;flex-direction:column;gap:10px;margin:12px 0}.chat-message{background:rgba(0,0,0,.2);border-radius:16px;padding:12px}.chat-message p{white-space:pre-wrap;margin:6px 0}.chat-message small{opacity:.7}.chat-image{max-width:100%;max-height:240px;object-fit:contain;display:block;border-radius:12px;cursor:zoom-in}.chat-image-button{border:0;background:transparent;padding:0;text-align:left;cursor:zoom-in;width:100%}
 #chatForm{display:flex;flex-direction:column;gap:10px}#chatText{width:100%;resize:vertical;font:inherit;color:inherit;background:#0A1128;border:1px solid #ffffff30;border-radius:16px;padding:12px;box-sizing:border-box}.photo-picker{position:relative;cursor:pointer}.photo-picker input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}#chatPreview{max-width:100%;max-height:160px;border-radius:12px}#photoDraft{display:flex;align-items:center;gap:12px}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
 #imageViewer{background:#0A1128;color:#D9E2FF;border:0;border-radius:20px;max-width:95vw;padding:16px}#imageViewer::backdrop{background:#000c}#imageViewer img{max-width:85vw;max-height:75vh;object-fit:contain;display:block}#imageViewer button{margin-top:12px}
+@media(min-width:1200px){#calisma>.grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(260px,300px)}.room-chat{position:sticky;top:24px;padding:24px;max-height:calc(100dvh - 48px);overflow-y:auto}#chatMessages{min-height:180px;max-height:calc(100dvh - 430px)}.room-chat .row{gap:8px}}
+@media(min-width:900px) and (max-width:1199px){#calisma>.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.room-chat{grid-column:1/-1}}
+@media(max-width:899px){#calisma>.grid{grid-template-columns:minmax(0,1fr)}}
 </style>
 </head>
 <body>
@@ -145,12 +148,13 @@ Focus For You
 <div class="row"><strong id="roomCode"></strong><button class="pill" id="copyInvite">Davet bağlantısını kopyala</button><button class="pill d" id="leaveRoom">Odadan ayrıl</button></div>
 <div class="room-total"><span>Bu odada toplam çalışma</span><strong id="roomTotal">0 sa 00 dk 00 sn</strong></div>
 <p id="roomInfo"></p><ul id="roomMembers"></ul>
-<div class="room-chat"><h3>Oda sohbeti</h3><p class="chat-note">Mesajlar ve fotoğraflar bu açık odada tutulur; oda kapanınca silinir.</p><div id="chatMessages" role="log" aria-label="Oda mesajları" aria-live="polite"></div>
-<form id="chatForm"><label class="sr-only" for="chatText">Mesajın</label><textarea id="chatText" maxlength="2000" rows="2" placeholder="Bir soru sor veya mesaj yaz…"></textarea><div id="photoDraft" hidden><img id="chatPreview" alt="Göndermeden önce fotoğraf önizlemesi"><button class="pill d" type="button" id="removePhoto">Fotoğrafı kaldır</button></div>
-<div class="row"><label class="pill photo-picker">Galeriden seç<input id="chatPhoto" type="file" accept="image/*"></label><label class="pill photo-picker">Fotoğraf çek<input id="chatCamera" type="file" accept="image/*" capture="environment"></label><button class="pill p" id="sendChat" type="submit">Gönder</button></div><p id="chatStatus" role="status"></p></form></div>
+
 </div>
 <p>Ücretsiz lobi en fazla 8 kişi içindir. Oda sahibi sayfayı açık tutmalı; sayfayı kapatır veya yenilerse oda kapanır. Telefon uykuya geçerse bağlantı kesilebilir. Bazı okul ve mobil ağları doğrudan bağlantıyı engelleyebilir; bu durumda başka bir ağ dene. Odadan ayrılmak kişisel sayacını durdurmaz.</p>
 </article>
+<aside class="card c2 room-chat" aria-label="Oda sohbeti" data-calm="1"><h3>Oda sohbeti</h3><p class="chat-note">Mesajlar ve fotoğraflar bu açık odada tutulur; oda kapanınca silinir.</p><div id="chatMessages" role="log" aria-label="Oda mesajları" aria-live="polite"></div>
+<form id="chatForm"><label class="sr-only" for="chatText">Mesajın</label><textarea id="chatText" maxlength="2000" rows="2" placeholder="Bir soru sor veya mesaj yaz…"></textarea><div id="photoDraft" hidden><img id="chatPreview" alt="Göndermeden önce fotoğraf önizlemesi"><button class="pill d" type="button" id="removePhoto">Fotoğrafı kaldır</button></div>
+<div class="row"><label class="pill photo-picker">Galeriden seç<input id="chatPhoto" type="file" accept="image/*"></label><label class="pill photo-picker">Fotoğraf çek<input id="chatCamera" type="file" accept="image/*" capture="environment"></label><button class="pill p" id="sendChat" type="submit">Gönder</button></div><p id="chatStatus" role="status"></p></form></aside>
 
 
 </div>
@@ -393,5 +397,4 @@ document.addEventListener('pointerup',up);document.addEventListener('pointercanc
 <script src="install.js"></script>
 </body>
 </html>
-
 
