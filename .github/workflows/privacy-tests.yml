@@ -2,7 +2,7 @@ name: Privacy and deletion checks
 on:
   push:
     branches: [main]
-    paths: ['firestore.rules', 'privacy-tests/**', '.github/workflows/privacy-tests.yml']
+    paths: ['firestore.rules', 'privacy-tests/**', 'tests/**', '*.js', 'index.html', '.github/workflows/privacy-tests.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -14,6 +14,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - run: node --test tests/*.test.cjs
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -24,3 +25,4 @@ jobs:
         working-directory: privacy-tests
       - run: npx firebase emulators:exec --only firestore --project demo-focus-deletion "node --test *.rules.test.cjs"
         working-directory: privacy-tests
+

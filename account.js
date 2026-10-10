@@ -3,7 +3,8 @@ import {getAuth,GoogleAuthProvider,EmailAuthProvider,reauthenticateWithPopup,rea
 import {getFirestore,doc,getDocFromServer,collection,onSnapshot,runTransaction,serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js';
 import {initializeAppCheck,ReCaptchaEnterpriseProvider} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-app-check.js';
 import {firebaseConfig,googleClientId,appCheckSiteKey} from './firebase-config.js';
-import {eraseAccount} from './account-delete.js?v=2';
+import {eraseAccount} from './account-delete.js?v=3';
+import {initSocial} from './social.js';
 
 const app=initializeApp(firebaseConfig);
 // Enable only after the matching web provider is registered in Firebase.
@@ -63,6 +64,7 @@ async function sync(){
 }
 async function bind(user){
  if(deleting)return;
+ window.FocusSocial?.stop();
  deletionLocked=false;
  const previous=localStorage.getItem('focus_current_uid')||'',next=user?.emailVerified?user.uid:'';
  if(previous&&previous!==next){try{const guest=JSON.parse(localStorage.getItem('focus_guest_backup')||'null');if(guest){Study.applyDays(guest.days);window.FocusData?.apply(guest.fields)}}catch(e){}}
@@ -83,6 +85,7 @@ async function bind(user){
  try{
   await runTransaction(db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())tx.set(ref,seed)});
   if(revision!==generation)return;ready=true;observed=fields();
+  window.FocusSocial.bind(user).catch(()=>message('Sosyal odalara erişilemiyor. Firebase oda kurallarının yayımlandığını kontrol et.')); 
   unsub.push(onSnapshot(ref,snap=>{if(revision!==generation||!snap.exists())return;base=snap.data();applyCloud();message('Bulut kayıtların açık; değişiklikler otomatik kaydedilir.')},()=>{ready=false;renderProfile();message('Bulut kayıtlarına erişilemiyor. Kayıtların cihazda duruyor.')}));
   unsub.push(onSnapshot(collection(db,'users',uid,'devices'),snap=>{if(revision!==generation)return;watchChanges();devices=new Map(snap.docs.map(d=>[d.id,d.data()]));devicesLoaded=true;acknowledgeFields();applyCloud()},()=>message('Bulut kayıtlarına bağlantı kesildi; cihaz kayıtları korunuyor.')));
  }catch(e){message('Hesap açık, fakat bulut kayıtları henüz bağlanamadı. Cihaz kayıtların korunuyor.');renderProfile()}
@@ -100,7 +103,7 @@ by('emailRegister').onclick=()=>busy(async()=>{const c=credentials();if(c.passwo
 by('resetPassword').onclick=()=>busy(async()=>{const email=by('loginEmail').value.trim();if(!email){message('Önce e-posta adresini yaz.');return}await sendPasswordResetEmail(auth,email);message('Hesap varsa şifre sıfırlama e-postası gönderildi. Gelen kutunu kontrol et.')});
 by('verifyAccountButton').onclick=()=>busy(async()=>{await reload(auth.currentUser);await getIdToken(auth.currentUser,true);await bind(auth.currentUser)});
 by('resendVerification').onclick=()=>busy(async()=>{if(auth.currentUser&&!auth.currentUser.emailVerified){await sendEmailVerification(auth.currentUser);message('Doğrulama e-postası tekrar gönderildi.')}});
-by('logoutAccount').onclick=()=>busy(async()=>{if(Study.liveSession?.().running){message('Çıkış yapmadan önce sayacı duraklat.');return}await sync();saveCache();await signOut(auth);window.FocusAndroid?.clearGoogleSession?.()});
+by('logoutAccount').onclick=()=>busy(async()=>{if(Study.liveSession?.().running){message('Çıkış yapmadan önce sayacı duraklat.');return}await sync();saveCache();await window.FocusSocial?.pauseRoom();window.FocusTemporaryRoom?.leaveNow();await signOut(auth);window.FocusAndroid?.clearGoogleSession?.()});
 by('profilePhoto').onchange=async e=>{
  if(!by('profilePhotoConsent').checked){message('Fotoğrafını saklamak ve katıldığın odada göstermek için fotoğraf onayını işaretle.');e.target.value='';return}
  const file=e.target.files[0];if(!file)return;if(!file.type.startsWith('image/')||file.size>20*1024*1024){message('20 MB’tan küçük bir fotoğraf seç.');return}let bitmap;
@@ -121,13 +124,14 @@ by('removeProfilePhoto').onclick=()=>busy(async()=>{
 by('exportAccount').onclick=()=>busy(async()=>{
  if(!uid||!ready||!base||!devicesLoaded){message('Verilerini indirmek için önce bulut kayıtlarının yüklenmesini bekle.');return}
  watchChanges();const owner=uid,revision=generation;
- const value=JSON.stringify({format:'focus-for-you-data-v1',exportedAt:new Date().toISOString(),account:{uid:owner,email:auth.currentUser.email,profile:{...profile}},cloud:{baseline:json(base),devices:[...devices].map(([id,data])=>({id,data:json(data)}))},currentDevice:{days:json(cache.days),pendingFields:json(cache.dirty),visibleDays:Study.snapshot().days,settings:fields()}},null,2);
+ const social=await window.FocusSocial.exportData();
+ const value=JSON.stringify({social,format:'focus-for-you-data-v1',exportedAt:new Date().toISOString(),account:{uid:owner,email:auth.currentUser.email,profile:{...profile}},cloud:{baseline:json(base),devices:[...devices].map(([id,data])=>({id,data:json(data)}))},currentDevice:{days:json(cache.days),pendingFields:json(cache.dirty),visibleDays:Study.snapshot().days,settings:fields()}},null,2);
  if(owner!==uid||revision!==generation)return;
  if(window.FocusAndroid){if(!window.FocusAndroid.saveBackup){message('Verilerini indirmek için APK’yi güncelle veya siteyi tarayıcıda aç.');return}if(new TextEncoder().encode(value).length>1000000){message('Dosya APK için büyük. Hesabınla tarayıcıdan giriş yapıp Verilerimi indir’i kullan.');return}window.FocusAndroid.saveBackup(value);message('Verilerini kaydetmek için açılan pencerede dosya konumunu seç.');return}
  const url=URL.createObjectURL(new Blob([value],{type:'application/json'})),link=document.createElement('a');link.href=url;link.download='focus-for-you-verilerim.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),30000);message('Veri dosyan hazır. Dosya kişisel kayıtlarını içerir; herkese açık paylaşma.');
 });
 function clearAccountDevice(owner){
- by('leaveRoom')?.click();Study.stopForAccountDeletion?.();
+ window.FocusSocial?.stop();sessionStorage.removeItem('focus_active_room_'+owner);by('leaveRoom')?.click();Study.stopForAccountDeletion?.();
  by('lobbyName').value='';window.FocusNative?.pulse();
  profile={uid:'',name:'',photo:''};avatar='';renderProfile();
  localStorage.removeItem('focus_current_uid');localStorage.removeItem('focus_account_'+owner);localStorage.removeItem('focus_guest_backup');
@@ -165,8 +169,10 @@ if(by('deleteAccount'))by('deleteAccount').onclick=()=>busy(async()=>{
  by('deletePassword').value='';await finishDeletion(user);
 });
 window.FocusAccount={profile:()=>({...profile}),record:(date,seconds)=>{if(!uid||deleting||deletionLocked)return;cache.days[date]=Math.min(86400,(cache.days[date]||0)+seconds)},sync};
+initSocial({db,auth});
 onAuthStateChanged(auth,user=>{bind(user).catch(failure)});
 setInterval(()=>{watchChanges();saveCache();if(!auth.currentUser)localStorage.setItem('focus_guest_backup',JSON.stringify({days:Study.snapshot().days,fields:fields()}))},5000);setInterval(sync,60000);
 addEventListener('online',()=>{if(auth.currentUser?.emailVerified&&!ready)bind(auth.currentUser);else sync()});
 addEventListener('pagehide',()=>{watchChanges();saveCache()});
 document.addEventListener('visibilitychange',()=>{watchChanges();saveCache();if(!document.hidden)sync()});
+

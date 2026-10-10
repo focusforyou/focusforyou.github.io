@@ -1,19 +1,22 @@
 'use strict';
 const RoomChat=(()=>{
-const by=id=>document.getElementById(id);let transport=null,photo='',processing=false,joined=false;const seen=new Set(),pending=new Map(),rows=[];
+const by=id=>document.getElementById(id);let transport=null,photo='',processing=false,joined=false,persistent=false;const seen=new Set(),pending=new Map(),rows=[];
 function state(value){joined=value;by('sendChat').disabled=!joined||processing;by('chatPhoto').disabled=!joined;by('chatCamera').disabled=!joined}
 function remove(){photo='';by('photoDraft').hidden=true;by('chatPreview').removeAttribute('src');by('chatPhoto').value='';by('chatCamera').value=''}
 function reset(){seen.clear();rows.length=0;for(const task of pending.values())clearTimeout(task.task);pending.clear();by('chatMessages').replaceChildren();by('chatStatus').textContent='';remove();state(false);if(by('imageViewer').open)by('imageViewer').close();by('fullPhoto').removeAttribute('src')}
-function receive(input){
+function receive(input,identity,onDelete){
 const message=LobbyModel.chat(input);if(!message||seen.has(message.id))return;seen.add(message.id);
 if(pending.has(message.id)){clearTimeout(pending.get(message.id).task);pending.delete(message.id);by('chatStatus').textContent='Mesaj gönderildi.'}
 const list=by('chatMessages'),bottom=list.scrollHeight-list.scrollTop-list.clientHeight<60;
 const item=document.createElement('article');item.className='chat-message';const label=document.createElement('strong');label.textContent=message.sender;const date=document.createElement('small');date.textContent=' · '+new Date(message.time).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});item.append(label,date);
-if(message.avatar){const avatar=document.createElement('img');avatar.className='chat-avatar';avatar.width=avatar.height=28;avatar.src=message.avatar;avatar.alt='';avatar.referrerPolicy='no-referrer';item.prepend(avatar)}
+if(identity)SocialModel.decorate(label,identity);
+if(onDelete){const remove=document.createElement('button');remove.className='chat-delete';remove.type='button';remove.textContent='Sil';remove.setAttribute('aria-label','Kendi mesajını sil');remove.onclick=onDelete;item.append(remove)}
+if(message.avatar){const avatar=document.createElement('img');avatar.className='chat-avatar'+(identity?.cosmetics?.frame==='gold'?' frame-gold':'');avatar.width=avatar.height=28;avatar.src=message.avatar;avatar.alt='';avatar.referrerPolicy='no-referrer';item.prepend(avatar)}
 if(message.text){const text=document.createElement('p');text.textContent=message.text;item.append(text)}
 if(message.image){const button=document.createElement('button');button.type='button';button.className='chat-image-button';button.setAttribute('aria-label','Fotoğrafı büyüt');const image=document.createElement('img');image.className='chat-image';image.loading='lazy';image.decoding='async';image.src=message.image;image.alt=message.text||message.sender+' tarafından paylaşılan fotoğraf';button.append(image);button.onclick=()=>{by('fullPhoto').src=message.image;by('imageViewer').showModal()};item.append(button)}
-list.append(item);rows.push({id:message.id,item,size:message.image.length});while(rows.length>60||rows.filter(r=>r.size>0).length>8||rows.reduce((n,r)=>n+r.size,0)>4500000){const old=rows.shift();old.item.remove();seen.delete(old.id)}if(bottom)list.scrollTop=list.scrollHeight;
+list.append(item);rows.push({id:message.id,item,size:message.image.length});while(rows.length>60||rows.filter(r=>r.size>0).length>(persistent?20:8)||rows.reduce((n,r)=>n+r.size,0)>(persistent?9000000:4500000)){const old=rows.shift();old.item.remove();seen.delete(old.id)}if(bottom)list.scrollTop=list.scrollHeight;
 }
+function retain(ids){const keep=new Set(ids);for(let i=rows.length-1;i>=0;i--)if(!keep.has(rows[i].id)){rows[i].item.remove();seen.delete(rows[i].id);rows.splice(i,1)}}
 function rejected(id,message){const p=pending.get(id);if(!p)return;clearTimeout(p.task);pending.delete(id);if(!by('chatText').value)by('chatText').value=p.message.text;if(!photo&&p.message.image){photo=p.message.image;by('chatPreview').src=photo;by('photoDraft').hidden=false}by('chatStatus').textContent=message}
 async function prepare(file){
 if(!file)return;if(!file.type.startsWith('image/')||file.size>20*1024*1024){by('chatStatus').textContent='En fazla 20 MB boyutunda bir fotoğraf seç.';return}
@@ -33,5 +36,6 @@ if(!transport?.(message)){clearTimeout(task);pending.delete(message.id);by('chat
 by('chatText').value='';remove();
 };
 by('chatText').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();by('chatForm').requestSubmit()}};
-by('imageViewer').onclose=()=>by('fullPhoto').removeAttribute('src');state(false);return {state,reset,receive,rejected,configure:fn=>transport=fn};
+by('imageViewer').onclose=()=>by('fullPhoto').removeAttribute('src');state(false);return {state,reset,receive,retain,rejected,configure:(fn,options={})=>{transport=fn;persistent=options.persistent===true}};
 })();
+

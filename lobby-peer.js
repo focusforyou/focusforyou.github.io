@@ -15,7 +15,7 @@ const send=(conn,data)=>{try{if(conn?.open){conn.send(data);return true}}catch(e
 const nameKey=value=>value.normalize('NFKC').trim().replace(/\s+/gu,' ').toLocaleLowerCase('tr-TR');
 function retire(id,entry){departed.set(id,entry.timer.roomWorked);members.delete(id)}
 function acceptChat(input,sender,profile){const body=LobbyModel.content(input);if(!body||history.some(m=>m.id===body.id))return;const message={...body,sender,avatar:profile?.photo||'',time:Date.now()};history.push(message);while(history.length>60||history.filter(m=>m.image).length>8||history.reduce((n,m)=>n+m.image.length,0)>4500000)history.shift();RoomChat.receive(message);for(const m of members.values())send(m.conn,{type:'chat',message})}
-RoomChat.configure(message=>{if(!joined)return false;if(host){acceptChat(message,name,ownProfile());return true}return send(upstream,{type:'chat-send',version:1,message})});
+function sendChat(message){if(!joined)return false;if(host){acceptChat(message,name,ownProfile());return true}return send(upstream,{type:'chat-send',version:1,message})}RoomChat.configure(sendChat);
 function randomCode(){const limit=Math.floor(4294967296/90000)*90000;let value;do{value=crypto.getRandomValues(new Uint32Array(1))[0]}while(value>=limit);return String(10000+value%90000)}
 function clear(){
 clearTimeout(timeout);clearTimeout(retry);clearTimeout(signalRetry);timeout=retry=signalRetry=null;
@@ -107,7 +107,9 @@ conn.on('close',()=>{if(upstream===conn)retryJoin('Oda bağlantısı kesildi; ye
 conn.on('error',()=>{if(upstream===conn){upstream=null;conn.close();retryJoin('Bağlantı sorunu; tekrar deneniyor…')}});
 }
 function enter(create,collisions=0){
+if(window.FocusSocial?.active()){window.FocusSocial.pauseRoom().then(()=>enter(create,collisions)).catch(()=>status('Önce kalıcı odadan ayrılmayı tekrar dene.'));return}
 if(peer||connecting)return;
+by('leaveRoom').onclick=leave;by('leaveRoom').textContent='Odadan ayrıl';RoomChat.configure(sendChat);by('copyInvite').onclick=copyInvite;document.querySelector('.chat-note').textContent='Geçici odanın sohbeti yalnızca açık oturumda tutulur.';
 name=LobbyModel.cleanName(by('lobbyName').value);
 if(!name){status('1–30 karakterlik bir takma ad yaz.');return}
 code=create?randomCode():by('roomCodeInput').value.trim().toUpperCase().replace(/\s/g,'');
@@ -145,10 +147,10 @@ else send(upstream,{type:'leave',version:1});
 setTimeout(()=>{clear();status('Odadan ayrıldın. Kişisel sayacın devam eder.')},100);
 }
 by('createRoom').onclick=()=>enter(true);by('joinRoom').onclick=()=>enter(false);by('leaveRoom').onclick=leave;
-by('copyInvite').onclick=async()=>{
+async function copyInvite(){
 if(!joined)return;const url=new URL(location.origin+location.pathname);url.searchParams.set('room',code);url.hash='lobi';
 try{await navigator.clipboard.writeText(url.href);status('Davet bağlantısı kopyalandı.')}catch(e){status('Davet bağlantısı: '+url.href)}
-};
+}by('copyInvite').onclick=copyInvite;
 const invite=new URLSearchParams(location.search).get('room');if(invite&&/^[1-9][0-9]{4}$/.test(invite))by('roomCodeInput').value=invite;
 window.FocusRoomHeartbeat=()=>{
 if(!joined)return;
@@ -162,6 +164,8 @@ setInterval(window.FocusRoomHeartbeat,1000);
 setInterval(renderClocks,250);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&joined){if(host)broadcast();else presence();render()}});
 window.addEventListener('pagehide',()=>{if(peer){if(host)for(const m of members.values())send(m.conn,{type:'closed'});else send(upstream,{type:'leave',version:1});clear()}});
+window.FocusTemporaryRoom={active:()=>joined,leaveNow:()=>{if(!peer)return;if(host)for(const m of members.values())send(m.conn,{type:'closed'});else send(upstream,{type:'leave',version:1});clear()}};
 sessionStorage.removeItem('focus_room');busy();status('Ücretsiz lobi hazır. Oda aç veya kodla katıl.');
 window.addEventListener('focus-profile',()=>{const profile=ownProfile();if(!peer&&profile.uid&&profile.name)by('lobbyName').value=profile.name});
 })();
+

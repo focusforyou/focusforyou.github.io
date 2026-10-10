@@ -39,3 +39,6 @@ body[data-view="progress"] #calisma{display:none}
 .account-card a{color:var(--pr)}.delete-account{margin-top:20px;padding-top:16px;border-top:1px solid #ffffff20}.danger{background:#602b40;color:#ffe4ec;border:1px solid #d06e8c}.delete-consent{display:flex!important;align-items:flex-start;gap:10px}#accountSheet #deleteConsent{width:20px;min-width:20px;min-height:20px;height:20px;padding:0;accent-color:#d06e8c}
 
 #accountSheet #profilePhotoConsent{width:20px;min-width:20px;min-height:20px;height:20px;padding:0;accent-color:var(--pr)}
+
+.timer-chevron{margin-left:auto;font-size:28px;line-height:1;color:var(--pr);transition:transform .3s ease}.mini-timer.expanded .timer-chevron{transform:rotate(180deg)}
+
