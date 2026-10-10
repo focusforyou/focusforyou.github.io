@@ -97,7 +97,7 @@ by('profilePhoto').onchange=async e=>{
 by('saveProfile').onclick=()=>busy(async()=>{
  if(!uid||!ready){message('Önce bulut kayıtlarının bağlanmasını bekle.');return}
  const name=by('profileName').value.trim();if(!name||name.length>30){message('1–30 karakterlik bir görünen ad yaz.');return}
- const next={uid,name,photo:CloudModel.photo(avatar)},ref=doc(db,'users',uid,'meta','main');await runTransaction(db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())throw Error();tx.update(ref,{profile:next})});profile=next;renderProfile();message('Profilin kaydedildi.');
+ const next={uid,name,photo:CloudModel.photo(avatar)},ref=doc(db,'users',uid,'meta','main');await runTransaction(db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())throw Error();tx.update(ref,{profile:next})});profile=next;avatar=next.photo;renderProfile();message('Profilin kaydedildi.');by('accountSheet').close();
 });
 window.FocusAccount={profile:()=>({...profile}),record:(date,seconds)=>{if(!uid)return;cache.days[date]=Math.min(86400,(cache.days[date]||0)+seconds)},sync};
 onAuthStateChanged(auth,user=>{bind(user).catch(failure)});
