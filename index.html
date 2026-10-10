@@ -93,7 +93,7 @@ main{padding:32px 16px}.card{padding:24px}
 @media(min-width:900px) and (max-width:1199px){#calisma>.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.room-chat{grid-column:1/-1}}
 @media(max-width:899px){#calisma>.grid{grid-template-columns:minmax(0,1fr)}}
 </style>
-<link rel="stylesheet" href="mobile-ui.css?v=rooms3">
+<link rel="stylesheet" href="mobile-ui.css?v=no-music1">
 </head>
 <body>
 <canvas id="sky" aria-hidden="true"></canvas>
@@ -106,7 +106,6 @@ Focus For You
 <a class="nav-link" href="#calisma">Çalışma</a>
 <a class="nav-link" href="#ilerleme">İlerleme</a>
 <button class="pill app-install-link" type="button" id="openInstall" aria-haspopup="dialog" aria-controls="installSheet">Uygulamayı kur</button>
-<button class="pill p" id="mu" type="button" aria-label="Arka plan müziğini aç veya kapat">Müziği aç</button>
 </nav>
 </header>
 
@@ -234,23 +233,6 @@ cx.fillStyle=gl;cx.beginPath();cx.arc(hx,hy,c.r*5,0,6.2832);cx.fill()}
 cx.globalAlpha=1;
 }
 requestAnimationFrame(frame);
-
-/* Arka plan müziği (tarayıcıda üretilen sakin ambiyans) */
-let ac,mg,lp,dl,ci=0,ct,bt,mon=false;
-const CH=[[110,220,261.63,329.63,493.88],[87.31,174.61,220,261.63,329.63],[65.41,130.81,196,293.66,329.63],[98,196,246.94,293.66,329.63]],PE=[440,523.25,587.33,659.25,783.99,880];
-function chord(){const n=ac.currentTime;CH[ci++%4].forEach(f=>{const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;o.detune.value=R(-6,6);g.gain.setValueAtTime(0,n);g.gain.linearRampToValueAtTime(.05,n+3);g.gain.linearRampToValueAtTime(.05,n+5.5);g.gain.linearRampToValueAtTime(0,n+9.5);o.connect(g);g.connect(lp);g.connect(dl);o.start(n);o.stop(n+10)})}
-function bell(){const n=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.frequency.value=PE[Math.random()*6|0];g.gain.setValueAtTime(.0001,n);g.gain.linearRampToValueAtTime(.05,n+.02);g.gain.exponentialRampToValueAtTime(.0001,n+4);o.connect(g);g.connect(lp);g.connect(dl);o.start(n);o.stop(n+4.2);bt=setTimeout(bell,2500+Math.random()*4000)}
-function setMusic(on){
-const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
-if(on){
-if(!ac){ac=new AC();mg=ac.createGain();mg.gain.value=0;mg.connect(ac.destination);lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1600;lp.connect(mg);
-dl=ac.createDelay(1.5);dl.delayTime.value=.55;const fb=ac.createGain();fb.gain.value=.45;const dp=ac.createBiquadFilter();dp.type='lowpass';dp.frequency.value=1800;dl.connect(dp);dp.connect(fb);fb.connect(dl);dp.connect(mg)}
-ac.resume();mg.gain.cancelScheduledValues(ac.currentTime);mg.gain.setTargetAtTime(.22,ac.currentTime,1.5);
-chord();clearInterval(ct);ct=setInterval(chord,8000);clearTimeout(bt);bt=setTimeout(bell,3000);
-}else{clearInterval(ct);clearTimeout(bt);if(ac){mg.gain.cancelScheduledValues(ac.currentTime);mg.gain.setTargetAtTime(0,ac.currentTime,.4)}}
-mon=on;$('mu').textContent=on?'Müziği kapat':'Müziği aç';
-}
-$('mu').onclick=()=>setMusic(!mon);
 
 /* Sınav geri sayımı */
 function cd(){
