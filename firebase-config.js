@@ -7,3 +7,5 @@ export const firebaseConfig={
  appId:'1:718275780283:web:b7862d52dffa7da15a139e'
 };
 export const googleClientId='718275780283-9clat2fbif7idmrh7ddm06vlg1m2rmlo.apps.googleusercontent.com';
+// Public site key, never a secret key. Empty until the provider is registered.
+export const appCheckSiteKey='';

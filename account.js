@@ -1,10 +1,15 @@
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js';
 import {getAuth,GoogleAuthProvider,EmailAuthProvider,reauthenticateWithPopup,reauthenticateWithCredential,signInWithPopup,signInWithCredential,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendEmailVerification,sendPasswordResetEmail,signOut,onAuthStateChanged,reload,getIdToken} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js';
 import {getFirestore,doc,getDocFromServer,collection,onSnapshot,runTransaction,serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js';
-import {firebaseConfig,googleClientId} from './firebase-config.js';
+import {initializeAppCheck,ReCaptchaEnterpriseProvider} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-app-check.js';
+import {firebaseConfig,googleClientId,appCheckSiteKey} from './firebase-config.js';
 import {eraseAccount} from './account-delete.js?v=2';
 
-const by=id=>document.getElementById(id),auth=getAuth(initializeApp(firebaseConfig)),db=getFirestore();auth.languageCode='tr';
+const app=initializeApp(firebaseConfig);
+// Enable only after the matching web provider is registered in Firebase.
+// The APK uses this same web app through HTTPS; do not bypass attestation there.
+if(appCheckSiteKey)initializeAppCheck(app,{provider:new ReCaptchaEnterpriseProvider(appCheckSiteKey),isTokenAutoRefreshEnabled:true});
+const by=id=>document.getElementById(id),auth=getAuth(app),db=getFirestore();auth.languageCode='tr';
 let uid='',cache={days:{},dirty:{}},base=null,devices=new Map(),devicesLoaded=false,unsub=[],generation=0,syncing=false,ready=false,observed={},avatar='',profile={uid:'',name:'',photo:''};
 let deleting=false,deletionLocked=false,nativeDeleteUid='';
 const storedDeviceId=localStorage.getItem('focus_device_id');
