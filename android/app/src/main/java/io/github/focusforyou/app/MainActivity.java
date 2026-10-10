@@ -1,5 +1,9 @@
 package io.github.focusforyou.app;
 import android.app.Activity;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Color;
@@ -31,6 +35,24 @@ import org.json.JSONObject;
 public class MainActivity extends Activity {
     private static final String HOME = "https://focusforyou.github.io/";
     private WebView web;
+    private SensorManager skySensors;
+    private Sensor skySensor;
+    private boolean motionRequested=false;
+    private long lastMotion=0;
+    private final float[] gravity=new float[3];
+    private final SensorEventListener skyListener=new SensorEventListener(){
+        public void onAccuracyChanged(Sensor sensor,int accuracy){}
+        public void onSensorChanged(SensorEvent event){
+            if(!resumed||!motionRequested||!trustedPage())return;
+            for(int i=0;i<3;i++)gravity[i]=event.sensor.getType()==Sensor.TYPE_ACCELEROMETER?.85f*gravity[i]+.15f*event.values[i]:event.values[i];
+            if(event.timestamp-lastMotion<50000000L)return;lastMotion=event.timestamp;
+            double beta=Math.toDegrees(Math.atan2(-gravity[1],gravity[2])),gamma=Math.toDegrees(Math.atan2(gravity[0],Math.hypot(gravity[1],gravity[2])));
+            if(!Double.isFinite(beta)||!Double.isFinite(gamma))return;
+            int angle=getWindowManager().getDefaultDisplay().getRotation()*90;
+            web.evaluateJavascript("window.FocusMotion?.receive("+beta+","+gamma+","+angle+")",null);
+        }
+    };
+    private void updateMotion(){if(skySensors==null)return;skySensors.unregisterListener(skyListener);lastMotion=0;java.util.Arrays.fill(gravity,0);if(resumed&&motionRequested&&trustedPage()&&skySensor!=null)skySensors.registerListener(skyListener,skySensor,SensorManager.SENSOR_DELAY_UI);}
     private boolean errorShown = false;
     private ValueCallback<Uri[]> fileCallback;
     private String backup;
@@ -71,6 +93,7 @@ public class MainActivity extends Activity {
         try{startActivityForResult(pick,101);}catch(Exception ignored){if(fileCallback!=null)fileCallback.onReceiveValue(null);fileCallback=null;}
     }
     public class BackupBridge {
+        @JavascriptInterface public void motion(boolean enabled){runOnUiThread(()->{if(!trustedPage())return;motionRequested=enabled;updateMotion();});}
         @JavascriptInterface public void googleSignIn(String clientId){
             runOnUiThread(()->{
                 if(!trustedPage()||!resumed||signingIn||!GOOGLE_CLIENT.equals(clientId))return;
@@ -113,6 +136,7 @@ public class MainActivity extends Activity {
     }
     @Override public void onCreate(Bundle saved) {
         super.onCreate(saved);
+        skySensors=(SensorManager)getSystemService(SENSOR_SERVICE);if(skySensors!=null){skySensor=skySensors.getDefaultSensor(Sensor.TYPE_GRAVITY);if(skySensor==null)skySensor=skySensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);}
         File photoDirectory=new File(getCacheDir(),"photos");File[] oldPhotos=photoDirectory.listFiles();if(oldPhotos!=null)for(File photo:oldPhotos)if(System.currentTimeMillis()-photo.lastModified()>86400000)photo.delete();
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.rgb(10,17,40));
@@ -165,7 +189,7 @@ public class MainActivity extends Activity {
                 }
                 return true;
             }
-            @Override public void onPageStarted(WebView view,String url,android.graphics.Bitmap icon) { errorShown=false; }
+            @Override public void onPageStarted(WebView view,String url,android.graphics.Bitmap icon) { errorShown=false;motionRequested=false;updateMotion(); }
             @Override public void onPageFinished(WebView view,String url) {
                 super.onPageFinished(view,url);
                 Uri uri=Uri.parse(url);
@@ -195,8 +219,8 @@ public class MainActivity extends Activity {
         }
     }
     @Override protected void onSaveInstanceState(Bundle out) { web.saveState(out);super.onSaveInstanceState(out); }
-    @Override protected void onPause() { resumed=false;if(!keepSession&&!FocusService.active)web.onPause();super.onPause(); }
-    @Override protected void onResume() { super.onResume();resumed=true;if(web!=null){web.onResume();nativeTick();} }
-    @Override protected void onDestroy() { if(signInCancellation!=null)signInCancellation.cancel();stopService(new Intent(this,FocusService.class));FocusService.heartbeat=null;FocusService.toggle=null;if(web!=null){if(trustedPage())web.evaluateJavascript("typeof flush==='function'&&flush()",null);((FrameLayout)web.getParent()).removeView(web);web.destroy();}super.onDestroy(); }
+    @Override protected void onPause() { resumed=false;updateMotion();if(!keepSession&&!FocusService.active)web.onPause();super.onPause(); }
+    @Override protected void onResume() { super.onResume();resumed=true;updateMotion();if(web!=null){web.onResume();nativeTick();} }
+    @Override protected void onDestroy() { resumed=false;updateMotion();if(signInCancellation!=null)signInCancellation.cancel();stopService(new Intent(this,FocusService.class));FocusService.heartbeat=null;FocusService.toggle=null;if(web!=null){if(trustedPage())web.evaluateJavascript("typeof flush==='function'&&flush()",null);((FrameLayout)web.getParent()).removeView(web);web.destroy();}super.onDestroy(); }
 }
 
