@@ -24,3 +24,6 @@ body[data-view="progress"] #calisma{display:none}
 #timerSheet{margin:auto 0 0;width:100%;max-width:none;max-height:calc(100dvh - 24px);border-radius:28px 28px 0 0;padding-bottom:env(safe-area-inset-bottom,0px)}
 }
 @media(prefers-reduced-motion:reduce){#timerSheet::backdrop,.mobile-nav,.mini-timer{backdrop-filter:none}}
+
+/* Suppress Android WebView/Chrome tap overlays while keeping keyboard focus. */
+html{-webkit-tap-highlight-color:transparent}
