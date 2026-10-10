@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#0A1128">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg">
-<script src="study.js"></script>
+<script src="study.js?v=accounts1"></script>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
 :root{--tx:#E3E8F5;--mu:#B5BDD6;--pr:#AFC6FF;--on:#0A1A44}
@@ -93,7 +93,7 @@ main{padding:32px 16px}.card{padding:24px}
 @media(min-width:900px) and (max-width:1199px){#calisma>.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.room-chat{grid-column:1/-1}}
 @media(max-width:899px){#calisma>.grid{grid-template-columns:minmax(0,1fr)}}
 </style>
-<link rel="stylesheet" href="mobile-ui.css?v=mobile-nav3">
+<link rel="stylesheet" href="mobile-ui.css?v=accounts1">
 </head>
 <body>
 <canvas id="sky" aria-hidden="true"></canvas>
@@ -160,7 +160,9 @@ Focus For You
 
 <section id="ilerleme">
 <h2>İlerlemen</h2>
-<div class="grid"><article class="card c0">
+<div class="grid"><article class="card c5 wide account-card" data-calm="1"><h3>Hesabın</h3><p id="accountStatus" role="status">Hesap bağlantısı yükleniyor… İnternet yoksa cihaz kayıtlarınla çalışmaya devam edebilirsin.</p>
+<div id="accountGuest"><button class="pill google-login" id="googleLogin" type="button">Google ile giriş yap</button><details class="email-login"><summary>E-postayla devam et</summary><label for="loginEmail">E-posta</label><input id="loginEmail" type="email" autocomplete="email"><label for="loginPassword">Şifre</label><input id="loginPassword" type="password" minlength="8" autocomplete="current-password"><div class="row"><button class="pill p" id="emailLogin" type="button">Giriş yap</button><button class="pill" id="emailRegister" type="button">Hesap oluştur</button><button class="pill d" id="resetPassword" type="button">Şifremi unuttum</button></div></details></div>
+<div id="accountMember" hidden><p id="accountEmail"></p><div id="verifyAccount"><button class="pill p" id="verifyAccountButton" type="button">Doğruladım</button><button class="pill" id="resendVerification" type="button">Doğrulama e-postasını tekrar gönder</button></div><div id="profileControls" hidden><img id="profileAvatar" alt="Profil fotoğrafın" width="64" height="64" hidden><label for="profileName">Görünen adın</label><input id="profileName" maxlength="30" autocomplete="nickname"><label class="pill photo-picker">Profil fotoğrafı seç<input id="profilePhoto" type="file" accept="image/*"></label><button class="pill p" id="saveProfile" type="button">Profilini kaydet</button></div><button class="pill d" id="logoutAccount" type="button">Çıkış yap</button></div><p class="account-note">Giriş yapınca ilerlemen ve ayarların otomatik kaydedilir. Oda arkadaşların yalnızca görünen adını ve profil fotoğrafını görür.</p></article><article class="card c0">
 <span class="chip">Sınav geri sayımı</span>
 <div class="big" id="en">—</div>
 <p id="ec"></p>
@@ -169,7 +171,8 @@ Focus For You
 </article>
 <article class="card c4"><span class="chip">Günlük hedef</span><div class="big" id="dailyMinutes">0</div><p>dakika odaklandın</p><progress id="dailyProgress" max="120" value="0" aria-label="Günlük çalışma hedefi" style="width:100%"></progress><p id="dailySummary"></p><label for="dailyGoal">Günlük hedef (dakika)</label><input id="dailyGoal" type="number" min="5" max="1440" value="120"><button class="pill p" id="saveGoal">Hedefi kaydet</button></article>
 <article class="card c1"><h3>Ritmini seç</h3><label for="focusMinutes">Odak süresi (dakika)</label><input id="focusMinutes" type="number" min="1" max="180" value="25"><label for="breakMinutes">Mola süresi (dakika)</label><input id="breakMinutes" type="number" min="1" max="60" value="5"><button class="pill p" id="saveDurations">Süreleri kaydet</button><p id="settingsMessage" role="status"></p><p>Süreleri yeni bir tura başlamadan önce değiştirebilirsin.</p></article>
-<article class="card c2 wide"><h3>Son 7 gün</h3><div id="studyHistory" class="history"></div><p id="weeklySummary"></p><button class="pill" id="exportStudy">Verileri yedekle</button><label for="importStudy">Yedeği geri yükle</label><input id="importStudy" type="file" accept=".json,application/json"><p id="backupMessage" role="status"></p><p>İlerlemen bu cihazda saklanır. Başka cihaza geçerken yedeğini kullan.</p></article>
+<article class="card c2 wide"><h3>Son 7 gün</h3><div id="studyHistory" class="history"></div><p id="weeklySummary"></p><details id="localBackup"><summary>Cihaz yedeği</summary><button class="pill" id="exportStudy">Verileri yedekle</button><label for="importStudy">Yedeği geri yükle</label><input id="importStudy" type="file" accept=".json,application/json"><p id="backupMessage" role="status"></p><p>Hesap kullanmadan çalışıyorsan kayıtlarını buradan başka cihaza taşıyabilirsin.</p></details></article>
+<article class="card c3 motion-card" data-calm="1"><h3>Gökyüzü</h3><p>Telefonunu hafif eğerek yıldızları hareket ettir.</p><button class="pill" id="toggleMotion" type="button" aria-pressed="false">Telefon hareketini aç</button><p id="motionStatus" role="status"></p></article>
 </div>
 </section>
 
@@ -195,7 +198,8 @@ const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 /* Gökyüzü: yıldızlar, yağan noktalar, kayan yıldız, kometler */
 const cv=$('sky'),cx=cv.getContext('2d');
 let W,H,D,stars,flakes,shoot=null,comets=[],ns=R(2,5),nc=R(1,3),mx=0,my=0,sx=0,sy=0,t=0,last=performance.now();
-addEventListener('pointermove',e=>{mx=e.clientX/innerWidth-.5;my=e.clientY/innerHeight-.5});
+addEventListener('pointermove',e=>{if(window.FocusMotion?.active)return;mx=e.clientX/innerWidth-.5;my=e.clientY/innerHeight-.5});
+window.FocusSky={set:(x,y)=>{mx=x;my=y}};
 function fit(){
 D=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;cv.width=W*D;cv.height=H*D;
 stars=Array.from({length:Math.min(520,W*H/4000|0)},()=>({x:R(0,W),y:R(0,H),r:R(.3,1.1),a:R(.25,.85),s:R(.6,2),p:R(0,6.28),z:R(.2,1)}));
@@ -329,6 +333,7 @@ else for(const k of tasks){const label=$('kt'+k.id);if(label)label.textContent=k
 function setm(m){
 syncTimer();clearInterval(tm);run=0;
 const abandoned=mode==='f'&&left<focusDuration;
+focusDuration=Study.preferences.focus*60;breakDuration=Study.preferences.break*60;
 if(abandoned)F.l++;
 dead=abandoned;grown=false;mode=m;left=m==='f'?focusDuration:breakDuration;
 persistTimer();pm();rk();
@@ -347,6 +352,16 @@ syncTimer();persistTimer();pm();rk();
 if(run)tm=setInterval(tick,500);
 Study.changeDurations=(focus,rest)=>{if(run||left!==(mode==='f'?focusDuration:breakDuration))return false;Study.preferences.focus=focus;Study.preferences.break=rest;focusDuration=focus*60;breakDuration=rest*60;setm('f');Study.save();return true};
 Study.liveSession=()=>{syncTimer();return {worked:Study.totalSeconds(),focus:focusDuration,rest:breakDuration,phase:mode==='f'?'focus':'break',running:!!run,left,total:mode==='f'?focusDuration:breakDuration,rounds:sess}};
+window.FocusData={
+ fields:()=>({preferences:JSON.stringify(Study.preferences),tasks:JSON.stringify({t:tasks,a:act}),forest:JSON.stringify(F),exam:$('ed').value}),
+ apply(fields){
+  try{if(fields.preferences){Study.applyPreferences(JSON.parse(fields.preferences));if(!run&&left===(mode==='f'?focusDuration:breakDuration)){focusDuration=Study.preferences.focus*60;breakDuration=Study.preferences.break*60;left=mode==='f'?focusDuration:breakDuration}for(const [id,key] of [['dailyGoal','goal'],['focusMinutes','focus'],['breakMinutes','break']])$(id).value=Study.preferences[key]}}catch(e){}
+  try{if(fields.tasks){const value=JSON.parse(fields.tasks);if(Array.isArray(value.t)&&value.t.length<=1000&&value.t.every(k=>k&&Number.isSafeInteger(k.id)&&typeof k.name==='string'&&k.name.length<=500&&Number.isFinite(k.left)&&k.left>=0&&k.left<=36000)){tasks=value.t.map(k=>({...k,done:!!k.done}));act=tasks.some(k=>k.id===value.a&&!k.done)?value.a:null;if(act===null)nxt();svT();rk()}}}catch(e){}
+  try{if(fields.forest){const value=JSON.parse(fields.forest);if(Number.isSafeInteger(value.f)&&value.f>=0&&Number.isSafeInteger(value.l)&&value.l>=0){F=value;svF()}}}catch(e){}
+  if(typeof fields.exam==='string'&&(!fields.exam||/^\d{4}-\d{2}-\d{2}$/.test(fields.exam))){$('ed').value=fields.exam;localStorage.setItem('ex',fields.exam);cd()}
+  pm();
+ }
+};
 
 /* Kartlarda 3D eğilme ve basma efekti */
 if(matchMedia('(hover:hover) and (prefers-reduced-motion:no-preference)').matches){
@@ -363,12 +378,15 @@ document.addEventListener('pointerup',up);document.addEventListener('pointercanc
 }
 </script>
 <script src="vendor/peerjs-1.5.5.min.js"></script>
-<script src="lobby-model.js"></script>
-<script src="chat.js"></script>
+<script src="cloud-model.js"></script>
+<script src="lobby-model.js?v=profiles1"></script>
+<script src="chat.js?v=profiles1"></script>
 <script src="native-session.js?v=1"></script>
-<script src="lobby-peer.js?v=native-session1"></script>
+<script src="lobby-peer.js?v=profiles1"></script>
 <script src="install.js?v=nav2"></script>
 <script src="mobile-ui.js"></script>
+<script src="motion.js"></script>
+<script type="module">import('./account.js').catch(()=>{document.getElementById('accountStatus').textContent='Hesap hizmetine bağlanılamadı. İnternet bağlantın gelince sayfayı yeniden aç; cihaz kayıtların korunuyor.'})</script>
 </body>
 </html>
 

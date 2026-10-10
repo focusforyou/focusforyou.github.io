@@ -1,0 +1,24 @@
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  function owner(uid) { return request.auth != null && request.auth.uid == uid && request.auth.token.email_verified == true; }
+  match /users/{uid}/meta/{document} {
+   allow read: if owner(uid);
+   allow create, update: if owner(uid) && document == 'main'
+    && request.resource.data.keys().hasOnly(['days', 'fields', 'profile'])
+    && request.resource.data.days is map && request.resource.data.days.size() <= 10000
+    && request.resource.data.fields is map && request.resource.data.fields.size() <= 4
+    && request.resource.data.profile is map
+    && request.resource.data.profile.keys().hasOnly(['uid', 'name', 'photo'])
+    && request.resource.data.profile.uid == uid
+    && request.resource.data.profile.name is string && request.resource.data.profile.name.size() <= 30
+    && request.resource.data.profile.photo is string && request.resource.data.profile.photo.size() <= 40000;
+  }
+  match /users/{uid}/devices/{device} {
+   allow read: if owner(uid);
+   allow create, update: if owner(uid)
+    && request.resource.data.keys().hasOnly(['days', 'preferences', 'tasks', 'forest', 'exam'])
+    && request.resource.data.days is map && request.resource.data.days.size() <= 10000;
+  }
+ }
+}

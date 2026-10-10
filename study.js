@@ -11,14 +11,14 @@ if(/^\d{4}-\d{2}-\d{2}$/.test(date)&&Number.isFinite(seconds)&&seconds>=0&&secon
 }
 let stored={};try{stored=JSON.parse(localStorage.getItem('focus_study')||'{}')||{}}catch(e){}
 const preferences={focus:clamp(stored.preferences?.focus||25,1,180),break:clamp(stored.preferences?.break||5,1,60),goal:clamp(stored.preferences?.goal||120,5,1440)};
-let days=cleanDays(stored.days),lastRender=0;
+let days=cleanDays(stored.days),lastRender=0,localWorked=0;
 function save(){try{localStorage.setItem('focus_study',JSON.stringify({version:1,preferences,days}))}catch(e){}}
 function record(seconds,from){
 while(seconds>0){
 const date=new Date(from),midnight=new Date(date.getFullYear(),date.getMonth(),date.getDate()+1).getTime();
 const part=Math.min(seconds,(midnight-from)/1000);
 if(part<=0)break;
-const key=dateKey(date);days[key]=Math.min(86400,(days[key]||0)+part);seconds-=part;from+=part*1000;
+const key=dateKey(date);days[key]=Math.min(86400,(days[key]||0)+part);localWorked+=part;window.FocusAccount?.record(key,part);seconds-=part;from+=part*1000;
 }if(Date.now()-lastRender>1000){render();lastRender=Date.now()}
 }
 function render(){
@@ -75,6 +75,7 @@ localStorage.removeItem('mikro_timer');removeEventListener('pagehide',flush);loc
 render();setInterval(render,30000);
 }
 document.addEventListener('DOMContentLoaded',init);
-return {preferences,record,save,render,dateKey,totalSeconds:()=>Object.values(days).reduce((sum,n)=>sum+n,0)};
+return {preferences,record,save,render,dateKey,totalSeconds:()=>Object.values(days).reduce((sum,n)=>sum+n,0),localSeconds:()=>localWorked,
+snapshot:()=>({days:{...days},preferences:{...preferences}}),applyDays:value=>{days=cleanDays(value);save();render()},applyPreferences:value=>{preferences.focus=clamp(value?.focus,1,180);preferences.break=clamp(value?.break,1,60);preferences.goal=clamp(value?.goal,5,1440);save();render()}};
 })();
 
