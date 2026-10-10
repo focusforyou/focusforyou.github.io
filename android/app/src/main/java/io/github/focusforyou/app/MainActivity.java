@@ -30,6 +30,11 @@ public class MainActivity extends Activity {
     private String backup;
     private Uri cameraUri;
     private File cameraFile;
+    private boolean resumed=false,notificationAsked=false,keepSession=false;
+    private String sessionState="";
+    private boolean trustedPage(){if(web==null||web.getUrl()==null)return false;Uri u=Uri.parse(web.getUrl());return "https".equals(u.getScheme())&&"focusforyou.github.io".equals(u.getHost());}
+    private void nativeTick(){if(trustedPage())web.evaluateJavascript("window.FocusNative?.heartbeat()",null);}
+    private void nativeToggle(){if(trustedPage())web.evaluateJavascript("window.FocusNative?.toggle()",null);}
     private void chooseFile(WebChromeClient.FileChooserParams params) {
         boolean image=false;for(String type:params.getAcceptTypes())if(type!=null&&type.startsWith("image/"))image=true;
         Intent pick=new Intent(Intent.ACTION_OPEN_DOCUMENT);pick.addCategory(Intent.CATEGORY_OPENABLE);pick.setType(image?"image/*":"application/json");
@@ -56,6 +61,20 @@ public class MainActivity extends Activity {
         try{startActivityForResult(pick,101);}catch(Exception ignored){if(fileCallback!=null)fileCallback.onReceiveValue(null);fileCallback=null;}
     }
     public class BackupBridge {
+        @JavascriptInterface public void session(boolean active,boolean running,boolean rest,long deadline,long remaining,String room) {
+            final String code=room!=null&&room.matches("[1-9][0-9]{4}")?room:"";
+            runOnUiThread(()->{
+                if(!trustedPage())return;
+                keepSession=active;
+                String state=active+":"+running+":"+rest+":"+(deadline/1000)+":"+(running?0:remaining)+":"+code;
+                if(state.equals(sessionState))return;
+                if(!active){sessionState=state;stopService(new Intent(MainActivity.this,FocusService.class));return;}
+                if(!resumed&&!FocusService.active)return;
+                if(android.os.Build.VERSION.SDK_INT>=33&&resumed&&!notificationAsked&&checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)!=android.content.pm.PackageManager.PERMISSION_GRANTED){notificationAsked=true;requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS},201);}
+                Intent intent=new Intent(MainActivity.this,FocusService.class).putExtra("active",active).putExtra("running",running).putExtra("break",rest).putExtra("deadline",deadline).putExtra("remaining",Math.max(0,Math.min(10800,remaining))).putExtra("room",code);
+                try{startForegroundService(intent);sessionState=state;}catch(IllegalStateException|SecurityException ignored){sessionState="";}
+            });
+        }
         @JavascriptInterface public void saveBackup(String value) {
             if(value==null || value.length()>1000000) return;
             runOnUiThread(()->{
@@ -88,6 +107,7 @@ public class MainActivity extends Activity {
         });
         root.requestApplyInsets();
         web = new WebView(this);
+        FocusService.heartbeat=this::nativeTick;FocusService.toggle=this::nativeToggle;
         root.addView(web,new FrameLayout.LayoutParams(-1,-1));
         web.setBackgroundColor(Color.rgb(10,17,40));
         if (getPreferences(MODE_PRIVATE).getInt("tap_ui_revision",0)<1) {
@@ -139,7 +159,7 @@ public class MainActivity extends Activity {
         });
         if (saved==null || web.restoreState(saved)==null) web.loadUrl(HOME);
     }
-    @Override public void onBackPressed() { if(web.canGoBack())web.goBack();else super.onBackPressed(); }
+    @Override public void onBackPressed() { if(web.canGoBack())web.goBack();else if(keepSession||FocusService.active)moveTaskToBack(true);else super.onBackPressed(); }
     @Override protected void onActivityResult(int request,int result,Intent data) {
         super.onActivityResult(request,result,data);
         if(request==101&&fileCallback!=null){fileCallback.onReceiveValue(result==RESULT_OK&&data!=null&&data.getData()!=null?new Uri[]{data.getData()}:null);fileCallback=null;}
@@ -151,8 +171,8 @@ public class MainActivity extends Activity {
         }
     }
     @Override protected void onSaveInstanceState(Bundle out) { web.saveState(out);super.onSaveInstanceState(out); }
-    @Override protected void onPause() { web.onPause();super.onPause(); }
-    @Override protected void onResume() { super.onResume();if(web!=null)web.onResume(); }
-    @Override protected void onDestroy() { if(web!=null){((FrameLayout)web.getParent()).removeView(web);web.destroy();}super.onDestroy(); }
+    @Override protected void onPause() { resumed=false;if(!keepSession&&!FocusService.active)web.onPause();super.onPause(); }
+    @Override protected void onResume() { super.onResume();resumed=true;if(web!=null){web.onResume();nativeTick();} }
+    @Override protected void onDestroy() { stopService(new Intent(this,FocusService.class));FocusService.heartbeat=null;FocusService.toggle=null;if(web!=null){if(trustedPage())web.evaluateJavascript("typeof flush==='function'&&flush()",null);((FrameLayout)web.getParent()).removeView(web);web.destroy();}super.onDestroy(); }
 }
 

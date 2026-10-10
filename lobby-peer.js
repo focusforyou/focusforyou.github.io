@@ -18,9 +18,11 @@ function clear(){
 clearTimeout(timeout);clearTimeout(retry);clearTimeout(signalRetry);timeout=retry=signalRetry=null;
 const old=peer;peer=null;upstream=null;connecting=false;joined=false;host=false;code='';attempts=0;
 members.clear();pending.clear();departed.clear();history.length=0;ownRoom=ownBase=roomPast=0;roomMembers=[];views=[];RoomChat.reset();old?.destroy();by('roomPanel').hidden=true;busy();
+window.FocusNative?.room('');
 }
 function render(){
 if(!joined)return;
+window.FocusNative?.room(code);
 views=[];
 by('roomPanel').hidden=false;by('roomCode').textContent='Oda '+code;
 by('roomInfo').textContent=roomMembers.length+'/'+LIMIT+' kişi · Herkes kendi sayacını yönetir'+(host?' · Oda sahibisin.':'');
@@ -141,14 +143,15 @@ if(!joined)return;const url=new URL(location.origin+location.pathname);url.searc
 try{await navigator.clipboard.writeText(url.href);status('Davet bağlantısı kopyalandı.')}catch(e){status('Davet bağlantısı: '+url.href)}
 };
 const invite=new URLSearchParams(location.search).get('room');if(invite&&/^[1-9][0-9]{4}$/.test(invite))by('roomCodeInput').value=invite;
-setInterval(()=>{
+window.FocusRoomHeartbeat=()=>{
 if(!joined)return;
 if(host)broadcast();else if(upstream?.open){
 send(upstream,{type:'presence',version:1,timer:live()});
 if(Date.now()-lastMessage>120000){const old=upstream;upstream=null;old.close();retryJoin('Oda sahibinden yanıt gelmiyor; tekrar deneniyor…')}
 else if(Date.now()-lastMessage>20000)status('Oda sahibi yanıt vermiyor. Son alınan durum gösteriliyor.');
 }render();
-},1000);
+};
+setInterval(window.FocusRoomHeartbeat,1000);
 setInterval(renderClocks,250);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&joined){if(host)broadcast();else send(upstream,{type:'presence',version:1,timer:live()});render()}});
 window.addEventListener('pagehide',()=>{if(peer){if(host)for(const m of members.values())send(m.conn,{type:'closed'});else send(upstream,{type:'leave',version:1});clear()}});
