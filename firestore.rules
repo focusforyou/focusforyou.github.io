@@ -38,7 +38,8 @@ service cloud.firestore {
     && getAfter(/databases/$(database)/documents/usernames/$(p.username)).data.uid == uid
     && p.name is string && p.name.size() >= 1 && p.name.size() <= 30
     && p.photo is string && p.photo.size() <= 40000
-    && (p.photo == '' || p.photo.matches('data:image/jpeg;base64,[A-Za-z0-9+/]+={0,2}'))
+    && (p.photo == '' || p.photo.matches('data:image/jpeg;base64,[A-Za-z0-9+/]+={0,2}')
+     || (p.photo.size() < 1500 && p.photo.matches('https://lh[0-9]+[.]googleusercontent[.]com/.*')))
     && p.exam in ['', 'YKS','LGS','TUS'] && validCosmetics(p.cosmetics,uid);
   }
   match /publicProfiles/{uid} {
@@ -123,6 +124,7 @@ service cloud.firestore {
     allow get: if self(uid) || member(rid) || leader(rid);
     allow list: if member(rid) || leader(rid);
     allow create: if owner(uid) && unlocked(uid)
+     && !locked(room(rid).ownerUid)
      && existsAfter(/databases/$(database)/documents/users/$(uid)/rooms/$(rid))
      && (room(rid).locked == false || leader(rid)
        || exists(/databases/$(database)/documents/roomInvites/$(rid + '_' + uid))

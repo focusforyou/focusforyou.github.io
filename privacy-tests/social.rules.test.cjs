@@ -9,6 +9,9 @@ test('unique handles, reserved admin cosmetics, password rooms, friends, invitat
  const profile=(uid,username,tag='none')=>({uid,username,name:username,photo:'',exam:'',cosmetics:{tag,nameStyle:'plain',frame:'none',plate:'none'}});
  const register=(db,uid,handle,tag)=>{const batch=writeBatch(db);batch.set(doc(db,'usernames',handle),{uid});batch.set(doc(db,'publicProfiles',uid),profile(uid,handle,tag));return batch.commit()};
  await assertSucceeds(register(a,'socialA','social_a'));await assertSucceeds(register(b,'socialB','social_b'));await assertSucceeds(register(c,'socialC','social_c'));
+ await assertSucceeds(updateDoc(doc(a,'publicProfiles','socialA'),{photo:'https://lh3.googleusercontent.com/a/avatar'}));
+ await assertFails(updateDoc(doc(a,'publicProfiles','socialA'),{photo:'https://lh3.googleusercontent.com.evil.test/avatar'}));
+ await assertFails(updateDoc(doc(a,'publicProfiles','socialA'),{photo:'https://evil.test/avatar'}));
  await assertFails(register(c,'socialC','social_a'));await assertFails(register(c,'socialC','efe','doctor'));
  await assertFails(updateDoc(doc(b,'publicProfiles','socialB'),{cosmetics:{tag:'doctor',nameStyle:'plain',frame:'none',plate:'none'}}));await assertSucceeds(register(admin,'adminEfe','efe','doctor'));
  await assertFails(setDoc(doc(b,'entitlements/socialB'),{nameStyles:['gold'],frames:['gold'],plates:['gold']}));await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(),'publicProfiles','socialA')));
@@ -22,5 +25,7 @@ test('unique handles, reserved admin cosmetics, password rooms, friends, invitat
  const invite=doc(a,'roomInvites',rid+'_socialC');await assertSucceeds(setDoc(invite,{from:'socialA',to:'socialC',roomId:rid}));await assertSucceeds(join(c,'socialC'));
  await assertSucceeds(setDoc(doc(b,'deletions','socialB'),{startedAt:serverTimestamp()}));await assertFails(updateDoc(doc(b,'rooms',rid,'members','socialB'),{timer,presenceAt:serverTimestamp(),online:true}));await assertFails(updateDoc(doc(b,'publicProfiles','socialB'),{name:'revive'}));
  await assertSucceeds(getDocs(query(collection(b,'rooms',rid,'messages'),where('uid','==','socialB'))));await assertSucceeds(deleteDoc(message));await assertSucceeds(deleteDoc(doc(b,'rooms',rid,'members','socialB')));await assertSucceeds(deleteDoc(doc(b,'users','socialB','rooms',rid)));await assertSucceeds(deleteDoc(doc(b,'users','socialB','roomProofs',rid)));await assertSucceeds(deleteDoc(doc(b,'friendships','socialA_socialB')));await assertSucceeds(deleteDoc(doc(b,'usernames','social_b')));await assertSucceeds(deleteDoc(doc(b,'publicProfiles','socialB')));await assertSucceeds(deleteDoc(doc(b,'entitlements','socialB')));
- await assertSucceeds(setDoc(doc(a,'deletions','socialA'),{startedAt:serverTimestamp()}));await assertSucceeds(updateDoc(room,{ownerUid:'socialC'}));
+ await assertSucceeds(setDoc(doc(a,'deletions','socialA'),{startedAt:serverTimestamp()}));const blockedRoom='blocked_1234567890123';await env.withSecurityRulesDisabled(async context=>{const db=context.firestore();await setDoc(doc(db,'rooms',blockedRoom),{name:'Shared name',ownerUid:'socialA',locked:false,salt:'',exam:'',createdAt:serverTimestamp()})});
+ const blockedJoin=writeBatch(c);blockedJoin.set(doc(c,'users','socialC','rooms',blockedRoom),{name:'Shared name'});blockedJoin.set(doc(c,'rooms',blockedRoom,'members','socialC'),{uid:'socialC',joinedAt:serverTimestamp(),presenceAt:serverTimestamp(),online:true,timer});await assertFails(blockedJoin.commit());
+ await assertSucceeds(updateDoc(room,{ownerUid:'socialC'}));
 });
