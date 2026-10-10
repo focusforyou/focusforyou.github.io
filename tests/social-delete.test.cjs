@@ -50,6 +50,7 @@ function populate(f){
  }
  f.put('rooms/shared/members/bob',{uid:'bob'});f.put('rooms/shared/messages/other',{uid:'bob'});
  f.put('rooms/solo/secrets/password',{hash:'private-password-hash'});
+ f.put('rooms/solo/bans/bob',{by:'alice',at:0});f.put('rooms/shared/bans/alice',{by:'bob',at:0});f.put('rooms/shared/kicks/alice',{by:'bob',at:0});f.put('appBans/alice',{by:'admin',at:0});
  f.put('rooms/foreign/members/bob',{uid:'bob'});
  f.put('users/alice/roomProofs/shared',{hash:'private-password-hash'});
  f.put('publicProfiles/alice',{username:'alice_handle'});f.put('usernames/alice_handle',{uid:'alice'});f.put('entitlements/alice',{nameStyles:['gold']});
@@ -61,6 +62,7 @@ test('social deletion removes personal data, transfers shared leadership and pre
  const f=fixture();populate(f);for(let i=0;i<310;i++)f.put(`rooms/shared/messages/own${i}`,{uid:'alice'});
  await f.run();
  assert.equal(f.records.get('rooms/shared').ownerUid,'bob');assert.equal(f.records.has('rooms/solo'),false);assert.equal(f.records.has('rooms/solo/secrets/password'),false);
+ assert.equal(f.records.has('rooms/solo/bans/bob'),false);assert.equal(f.records.has('rooms/shared/bans/alice'),false);assert.equal(f.records.has('rooms/shared/kicks/alice'),false);assert.equal(f.records.has('appBans/alice'),false);
  assert.equal(f.records.get('rooms/foreign').ownerUid,'bob');assert.equal(f.records.has('rooms/shared/messages/other'),true);
  assert.equal(f.records.has('friendships/bob_charlie'),true);assert.equal(f.records.has('roomInvites/foreign_charlie'),true);
  assert.equal([...f.records.entries()].some(([p,d])=>p.includes('/alice')||d.uid==='alice'||d.from==='alice'||d.to==='alice'||d.uids?.includes('alice')),false);

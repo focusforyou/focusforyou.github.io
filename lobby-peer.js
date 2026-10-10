@@ -107,6 +107,7 @@ conn.on('close',()=>{if(upstream===conn)retryJoin('Oda bağlantısı kesildi; ye
 conn.on('error',()=>{if(upstream===conn){upstream=null;conn.close();retryJoin('Bağlantı sorunu; tekrar deneniyor…')}});
 }
 function enter(create,collisions=0){
+if(window.FocusSocial?.banned?.()){status("Çevrimiçi özelliklerin yasaklandı. Kişisel sayacını kullanabilir veya Profilim’den hesabını silebilirsin.");return}
 if(window.FocusSocial?.active()){window.FocusSocial.pauseRoom().then(()=>enter(create,collisions)).catch(()=>status('Önce kalıcı odadan ayrılmayı tekrar dene.'));return}
 if(peer||connecting)return;
 by('leaveRoom').onclick=leave;by('leaveRoom').textContent='Odadan ayrıl';RoomChat.configure(sendChat);by('copyInvite').onclick=copyInvite;document.querySelector('.chat-note').textContent='Geçici odanın sohbeti yalnızca açık oturumda tutulur.';

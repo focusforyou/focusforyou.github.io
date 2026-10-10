@@ -1,6 +1,6 @@
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js';
 import {getAuth,GoogleAuthProvider,EmailAuthProvider,reauthenticateWithPopup,reauthenticateWithCredential,signInWithPopup,signInWithCredential,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendEmailVerification,sendPasswordResetEmail,signOut,onAuthStateChanged,reload,getIdToken} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js';
-import {getFirestore,doc,getDocFromServer,collection,onSnapshot,runTransaction,serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js';
+import {getFirestore,doc,getDocFromServer,getDocsFromServer,collection,onSnapshot,runTransaction,serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js';
 import {initializeAppCheck,ReCaptchaEnterpriseProvider} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-app-check.js';
 import {firebaseConfig,googleClientId,appCheckSiteKey} from './firebase-config.js';
 import {eraseAccount} from './account-delete.js?v=3';
@@ -12,6 +12,7 @@ const app=initializeApp(firebaseConfig);
 if(appCheckSiteKey)initializeAppCheck(app,{provider:new ReCaptchaEnterpriseProvider(appCheckSiteKey),isTokenAutoRefreshEnabled:true});
 const by=id=>document.getElementById(id),auth=getAuth(app),db=getFirestore();auth.languageCode='tr';
 let uid='',cache={days:{},dirty:{}},base=null,devices=new Map(),devicesLoaded=false,unsub=[],generation=0,syncing=false,ready=false,observed={},avatar='',profile={uid:'',name:'',photo:''};
+let onlineBanned=false;
 let deleting=false,deletionLocked=false,nativeDeleteUid='';
 const storedDeviceId=localStorage.getItem('focus_device_id');
 const deviceId=/^[A-Za-z0-9_-]{8,64}$/.test(storedDeviceId||'')?storedDeviceId:crypto.randomUUID();localStorage.setItem('focus_device_id',deviceId);
@@ -45,7 +46,7 @@ function applyCloud(){
  profile=CloudModel.profile({...base.profile,uid});avatar=profile.photo;renderProfile();saveCache();
 }
 async function sync(){
- if(!uid||syncing||!ready||deleting||deletionLocked)return;watchChanges();const owner=uid,revision=generation,target=doc(db,'users',uid,'devices',deviceId),counts=json(cache.days),dirty={...cache.dirty};
+ if(!uid||syncing||!ready||deleting||deletionLocked||onlineBanned)return;watchChanges();const owner=uid,revision=generation,target=doc(db,'users',uid,'devices',deviceId),counts=json(cache.days),dirty={...cache.dirty};
  const last=devices.get(deviceId)?.days||{};if(!Object.keys(dirty).length&&JSON.stringify(counts)===JSON.stringify(last))return;
  syncing=true;
  try{
@@ -71,8 +72,10 @@ async function bind(user){
  if(next)localStorage.setItem('focus_current_uid',next);else localStorage.removeItem('focus_current_uid');
  generation++;const revision=generation;for(const stop of unsub)stop();unsub=[];ready=false;base=null;devices=new Map();devicesLoaded=false;uid='';
  profile=CloudModel.profile({uid:user?.uid,name:user?.displayName||'Odak arkadaşı',photo:''});avatar=profile.photo;renderProfile();
+ onlineBanned=false;
  if(!user){message('Giriş yapınca ilerlemen cihazların arasında otomatik eşitlenir.');return}
  try{const lockRef=doc(db,'deletions',user.uid),lock=await getDocFromServer(lockRef);if(revision!==generation)return;if(lock.exists()){deletionLocked=true;ready=false;clearAccountDevice(user.uid);message('Yarım kalan hesap silme işlemi sürdürülüyor…');await finishDeletion(user);return}unsub.push(onSnapshot(lockRef,snap=>{if(revision!==generation||deleting||!snap.exists())return;receiveDeletion(user.uid);},()=>{}));}catch(e){if(e.code!=='permission-denied'){message('Hesap durumu sunucudan doğrulanamadı. İnternet bağlantını kontrol et.');return}}
+ const ban=await getDocFromServer(doc(db,'appBans',user.uid));if(revision!==generation)return;onlineBanned=ban.exists()&&user.email!=='efeozbilgin550@gmail.com';if(onlineBanned){uid=user.uid;window.FocusSocial.bind(user).catch(failure);message('Çevrimiçi özelliklerin yasaklandı. Kişisel sayacını kullanabilir, verilerini indirebilir veya hesabını silebilirsin.');return}
  if(!user.emailVerified){message('Bulut kayıtlarını kullanmak için e-postanı doğrula, ardından Doğruladım’a bas.');return}
  uid=user.uid;try{cache=JSON.parse(localStorage.getItem('focus_account_'+uid)||'null')||{days:{},dirty:{}}}catch(e){cache={days:{},dirty:{}}}
  cache.days=CloudModel.days(cache.days);cache.dirty=cache.dirty&&typeof cache.dirty==='object'?cache.dirty:{};
@@ -122,7 +125,8 @@ by('removeProfilePhoto').onclick=()=>busy(async()=>{
  if(owner!==uid||revision!==generation)return;profile=next;avatar='';renderProfile();message('Profil fotoğrafın kaldırıldı. Odadaki katılımcıların daha önce aldığı kopyalar silinmez.');
 });
 by('exportAccount').onclick=()=>busy(async()=>{
- if(!uid||!ready||!base||!devicesLoaded){message('Verilerini indirmek için önce bulut kayıtlarının yüklenmesini bekle.');return}
+ if(onlineBanned&&uid){const owner=uid,revision=generation;const [meta,rows]=await Promise.all([getDocFromServer(doc(db,'users',uid,'meta','main')),getDocsFromServer(collection(db,'users',uid,'devices'))]);if(owner!==uid||revision!==generation)return;base=meta.exists()?meta.data():{};devices=new Map(rows.docs.map(d=>[d.id,d.data()]));devicesLoaded=true;profile=CloudModel.profile({...base.profile,uid});}
+ if(!uid||(!ready&&!onlineBanned)||!base||!devicesLoaded){message('Verilerini indirmek için önce bulut kayıtlarının yüklenmesini bekle.');return}
  watchChanges();const owner=uid,revision=generation;
  const social=await window.FocusSocial.exportData();
  const value=JSON.stringify({social,format:'focus-for-you-data-v1',exportedAt:new Date().toISOString(),account:{uid:owner,email:auth.currentUser.email,profile:{...profile}},cloud:{baseline:json(base),devices:[...devices].map(([id,data])=>({id,data:json(data)}))},currentDevice:{days:json(cache.days),pendingFields:json(cache.dirty),visibleDays:Study.snapshot().days,settings:fields()}},null,2);
@@ -175,4 +179,6 @@ setInterval(()=>{watchChanges();saveCache();if(!auth.currentUser)localStorage.se
 addEventListener('online',()=>{if(auth.currentUser?.emailVerified&&!ready)bind(auth.currentUser);else sync()});
 addEventListener('pagehide',()=>{watchChanges();saveCache()});
 document.addEventListener('visibilitychange',()=>{watchChanges();saveCache();if(!document.hidden)sync()});
+
+addEventListener('focus-moderation',event=>{const was=onlineBanned;onlineBanned=!!event.detail.banned;if(onlineBanned){ready=false;message('Çevrimiçi özelliklerin yasaklandı. Kişisel sayaç ve hesap silme açık.')}else if(was&&auth.currentUser)void bind(auth.currentUser).catch(failure)});
 

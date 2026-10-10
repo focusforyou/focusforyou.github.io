@@ -42,7 +42,7 @@ function fixture(){
   where:(field,op,value)=>({type:'where',field,op,value}),orderBy:field=>({type:'order',field}),limit:value=>({type:'limit',value}),startAfter:cursor=>({type:'after',cursor}),
   getDoc:async r=>select(r),getDocFromServer:async r=>{if(offline)throw Error('offline');return select(r)},getDocs:async q=>select(q),getDocsFromServer:async q=>{if(offline)throw Error('offline');return select(q)},
   onSnapshot:(q,fn)=>{const s={q,fn,active:true};subscriptions.push(s);queueMicrotask(()=>{if(s.active)fn(select(q))});return ()=>s.active=false},
-  serverTimestamp:()=>({toMillis:()=>clock}),
+  serverTimestamp:()=>{const at=clock;return {toMillis:()=>at}},
   setDoc:async(r,data)=>{if(r.path.includes('/roomProofs/')){const rid=r.path.split('/').at(-1);if(data.hash!==records.get('rooms/'+rid+'/secrets/password')?.hash)throw Object.assign(Error('wrong-password'),{code:'permission-denied'})}apply('set',r,data);notify()},
   updateDoc:async(r,data)=>{apply('update',r,data);notify()},deleteDoc:async r=>{apply('delete',r);notify()},
   writeBatch:()=>{const writes=[];return {set:(r,data)=>writes.push(['set',r,data]),delete:r=>writes.push(['delete',r]),commit:async()=>{for(const w of writes)apply(...w);notify()}}},
@@ -172,4 +172,32 @@ test('export includes own membership totals and sent invitations and aborts on a
  const original=f.ctx.getDocFromServer;let release;f.ctx.getDocFromServer=async r=>r.path===`rooms/${OPEN}/members/alice`?new Promise(resolve=>{release=()=>resolve(original(r))}):original(r);
  const exporting=f.ctx.FocusSocial.exportData();await f.settle();await f.login('bob');release();await assert.rejects(exporting,/account-changed/);
 });
+
+test('admin joins a password room without deriving a password and can moderate any member',async()=>{
+ const f=fixture();f.put('rooms/'+LOCKED,{name:'Private',ownerUid:'bob',locked:true,salt:'secret'});f.put('publicProfiles/admin',profile('admin','efe'));f.ctx.auth.currentUser={uid:'admin',emailVerified:true,email:'efeozbilgin550@gmail.com'};await f.ctx.FocusSocial.bind(f.ctx.auth.currentUser);await f.settle();await f.join(LOCKED);
+ assert.equal(f.ctx.FocusSocial.active(),LOCKED);assert.equal(f.records.has(`users/admin/roomProofs/${LOCKED}`),false);assert.equal(f.node('permanentRoomSettings').hidden,false);
+ f.put(`rooms/${LOCKED}/members/bob`,{uid:'bob',online:true,joinedAt:{toMillis:()=>0},presenceAt:{toMillis:()=>Date.now()},timer:timer()});f.put('publicProfiles/bob',profile('bob'));f.emit();await f.settle();
+ const member=f.node('roomMembers').children.find(x=>x.textContent.includes('bob'));
+ await member.children.at(-1).children.find(x=>x.textContent==='Uygulamadan yasakla').onclick();assert.equal(f.records.get('appBans/bob').by,'admin');
+});
+
+test('leaders can kick and room-ban but never moderate the protected admin',async()=>{
+ const f=fixture();f.put('rooms/'+OPEN,{name:'Focus',ownerUid:'alice',locked:false});await f.login();await f.join(OPEN);
+ for(const [uid,name] of [['bob','bob'],['admin','efe']]){f.put(`rooms/${OPEN}/members/${uid}`,{uid,joinedAt:{toMillis:()=>0},online:true,presenceAt:{toMillis:()=>Date.now()},timer:timer()});f.put('publicProfiles/'+uid,profile(uid,name))}f.emit();await f.settle();
+ const adminMember=f.node('roomMembers').children.find(x=>x.textContent.includes('@efe'));assert.ok(adminMember);assert.equal(adminMember.children.some(x=>x.className==='moderation-actions'),false);
+ const bob=f.node('roomMembers').children.find(x=>x.textContent.includes('bob'));const controls=bob.children.at(-1).children;assert.equal(controls.some(x=>x.textContent==='Uygulamadan yasakla'),false);await controls.find(x=>x.textContent==='Odadan at').onclick();assert.equal(f.records.get(`rooms/${OPEN}/kicks/bob`).by,'alice');await controls.find(x=>x.textContent==='Odadan yasakla').onclick();assert.equal(f.records.get(`rooms/${OPEN}/bans/bob`).by,'alice');
+});
+
+test('kick disconnects immediately, explicit rejoin preserves room totals, subsequent kick still disconnects',async()=>{
+ const f=fixture();f.put('rooms/'+OPEN,{name:'Focus',ownerUid:'bob',locked:false});await f.login();await f.join(OPEN);f.records.get(`rooms/${OPEN}/members/alice`).timer.roomWorked=55;
+ f.work(1);f.put(`rooms/${OPEN}/kicks/alice`,{by:'bob',at:{toMillis:()=>Date.now()+100}});f.emit();await f.settle();assert.equal(f.ctx.FocusSocial.active(),'');
+ f.work(2);await f.join(OPEN);assert.equal(f.ctx.FocusSocial.active(),OPEN);assert.equal(f.records.get(`rooms/${OPEN}/members/alice`).timer.roomWorked,55);
+ f.work(5);f.put(`rooms/${OPEN}/kicks/alice`,{by:'bob',at:{toMillis:()=>Date.now()+7000}});f.emit();await f.settle();assert.equal(f.ctx.FocusSocial.active(),'');
+});
+
+test('room ban prevents rejoin and global ban removes social access without stopping personal study',async()=>{
+ const f=fixture();f.put('rooms/'+OPEN,{name:'Focus',ownerUid:'bob',locked:false});await f.login();await f.join(OPEN);f.put(`rooms/${OPEN}/bans/alice`,{by:'bob',at:{toMillis:()=>Date.now()}});f.emit();await f.settle();assert.equal(f.ctx.FocusSocial.active(),'');await f.join(OPEN);assert.equal(f.ctx.FocusSocial.active(),'');assert.match(f.node('socialStatus').textContent,/yasaklandın/);
+ f.put('appBans/alice',{by:'admin',at:{toMillis:()=>Date.now()}});f.emit();await f.settle();assert.equal(f.ctx.FocusSocial.banned(),true);assert.equal(f.node('createRoom').disabled,true);assert.equal(f.node('joinRoom').disabled,true);f.work(30);assert.equal(f.ctx.Study.localSeconds(),30);assert.match(f.node('socialStatus').textContent,/Hesabımı sil/);
+});
+
 

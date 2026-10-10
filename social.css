@@ -4,3 +4,5 @@
 
 .room-avatar{width:32px;height:32px;border-radius:50%;object-fit:cover}#permanentRoomSettings{padding:14px;border:1px solid #ffffff25;border-radius:14px}#permanentRoomSettings summary{cursor:pointer;font-weight:600}#permanentRoomSettings p{font-size:13px;margin:10px 0}#permanentRoomSettings label{display:block;font-size:13px;margin-bottom:12px}#clearChatConsent{accent-color:#afc6ff}
 
+.moderation-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.moderation-actions .pill{font-size:12px;padding:7px 10px;background:#ffffff15}#adminModeration{margin-top:12px}
+

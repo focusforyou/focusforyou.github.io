@@ -23,6 +23,8 @@ export async function eraseSocial({db,uid,assertCurrent}){
   const next=others.docs.find(m=>m.id!==uid);
   if(next)await checked(()=>updateDoc(r.ref,{ownerUid:next.id}));
   else{
+   await drain(collection(db,'rooms',r.id,'bans'));
+   await drain(collection(db,'rooms',r.id,'kicks'));
    await remove(doc(db,'rooms',r.id,'secrets','password'));
    await remove(r.ref);
   }
@@ -32,6 +34,10 @@ export async function eraseSocial({db,uid,assertCurrent}){
   const ownMessages=query(collection(db,'rooms',r.id,'messages'),where('uid','==',uid));
   await drain(ownMessages);
   if(!(await readDocs(query(ownMessages,limit(1)))).empty)throw Error('social-messages-remain');
+  for(const kind of ['bans','kicks']){
+   const moderation=doc(db,'rooms',r.id,kind,uid);await remove(moderation);
+   if((await readDoc(moderation)).exists())throw Error('social-moderation-remains');
+  }
   // Delete the bookmark last so a retry still knows where messages belonged.
   await remove(doc(db,'rooms',r.id,'members',uid));
   await remove(r.ref);
@@ -49,9 +55,10 @@ export async function eraseSocial({db,uid,assertCurrent}){
   if((await readDoc(claim)).exists())throw Error('social-username-remains');
  }
  await remove(profileRef);await remove(doc(db,'entitlements',uid));
+ await remove(doc(db,'appBans',uid));
  for(const q of [collection(db,'users',uid,'rooms'),collection(db,'users',uid,'roomProofs'),ownRooms,query(collection(db,'friendships'),where('uids','array-contains',uid)),query(collection(db,'roomInvites'),where('from','==',uid)),query(collection(db,'roomInvites'),where('to','==',uid))]){
   if(!(await readDocs(query(q,limit(1)))).empty)throw Error('social-cleanup-not-empty');
  }
- if((await readDoc(profileRef)).exists()||(await readDoc(doc(db,'entitlements',uid))).exists())throw Error('social-profile-remains');
+ if((await readDoc(profileRef)).exists()||(await readDoc(doc(db,'entitlements',uid))).exists()||(await readDoc(doc(db,'appBans',uid))).exists())throw Error('social-profile-remains');
 }
 

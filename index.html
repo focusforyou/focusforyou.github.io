@@ -95,7 +95,7 @@ main{padding:32px 16px}.card{padding:24px}
 @media(min-width:900px) and (max-width:1199px){#calisma>.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.room-chat{grid-column:1/-1}}
 @media(max-width:899px){#calisma>.grid{grid-template-columns:minmax(0,1fr)}}
 </style>
-<link rel="stylesheet" href="mobile-ui.css?v=social1"><link rel="stylesheet" href="social.css?v=1">
+<link rel="stylesheet" href="mobile-ui.css?v=moderation1"><link rel="stylesheet" href="social.css?v=1">
 </head>
 <body>
 <canvas id="sky" aria-hidden="true"></canvas>
@@ -152,13 +152,13 @@ Focus For You
 <details><summary>Kalıcı oda oluştur</summary><input id="permanentName" maxlength="40" placeholder="Oda adı" aria-label="Oda adı"><input id="permanentPassword" type="password" minlength="6" maxlength="100" autocomplete="new-password" placeholder="Şifre (isteğe bağlı)" aria-label="Yeni oda şifresi"><button class="pill p" id="createPermanent" type="button">Kalıcı oda oluştur</button><small>Oda adları aynı olabilir; her odanın ayrı bir ID’si vardır. Şifre en az 6 karakter olmalı.</small></details>
 <details><summary>Oda lobisi</summary><input id="roomSearch" maxlength="40" placeholder="Tam oda adı veya #ID" aria-label="Oda ara"><input id="joinPassword" type="password" maxlength="100" autocomplete="off" placeholder="Şifre (gerekliyse)" aria-label="Katılacağın oda şifresi"><div class="row"><button class="pill" id="searchRooms" type="button">Ara</button><button class="pill p" id="joinPermanent" type="button">ID ile katıl</button></div><div id="roomResults" class="social-list"></div></details>
 <details><summary>Arkadaşların</summary><div class="row"><input id="friendUsername" maxlength="25" placeholder="@kullanıcıadı" aria-label="Arkadaşının kullanıcı adı"><button class="pill" id="addFriend" type="button">İstek gönder</button></div><div class="social-list" id="friendList"></div><small>Oda lideri, kabul edilmiş arkadaşlarına oda daveti gönderebilir.</small></details></div>
-<p id="socialStatus" class="social-status" role="status"></p></div><details class="temporary-room"><summary>Geçici oda · 5 haneli kod</summary><p>Bir oda aç, kodunu arkadaşına gönder ve birlikte çalış. Herkes kendi odak ve mola sayacını yönetir; odada birbirinizin durumunu görürsünüz.</p>
+<details id="adminModeration" hidden><summary>Uygulama yönetimi</summary><div class="row"><input id="moderationUsername" placeholder="@kullanıcıadı" maxlength="25" aria-label="Yasaklanacak kullanıcı adı"><button class="pill" id="moderateAccount" type="button">Çevrimiçi özellikleri yasakla</button></div><div id="appBanList" class="social-list"></div></details><p id="socialStatus" class="social-status" role="status"></p></div><details class="temporary-room"><summary>Geçici oda · 5 haneli kod</summary><p>Bir oda aç, kodunu arkadaşına gönder ve birlikte çalış. Herkes kendi odak ve mola sayacını yönetir; odada birbirinizin durumunu görürsünüz.</p>
 <div class="row"><input type="text" id="lobbyName" maxlength="30" placeholder="Takma adın" aria-label="Lobi takma adı"><button class="pill p" id="createRoom">Oda oluştur</button></div>
 <div class="row"><input type="text" id="roomCodeInput" maxlength="5" inputmode="numeric" pattern="[1-9][0-9]{4}" placeholder="5 haneli oda numarası" aria-label="Oda kodu" autocomplete="off"><button class="pill" id="joinRoom">Odaya katıl</button></div>
 <p id="lobbyStatus" role="status" aria-live="polite"></p>
 
 <p>Ücretsiz lobi en fazla 8 kişi içindir. Oda sahibi sayfayı açık tutmalı; sayfayı kapatır veya yenilerse oda kapanır. Telefon uykuya geçerse bağlantı kesilebilir. Bazı okul ve mobil ağları doğrudan bağlantıyı engelleyebilir; bu durumda başka bir ağ dene. Odadan ayrılmak kişisel sayacını durdurmaz.</p>
-</details><div id="roomPanel" hidden><details id="permanentRoomSettings" hidden><summary>Oda ayarları</summary><p>Sohbet geçmişini silmek bu odadaki tüm metinleri ve fotoğrafları kalıcı olarak kaldırır. Alıcıların daha önce kaydettiği kopyalar silinmez.</p><label><input id="clearChatConsent" type="checkbox"> Bu odanın sohbet geçmişini silmeyi onaylıyorum.</label><button class="pill" id="clearRoomChat" type="button">Sohbet geçmişini sil</button></details>
+</details><div id="roomPanel" hidden><details id="permanentRoomSettings" hidden><summary>Oda ayarları</summary><p>Odadan atılanlar yeniden katılabilir. Oda yasağı kaldırılana kadar katılamazlar. Uygulama yöneticisine işlem yapılamaz.</p><div id="roomBanList" class="social-list"></div><p>Sohbet geçmişini silmek bu odadaki tüm metinleri ve fotoğrafları kalıcı olarak kaldırır. Alıcıların daha önce kaydettiği kopyalar silinmez.</p><label><input id="clearChatConsent" type="checkbox"> Bu odanın sohbet geçmişini silmeyi onaylıyorum.</label><button class="pill" id="clearRoomChat" type="button">Sohbet geçmişini sil</button></details>
 <div class="row"><strong id="roomCode"></strong><button class="pill" id="copyInvite">Davet bağlantısını kopyala</button><button class="pill d" id="leaveRoom">Odadan ayrıl</button></div>
 <div class="room-total"><span>Bu odada toplam çalışma</span><strong id="roomTotal">0 sa 00 dk 00 sn</strong></div>
 <p id="roomInfo"></p><ul id="roomMembers"></ul>
@@ -395,15 +395,15 @@ document.addEventListener('pointerup',up);document.addEventListener('pointercanc
 </script>
 <script src="vendor/peerjs-1.5.5.min.js"></script>
 <script src="lobby-model.js?v=profiles1"></script>
-<script src="social-model.js"></script><script src="chat.js?v=social1"></script>
+<script src="social-model.js"></script><script src="chat.js?v=moderation1"></script>
 <script src="native-session.js?v=1"></script>
-<script src="lobby-peer.js?v=social1"></script>
+<script src="lobby-peer.js?v=moderation1"></script>
 <script src="install.js?v=nav2"></script>
 <script src="mobile-ui.js?v=mobile-motion2"></script>
 <script src="motion.js?v=native2"></script>
 <dialog id="legalSheet" aria-label="Yasal bilgiler"><form method="dialog"><button class="pill" type="submit">Kapat ×</button></form><iframe id="legalFrame" title="Gizlilik ve kullanım bilgileri" sandbox="allow-same-origin"></iframe></dialog>
 <script src="legal-sheet.js"></script><script src="account-ui.js"></script>
-<script type="module">import('./account.js?v=social1').catch(()=>{document.getElementById('accountStatus').textContent='Hesap hizmetine bağlanılamadı. İnternet bağlantın gelince sayfayı yeniden aç; cihaz kayıtların korunuyor.'})</script>
+<script type="module">import('./account.js?v=moderation1').catch(()=>{document.getElementById('accountStatus').textContent='Hesap hizmetine bağlanılamadı. İnternet bağlantın gelince sayfayı yeniden aç; cihaz kayıtların korunuyor.'})</script>
 </body>
 </html>
 
