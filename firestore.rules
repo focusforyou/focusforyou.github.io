@@ -145,7 +145,7 @@ service cloud.firestore {
      && request.resource.data.image is string && request.resource.data.image.size() <= 450000
      && (request.resource.data.image == '' || request.resource.data.image.matches('data:image/jpeg;base64,[A-Za-z0-9+/]+={0,2}'))
      && (request.resource.data.text.size() > 0 || request.resource.data.image.size() > 0);
-    allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+    allow delete: if request.auth != null && (resource.data.uid == request.auth.uid || (active() && leader(rid)));
    }
   }
   // Fields are timestamped JSON strings in the existing sync format.
