@@ -12,6 +12,7 @@ function saveCache(){if(uid)try{localStorage.setItem('focus_account_'+uid,JSON.s
 function fields(){return window.FocusData?.fields()||{}}
 function watchChanges(){if(!uid||!ready)return;for(const [key,value] of Object.entries(fields()))if(value!==observed[key]){cache.dirty[key]=value;observed[key]=value}saveCache()}
 function renderProfile(){
+ by('openAccount').textContent=auth.currentUser?'Profilim':'Giriş yap';
  by('accountGuest').hidden=!!auth.currentUser;by('accountMember').hidden=!auth.currentUser;
  by('verifyAccount').hidden=!auth.currentUser||auth.currentUser.emailVerified;
  by('profileControls').hidden=!auth.currentUser?.emailVerified;
