@@ -10,7 +10,7 @@ const busy=()=>{by('createRoom').disabled=!!peer||connecting;by('joinRoom').disa
 const live=()=>{const timer=LobbyModel.cleanTimer(Study.liveSession?.());if(joined)ownRoom+=Math.max(0,timer.worked-ownBase);ownBase=timer.worked;timer.roomWorked=ownRoom;return timer};
 const send=(conn,data)=>{try{if(conn?.open){conn.send(data);return true}}catch(e){}return false};
 function retire(id,entry){departed.set(id,entry.timer.roomWorked);members.delete(id)}
-function acceptChat(input,sender){const body=LobbyModel.content(input);if(!body||history.some(m=>m.id===body.id))return;const message={...body,sender,time:Date.now()};history.push(message);while(history.length>60||history.reduce((n,m)=>n+m.image.length,0)>4500000)history.shift();RoomChat.receive(message);for(const m of members.values())send(m.conn,{type:'chat',message})}
+function acceptChat(input,sender){const body=LobbyModel.content(input);if(!body||history.some(m=>m.id===body.id))return;const message={...body,sender,time:Date.now()};history.push(message);while(history.length>60||history.filter(m=>m.image).length>8||history.reduce((n,m)=>n+m.image.length,0)>4500000)history.shift();RoomChat.receive(message);for(const m of members.values())send(m.conn,{type:'chat',message})}
 RoomChat.configure(message=>{if(!joined)return false;if(host){acceptChat(message,name);return true}return send(upstream,{type:'chat-send',version:1,message})});
 function randomCode(){const bytes=crypto.getRandomValues(new Uint8Array(10)),letters='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';return [...bytes].map(n=>letters[n%32]).join('')}
 function clear(){
@@ -60,7 +60,7 @@ members.set(conn.peer,{conn,name:clean,timer:LobbyModel.cleanTimer(data.timer),s
 }
 const m=members.get(conn.peer);if(!m||m.conn!==conn)return;
 if(data.type==='presence'){m.timer=LobbyModel.cleanTimer(data.timer);m.seen=Date.now()}
-else if(data.type==='chat-send'&&Date.now()-m.chatAt>700){m.chatAt=Date.now();acceptChat(data.message,m.name)}
+else if(data.type==='chat-send'){if(Date.now()-m.chatAt>700){m.chatAt=Date.now();acceptChat(data.message,m.name)}else send(conn,{type:'chat-error',id:data.message?.id})}
 else if(data.type==='leave'){retire(conn.peer,m);conn.close();broadcast()}
 });
 const closed=()=>{clearTimeout(handshake);pending.delete(conn);if(members.get(conn.peer)?.conn===conn){retire(conn.peer,members.get(conn.peer));broadcast()}};
@@ -83,6 +83,7 @@ if(upstream!==conn)return;
 if(data?.type==='closed'){clear();status('Oda sahibi ayrıldı; oda kapandı.');return}
 if(data?.type==='reject'){clear();status('Oda dolu. Başka bir oda açabilirsin.');return}
 if(data?.type==='chat'){RoomChat.receive(data.message);return}
+if(data?.type==='chat-error'){RoomChat.rejected(data.id,'Çok hızlı gönderildi. Bir saniye bekleyip tekrar Gönder’e bas.');return}
 const roster=LobbyModel.cleanRoster(data,code,PREFIX+code,peer.id);
 if(!roster)return;
 clearTimeout(timeout);if(!joined)ownBase=LobbyModel.cleanTimer(Study.liveSession?.()).worked;joined=true;connecting=false;attempts=0;lastMessage=Date.now();rosterAt=lastMessage;roomMembers=roster;views=[];roomPast=Math.max(0,LobbyModel.seconds(data.roomWorked)-roster.reduce((n,m)=>n+m.timer.roomWorked,0));
