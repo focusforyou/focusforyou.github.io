@@ -184,6 +184,11 @@ public class MainActivity extends Activity {
                 if (!request.isForMainFrame()) return false;
                 Uri uri=request.getUrl();
                 if ("https".equals(uri.getScheme()) && "focusforyou.github.io".equals(uri.getHost())) return false;
+                if ("mailto".equals(uri.getScheme())) {
+                    try { startActivity(new Intent(Intent.ACTION_SENDTO,uri)); }
+                    catch (Exception ignored) { new AlertDialog.Builder(MainActivity.this).setTitle("E-posta uygulaması bulunamadı").setMessage("Talebini kullandığın e-posta hizmetinden t1orstudios@proton.me adresine gönderebilirsin.").setPositiveButton("Tamam",null).show(); }
+                    return true;
+                }
                 if ("https".equals(uri.getScheme()) || "http".equals(uri.getScheme()) || "obtainium".equals(uri.getScheme())) {
                     try { startActivity(new Intent(Intent.ACTION_VIEW,uri)); } catch (Exception ignored) { }
                 }

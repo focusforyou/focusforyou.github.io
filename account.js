@@ -98,6 +98,20 @@ by('saveProfile').onclick=()=>busy(async()=>{
  const name=by('profileName').value.trim();if(!name||name.length>30){message('1–30 karakterlik bir görünen ad yaz.');return}
  const next={uid,name,photo:CloudModel.photo(avatar)},ref=doc(db,'users',uid,'meta','main');await runTransaction(db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())throw Error();tx.update(ref,{profile:next})});profile=next;avatar=next.photo;renderProfile();message('Profilin kaydedildi.');by('accountSheet').close();
 });
+by('removeProfilePhoto').onclick=()=>busy(async()=>{
+ if(!uid||!ready){message('Önce bulut kayıtlarının bağlanmasını bekle.');return}
+ const owner=uid,revision=generation,ref=doc(db,'users',owner,'meta','main');
+ const next=await runTransaction(db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())throw Error();const next={...CloudModel.profile({...snap.data().profile,uid:owner}),photo:''};tx.update(ref,{profile:next});return next});
+ if(owner!==uid||revision!==generation)return;profile=next;avatar='';renderProfile();message('Profil fotoğrafın kaldırıldı. Odadaki katılımcıların daha önce aldığı kopyalar silinmez.');
+});
+by('exportAccount').onclick=()=>busy(async()=>{
+ if(!uid||!ready||!base||!devicesLoaded){message('Verilerini indirmek için önce bulut kayıtlarının yüklenmesini bekle.');return}
+ watchChanges();const owner=uid,revision=generation;
+ const value=JSON.stringify({format:'focus-for-you-data-v1',exportedAt:new Date().toISOString(),account:{uid:owner,email:auth.currentUser.email,profile:{...profile}},cloud:{baseline:json(base),devices:[...devices].map(([id,data])=>({id,data:json(data)}))},currentDevice:{days:json(cache.days),pendingFields:json(cache.dirty),visibleDays:Study.snapshot().days,settings:fields()}},null,2);
+ if(owner!==uid||revision!==generation)return;
+ if(window.FocusAndroid){if(!window.FocusAndroid.saveBackup){message('Verilerini indirmek için APK’yi güncelle veya siteyi tarayıcıda aç.');return}if(new TextEncoder().encode(value).length>1000000){message('Dosya APK için büyük. Hesabınla tarayıcıdan giriş yapıp Verilerimi indir’i kullan.');return}window.FocusAndroid.saveBackup(value);message('Verilerini kaydetmek için açılan pencerede dosya konumunu seç.');return}
+ const url=URL.createObjectURL(new Blob([value],{type:'application/json'})),link=document.createElement('a');link.href=url;link.download='focus-for-you-verilerim.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),30000);message('Veri dosyan hazır. Dosya kişisel kayıtlarını içerir; herkese açık paylaşma.');
+});
 window.FocusAccount={profile:()=>({...profile}),record:(date,seconds)=>{if(!uid)return;cache.days[date]=Math.min(86400,(cache.days[date]||0)+seconds)},sync};
 onAuthStateChanged(auth,user=>{bind(user).catch(failure)});
 setInterval(()=>{watchChanges();saveCache();if(!auth.currentUser)localStorage.setItem('focus_guest_backup',JSON.stringify({days:Study.snapshot().days,fields:fields()}))},5000);setInterval(sync,60000);
