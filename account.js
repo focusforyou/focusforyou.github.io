@@ -10,7 +10,7 @@ const message=value=>by('accountStatus').textContent=value;
 const json=value=>JSON.parse(JSON.stringify(value));
 function saveCache(){if(uid)try{localStorage.setItem('focus_account_'+uid,JSON.stringify(cache))}catch(e){message('Cihaz hafızası dolu. Kayıtların buluta ulaşması için internet bağlantını açık tut.')}}
 function fields(){return window.FocusData?.fields()||{}}
-function watchChanges(){if(!uid||!ready)return;for(const [key,value] of Object.entries(fields()))if(value!==observed[key]){cache.dirty[key]=value;observed[key]=value}saveCache()}
+function watchChanges(){if(!uid)return;for(const [key,value] of Object.entries(fields()))if(value!==observed[key]){cache.dirty[key]=value;observed[key]=value}cache.observed={...observed};saveCache()}
 function renderProfile(){
  by('openAccount').textContent=auth.currentUser?'Profilim':'Giriş yap';
  by('accountGuest').hidden=!!auth.currentUser;by('accountMember').hidden=!auth.currentUser;
@@ -32,7 +32,7 @@ function applyCloud(){
  rows.push({...own,days:cache.days});const merged=CloudModel.combine(base,rows);
  Study.applyDays(merged.days);
  const updates={};for(const key of CloudModel.keys)if(!Object.hasOwn(cache.dirty,key)&&typeof merged.fields[key]==='string')updates[key]=merged.fields[key];
- window.FocusData?.apply(updates);observed=fields();
+ window.FocusData?.apply(updates);observed=fields();cache.observed={...observed};
  profile=CloudModel.profile({...base.profile,uid});avatar=profile.photo;renderProfile();saveCache();
 }
 async function sync(){
@@ -63,6 +63,7 @@ async function bind(user){
  if(!user.emailVerified){message('Bulut kayıtlarını kullanmak için e-postanı doğrula, ardından Doğruladım’a bas.');return}
  uid=user.uid;try{cache=JSON.parse(localStorage.getItem('focus_account_'+uid)||'null')||{days:{},dirty:{}}}catch(e){cache={days:{},dirty:{}}}
  cache.days=CloudModel.days(cache.days);cache.dirty=cache.dirty&&typeof cache.dirty==='object'?cache.dirty:{};
+ observed=fields();for(const [key,value] of Object.entries(observed))if(typeof cache.observed?.[key]==='string'&&value!==cache.observed[key])cache.dirty[key]=value;cache.observed={...observed};saveCache();
  const ref=doc(db,'users',uid,'meta','main');
  if(!cache.seed){const initial=CloudModel.days(Study.snapshot().days);for(const [date,n] of Object.entries(cache.days))initial[date]=Math.max(0,(initial[date]||0)-n);cache.seed={days:initial,fields:fields()};saveCache()}
  const seed={...cache.seed,profile};

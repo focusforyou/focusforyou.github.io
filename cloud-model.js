@@ -14,3 +14,9 @@ function profile(input){return {uid:typeof input?.uid==='string'&&/^[A-Za-z0-9_-
 return {days,combine,photo,profile,keys};
 })();
 if(typeof module!=='undefined')module.exports=CloudModel;
+if(typeof window!=='undefined'){
+ function offlineCache(change){const uid=localStorage.getItem('focus_current_uid');if(!uid)return;try{const cache=JSON.parse(localStorage.getItem('focus_account_'+uid)||'null')||{days:{},dirty:{}};cache.days=CloudModel.days(cache.days);cache.dirty=cache.dirty||{};change(cache);localStorage.setItem('focus_account_'+uid,JSON.stringify(cache))}catch(e){}}
+ window.FocusAccount={offline:true,record:(date,seconds)=>offlineCache(cache=>{cache.days[date]=Math.min(86400,(cache.days[date]||0)+seconds)})};
+ function offlineFields(){if(!window.FocusAccount?.offline)return;offlineCache(cache=>{const values=window.FocusData?.fields();if(!values)return;for(const [key,value] of Object.entries(values))if(typeof cache.observed?.[key]==='string'&&value!==cache.observed[key])cache.dirty[key]=value;cache.observed=values})}
+ setInterval(offlineFields,5000);addEventListener('pagehide',offlineFields);
+}
