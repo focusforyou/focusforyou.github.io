@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Focus For You | Şikâyet Defteri</title>
+<title>Focus For You | Odaklan ve birlikte çalış</title>
 <meta name="theme-color" content="#0A1128">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg">
@@ -54,8 +54,8 @@ input[type=date],input[type=text],input[type=number]{min-height:44px;padding:12p
 .pill:disabled{opacity:.6;cursor:default}
 @media(hover:hover) and (prefers-reduced-motion:no-preference){
 .card{position:relative;transform:perspective(900px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateY(var(--ty,0px)) scale(var(--sc,1));transition:transform .4s ease,box-shadow .25s ease}
-.card:hover{--ty:-8px;--sc:1.03;transition:transform .12s ease-out,box-shadow .25s ease;box-shadow:0 22px 44px rgba(0,0,0,.5),0 0 0 1px rgba(175,198,255,.3)}
-.card[data-calm]:hover{--ty:-3px;--sc:1.01}
+.card:hover{--ty:-2px;--sc:1.005;transition:transform .12s ease-out,box-shadow .25s ease;box-shadow:0 22px 44px rgba(0,0,0,.5),0 0 0 1px rgba(175,198,255,.3)}
+.card:is([data-calm],.wide,.verdict):hover{--ty:-1px;--sc:1.002}
 .card:active{box-shadow:0 14px 30px rgba(0,0,0,.55),0 0 0 1px rgba(175,198,255,.5)}
 .card::before,.card::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0}
 .card::after{background:radial-gradient(circle at var(--mx,50%) var(--my,50%),rgba(255,255,255,.14),transparent 55%);transition:opacity .25s}
@@ -89,7 +89,7 @@ main{padding:32px 16px}.card{padding:24px}
 <header>
 <div class="logo">
 <svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#D9E2FF" stroke-width="2" aria-hidden="true" style="background:#1E3A78;border-radius:14px;padding:6px"><circle cx="20" cy="20" r="12"/><circle cx="16" cy="17" r="2"/><circle cx="24" cy="22" r="2.5"/><circle cx="18" cy="25" r="1.5"/></svg>
-Şikâyet Defteri
+Focus For You
 </div>
 <nav>
 <a class="pill" href="#calisma">Çalışma</a>
@@ -157,7 +157,7 @@ main{padding:32px 16px}.card{padding:24px}
 </section>
 <section id="lobi">
 <h2>Birlikte odaklan</h2>
-<article class="card c1">
+<article class="card c1" data-calm="1">
 <p>Bir oda aç, kodunu arkadaşına gönder ve birlikte çalış. Herkes kendi odak ve mola sayacını yönetir; odada birbirinizin durumunu görürsünüz.</p>
 <div class="row"><input type="text" id="lobbyName" maxlength="30" placeholder="Takma adın" aria-label="Lobi takma adı"><button class="pill p" id="createRoom">Oda oluştur</button></div>
 <div class="row"><input type="text" id="roomCodeInput" maxlength="10" placeholder="Oda kodu" aria-label="Oda kodu" autocomplete="off" autocapitalize="characters"><button class="pill" id="joinRoom">Odaya katıl</button></div>
@@ -171,7 +171,7 @@ main{padding:32px 16px}.card{padding:24px}
 <p>Ücretsiz lobi en fazla 8 kişi içindir. Oda sahibi sayfayı açık tutmalı; sayfayı kapatır veya yenilerse oda kapanır. Telefon uykuya geçerse bağlantı kesilebilir. Bazı okul ve mobil ağları doğrudan bağlantıyı engelleyebilir; bu durumda başka bir ağ dene. Odadan ayrılmak kişisel sayacını durdurmaz.</p>
 </article>
 </section>
-<section id="kurulum"><h2>Cebinde de yanında</h2><article class="card c5"><h3>Focus For You'yu kur</h3><p>Telefonda uygulama gibi aç; site güncellendiğinde yenilikler de gelir.</p><button class="pill p" id="installApp" hidden>Ana ekrana kur</button><p id="installHelp">Android Chrome menüsünden “Ana ekrana ekle / Uygulamayı yükle”yi seç. iPhone'da Safari → Paylaş → Ana Ekrana Ekle.</p><a class="pill" href="https://github.com/focusforyou/focusforyou.github.io/releases">Android APK ve sürümler</a><p>APK sürümleri yayınlandığında bu depoyu Obtainium'a ekleyebilirsin.</p></article></section>
+<section id="kurulum"><h2>Cebinde de yanında</h2><article class="card c5" data-calm="1"><h3>Focus For You'yu kur</h3><p>Telefonda uygulama gibi aç; site güncellendiğinde yenilikler de gelir.</p><button class="pill p" id="installApp" hidden>Ana ekrana kur</button><p id="installHelp">Android Chrome menüsünden “Ana ekrana ekle / Uygulamayı yükle”yi seç. iPhone'da Safari → Paylaş → Ana Ekrana Ekle.</p><a class="pill" href="https://github.com/focusforyou/focusforyou.github.io/releases">Android APK ve sürümler</a><p>APK sürümleri yayınlandığında bu depoyu Obtainium'a ekleyebilirsin.</p></article></section>
 <section id="sikayetler">
 <h2>Şikâyet listesi (hepsini yazsak internet yetmez)</h2>
 <div class="grid" id="cg"></div>
@@ -376,8 +376,8 @@ Study.liveSession=()=>{syncTimer();return {phase:mode==='f'?'focus':'break',runn
 if(matchMedia('(hover:hover) and (prefers-reduced-motion:no-preference)').matches){
 let pr=false;
 const fc=e=>e.target.closest&&e.target.closest('.card');
-const mv=e=>{const el=fc(e);if(!el)return;const r=el.getBoundingClientRect(),nx=(e.clientX-r.left)/r.width-.5,ny=(e.clientY-r.top)/r.height-.5,s=(pr?-1.2:1)*(el.hasAttribute('data-calm')?.25:1);
-el.style.setProperty('--ry',(-nx*18*s).toFixed(2)+'deg');el.style.setProperty('--rx',(ny*18*s).toFixed(2)+'deg');
+const mv=e=>{const el=fc(e);if(!el)return;const r=el.getBoundingClientRect(),nx=(e.clientX-r.left)/r.width-.5,ny=(e.clientY-r.top)/r.height-.5,s=(pr?-1:1)*(el.matches('[data-calm],.wide,.verdict')||r.width>650||r.height>450?.15:1);
+el.style.setProperty('--ry',(-nx*8*s).toFixed(2)+'deg');el.style.setProperty('--rx',(ny*8*s).toFixed(2)+'deg');
 el.style.setProperty('--mx',((nx+.5)*100).toFixed(1)+'%');el.style.setProperty('--my',((ny+.5)*100).toFixed(1)+'%')};
 document.addEventListener('pointermove',mv);
 document.addEventListener('pointerout',e=>{const el=fc(e);if(!el||(e.relatedTarget&&el.contains(e.relatedTarget)))return;el.style.removeProperty('--rx');el.style.removeProperty('--ry')});
