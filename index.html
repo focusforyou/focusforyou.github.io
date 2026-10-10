@@ -93,6 +93,7 @@ main{padding:32px 16px}.card{padding:24px}
 @media(min-width:900px) and (max-width:1199px){#calisma>.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.room-chat{grid-column:1/-1}}
 @media(max-width:899px){#calisma>.grid{grid-template-columns:minmax(0,1fr)}}
 </style>
+<link rel="stylesheet" href="mobile-ui.css">
 </head>
 <body>
 <canvas id="sky" aria-hidden="true"></canvas>
@@ -105,18 +106,17 @@ Focus For You
 <a class="pill" href="#calisma">Çalışma</a>
 <a class="pill" href="#ilerleme">İlerleme</a>
 <a class="pill" href="#lobi">Lobi</a>
-<a class="pill" href="#sikayetler">Şikâyetler</a>
-<a class="pill" href="#karar">Karar</a>
+<a class="pill" href="#kurulum">Uygulamayı kur</a>
 <button class="pill p" id="mu" type="button" aria-label="Arka plan müziğini aç veya kapat">Müziği aç</button>
 </nav>
 </header>
 
 <main>
 <section id="calisma">
-<h2>Çalışma alanın</h2>
+<h2 id="workspaceTitle">Çalışma alanın</h2>
 <div class="grid">
 
-<div class="study-tools"><article class="card c1 timer">
+<div class="study-tools"><article class="card c4 mobile-welcome"><span class="chip">Bugünün odağı</span><h3>Bir hedef seç, başlayalım.</h3><p>Görevlerini ekle. Alttaki sayaca dokunarak odak ve mola süreni yönet.</p></article><article class="card c1 timer">
 <div class="row" style="justify-content:center"><button class="pill p" id="mf" type="button">Odak 25 dk</button><button class="pill d" id="mb" type="button">Mola 5 dk</button></div>
 <div class="ring">
 <svg width="200" height="200" viewBox="0 0 200 200" fill="none" aria-hidden="true"><circle cx="100" cy="100" r="84" stroke="#0A1128" stroke-width="12"/><circle id="rg" cx="100" cy="100" r="84" stroke="#AFC6FF" stroke-width="12" stroke-linecap="round" stroke-dasharray="527.79" stroke-dashoffset="0" transform="rotate(-90 100 100)"/></svg>
@@ -136,7 +136,7 @@ Focus For You
 </article><article class="card c2 wide" data-calm="1">
 <h3>Görevler</h3>
 <p id="kh"></p>
-<div class="row"><input type="text" id="kn" aria-label="Görev adı" placeholder="Görev adı (ör. Gram pozitif koklar)" style="flex:1;min-width:220px"><input type="number" id="km" min="1" max="600" value="25" aria-label="Dakika" style="width:110px"><button class="pill p" id="ka" type="button">Ekle</button></div>
+<div class="row"><input type="text" id="kn" aria-label="Görev adı" placeholder="Görev adı (ör. Matematik tekrarı)" style="flex:1;min-width:220px"><input type="number" id="km" min="1" max="600" value="25" aria-label="Dakika" style="width:110px"><button class="pill p" id="ka" type="button">Ekle</button></div>
 <div id="kl" style="display:flex;flex-direction:column;gap:8px"></div>
 </article></div>
 <article class="card c1 room-card" id="lobi" data-calm="1"><h3>Birlikte odaklan</h3>
@@ -176,32 +176,19 @@ Focus For You
 </section>
 
 <section id="kurulum"><h2>Cebinde de yanında</h2><article class="card c5" data-calm="1"><h3>Focus For You'yu kur</h3><p>Telefonda uygulama gibi aç; site güncellendiğinde yenilikler de gelir.</p><button class="pill p" id="installApp" hidden>Ana ekrana kur</button><p id="installHelp">Android Chrome menüsünden “Ana ekrana ekle / Uygulamayı yükle”yi seç. iPhone'da Safari → Paylaş → Ana Ekrana Ekle.</p><a class="pill p" href="https://github.com/focusforyou/focusforyou.github.io/releases/latest/download/FocusForYou.apk">Android APK indir</a><a class="pill" href="https://github.com/focusforyou/focusforyou.github.io/releases">Sürümleri gör</a><p>APK güncellemeleri için Obtainium → Uygulama ekle bölümüne https://github.com/focusforyou/focusforyou.github.io adresini ekle. Uygulamayı silmeden güncelleyebilirsin. Site yenilikleri uygulamayı yeniden açtığında gelir.</p></article></section>
-<section id="sikayetler">
-<h2>Şikâyet listesi (hepsini yazsak internet yetmez)</h2>
-<div class="grid" id="cg"></div>
-</section>
+</main>
+<div class="mini-timer" aria-label="Hızlı sayaç"><button type="button" id="openTimer" aria-haspopup="dialog" aria-controls="timerSheet"><span class="mini-ring"><b id="miniTime">25:00</b></span><span class="mini-description"><strong id="miniPhase">Odak</strong><small>Sayaç detayları</small></span></button><button type="button" id="miniToggle" aria-label="Sayacı başlat">▶</button></div>
+<nav class="mobile-nav" aria-label="Uygulama bölümleri">
+<button type="button" data-view="work" aria-pressed="true"><span aria-hidden="true">◷</span>Çalışma</button><button type="button" data-view="room" aria-pressed="false"><span aria-hidden="true">♧</span>Oda</button><button type="button" data-view="chat" aria-pressed="false"><span aria-hidden="true">▤</span>Sohbet</button><button type="button" data-view="progress" aria-pressed="false"><span aria-hidden="true">▥</span>İlerleme</button>
+</nav>
+<dialog id="timerSheet" aria-label="Sayaç detayları"><form method="dialog"><button class="sheet-close" aria-label="Sayaç detaylarını kapat">Kapat <span aria-hidden="true">⌄</span></button></form><div id="timerSlot"></div></dialog>
+<dialog id="imageViewer"><img id="fullPhoto" alt="Sohbette paylaşılan fotoğraf"><form method="dialog"><button class="pill">Kapat</button></form></dialog>
 
-<section id="karar" class="card verdict">
-<h2>Karar: Ders berbat. Final: ders çok berbat.</h2>
-<p style="font-size:18px;line-height:1.5;max-width:640px">Ders puanı: yarım yıldız, o da bakteriler adına verilen jest. Bakteriler masumdur, suçlu müfredattır.</p>
-</section>
-</main><dialog id="imageViewer"><img id="fullPhoto" alt="Sohbette paylaşılan fotoğraf"><form method="dialog"><button class="pill">Kapat</button></form></dialog>
-
-<footer>Bu site tamamen duygusal olarak üretilmiştir. Sınavdan sonra güncellenebilir.</footer>
+<footer>Focus For You · Kendi ritminde, birlikte odaklan.</footer>
 
 <script>
 const $=id=>document.getElementById(id),R=(a,b)=>a+Math.random()*(b-a);
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-/* Şikâyet kartları */
-const CP=[
-['Bakteri isimleri','Sanki biri klavyeye yüzüstü düşmüş de çıkan şeye “cins adı” demiş. Ezberlemesi eziyet, unutması garanti, sınavda çıkması kesin.','c0'],
-['Gram boyama','Mor mu pembe mi diye mikroskoba üç saat bakıyorsun, sonuç: gözlerin ağrıyor, hoca “bunu herkes görür” diyor, kimse görmüyor.','c1'],
-['Slaytlar','Her slayt bir öncekinin kopyası, her kopya bir öncekinden sıkıcı. Yazı boyutu karınca, bilgi yoğunluğu kara delik.','c2'],
-['Sınav soruları','“Aşağıdakilerden hangisi yanlıştır?” Cevap: hepsi, ama biri daha yanlış. Soruyu yazan da bunu bilmiyor, merak etme.','c3'],
-['Antibiyotik direnci','Bakteriler direnç geliştirmiş, sen çoktan bırakmışsın. Mekanizmaları öğrenene kadar yeni bir direnç türü çıkıyor, ders de aynı hızla kötüleşiyor.','c4'],
-['Virüsler','Canlı mı değil mi, kendine karar veremeyen bir şey için kırk slayt. Ders de aynı: ne öğretiyor ne bırakıyor, sadece oyalıyor.','c0']];
-$('cg').innerHTML=CP.map(c=>'<article class="card '+c[2]+'"><h3>'+c[0]+'</h3><p>'+c[1]+'</p></article>').join('');
 
 /* Gökyüzü: yıldızlar, yağan noktalar, kayan yıldız, kometler */
 const cv=$('sky'),cx=cv.getContext('2d');
@@ -266,7 +253,7 @@ $('mu').onclick=()=>setMusic(!mon);
 function cd(){
 const v=$('ed').value;let n='—',c='Sınav tarihini seç, geri sayım başlasın.';
 if(v){const p=v.split('-').map(Number),d=Math.round((new Date(p[0],p[1]-1,p[2])-new Date(new Date().setHours(0,0,0,0)))/864e5);
-if(d>0){n=d;c='gün kaldı. Şikâyet etmeyi bırak, çalış.'}else if(d==0){n=0;c='Sınav bugün, bol şans!'}else c='Bu sınav geçti, yeni bir tarih seç.'}
+if(d>0){n=d;c='gün kaldı. Her gün küçük bir adım.'}else if(d==0){n=0;c='Sınav bugün, bol şans!'}else c='Bu sınav geçti, yeni bir tarih seç.'}
 $('en').textContent=n;$('ec').textContent=c;
 }
 $('ed').onchange=()=>{try{localStorage.setItem('ex',$('ed').value)}catch(e){}cd()};
@@ -395,6 +382,7 @@ document.addEventListener('pointerup',up);document.addEventListener('pointercanc
 <script src="chat.js"></script>
 <script src="lobby-peer.js"></script>
 <script src="install.js"></script>
+<script src="mobile-ui.js"></script>
 </body>
 </html>
 

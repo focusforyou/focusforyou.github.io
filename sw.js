@@ -1,6 +1,6 @@
 'use strict';
-const CACHE='focus-v5';
-const SHELL=['/','/index.html','/study.js','/chat.js','/lobby-peer.js','/lobby-model.js','/vendor/peerjs-1.5.5.min.js','/install.js','/manifest.webmanifest','/icon.svg','/icon-192.png','/icon-512.png'];
+const CACHE='focus-v6';
+const SHELL=['/','/index.html','/study.js','/chat.js','/lobby-peer.js','/lobby-model.js','/vendor/peerjs-1.5.5.min.js','/install.js','/mobile-ui.js','/mobile-ui.css','/manifest.webmanifest','/icon.svg','/icon-192.png','/icon-512.png'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('focus-')&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()))});
 self.addEventListener('fetch',event=>{
