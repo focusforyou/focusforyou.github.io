@@ -35,3 +35,7 @@ body[data-view="progress"] #calisma{display:none}
 @media(max-width:380px){header .logo{font-size:14px}header .logo svg{width:24px;height:24px}header nav .app-install-link{font-size:10px;padding:8px 6px}header .account-menu{font-size:11px;padding:8px}}
 
 .timer-expansion{display:grid;grid-template-rows:0fr;opacity:0;width:100%;transition:grid-template-rows .36s cubic-bezier(.22,.8,.25,1),opacity .25s}.timer-details{min-height:0;overflow:hidden}.mini-timer.expanded .timer-expansion{grid-template-rows:1fr;opacity:1}.mini-timer.expanded .timer-details{max-height:calc(100dvh - var(--nav-height) - 115px);overflow:auto}.mini-timer #timerSheet .timer{padding:14px 8px;background:transparent}.mini-timer #timerSheet .ring{max-width:220px}.mini-timer .sheet-close{padding:12px 8px;background:transparent}.route-ghost{position:fixed!important;z-index:2;pointer-events:none;overflow:hidden!important;margin:0!important;box-sizing:border-box}body{overflow-x:hidden}@media(prefers-reduced-motion:reduce){.timer-expansion,.mobile-nav::before,.mobile-nav button{transition:none}}
+
+.account-card a{color:var(--pr)}.delete-account{margin-top:20px;padding-top:16px;border-top:1px solid #ffffff20}.danger{background:#602b40;color:#ffe4ec;border:1px solid #d06e8c}.delete-consent{display:flex!important;align-items:flex-start;gap:10px}#accountSheet #deleteConsent{width:20px;min-width:20px;min-height:20px;height:20px;padding:0;accent-color:#d06e8c}
+
+#accountSheet #profilePhotoConsent{width:20px;min-width:20px;min-height:20px;height:20px;padding:0;accent-color:var(--pr)}

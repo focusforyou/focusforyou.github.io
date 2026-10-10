@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg">
 <script src="cloud-model.js?v=offline1"></script>
-<script src="study.js?v=cloud2"></script>
+<script src="study.js?v=delete1"></script>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
 :root{--tx:#E3E8F5;--mu:#B5BDD6;--pr:#AFC6FF;--on:#0A1A44}
@@ -95,7 +95,7 @@ main{padding:32px 16px}.card{padding:24px}
 @media(min-width:900px) and (max-width:1199px){#calisma>.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.room-chat{grid-column:1/-1}}
 @media(max-width:899px){#calisma>.grid{grid-template-columns:minmax(0,1fr)}}
 </style>
-<link rel="stylesheet" href="mobile-ui.css?v=mobile-motion2">
+<link rel="stylesheet" href="mobile-ui.css?v=delete1">
 </head>
 <body>
 <canvas id="sky" aria-hidden="true"></canvas>
@@ -165,7 +165,7 @@ Focus For You
 <h2>İlerlemen</h2>
 <div class="grid"><article class="card c5 wide account-card" data-calm="1"><h3>Hesabın</h3><p id="accountStatus" role="status">Hesap bağlantısı yükleniyor… İnternet yoksa cihaz kayıtlarınla çalışmaya devam edebilirsin.</p>
 <div id="accountGuest"><p class="account-note">Giriş hizmeti Google/Firebase tarafından sağlanır. Hesabın ve çalışma kayıtlarının kullanımı için <a href="/privacy.html">gizlilik politikasını</a> inceleyebilirsin.</p><button class="pill google-login" id="googleLogin" type="button">Google ile giriş yap</button><details class="email-login"><summary>E-postayla devam et</summary><label for="loginEmail">E-posta</label><input id="loginEmail" type="email" autocomplete="email"><label for="loginPassword">Şifre</label><input id="loginPassword" type="password" minlength="8" autocomplete="current-password"><div class="row"><button class="pill p" id="emailLogin" type="button">Giriş yap</button><button class="pill" id="emailRegister" type="button">Hesap oluştur</button><button class="pill d" id="resetPassword" type="button">Şifremi unuttum</button></div></details></div>
-<div id="accountMember" hidden><p id="accountEmail"></p><div id="verifyAccount"><button class="pill p" id="verifyAccountButton" type="button">Doğruladım</button><button class="pill" id="resendVerification" type="button">Doğrulama e-postasını tekrar gönder</button></div><div id="profileControls" hidden><img id="profileAvatar" alt="Profil fotoğrafın" width="64" height="64" hidden><label for="profileName">Görünen adın</label><input id="profileName" maxlength="30" autocomplete="nickname"><label class="pill photo-picker">Profil fotoğrafı seç<input id="profilePhoto" type="file" accept="image/*"></label><button class="pill" id="removeProfilePhoto" type="button">Fotoğrafı kaldır</button><button class="pill p" id="saveProfile" type="button">Profilini kaydet</button></div><details class="email-login"><summary>Verilerin ve gizlilik</summary><p>Veri dosyası bu cihazdaki kayıtlarını ve en son yüklenen bulut kopyalarını içerir. Diğer cihazlardaki henüz eşitlenmemiş değişiklikler dahil değildir.</p><button class="pill" id="exportAccount" type="button">Verilerimi indir</button><p><a href="/delete-account.html">Hesap ve veri silme talebi</a> · <a href="mailto:t1orstudios@proton.me">Destek</a></p><p>Silme talepleri geliştirici tarafından incelenir; bu bağlantı hesabını anında silmez.</p></details><button class="pill d" id="logoutAccount" type="button">Çıkış yap</button></div><p class="account-note">Giriş yapınca ilerlemen ve ayarların otomatik kaydedilir. Oda arkadaşların görünen adını, profil fotoğrafını, sayaç durumunu ve paylaşılan çalışma sürelerini görür. E-postan odada paylaşılmaz.</p></article><article class="card c0">
+<div id="accountMember" hidden><p id="accountEmail"></p><div id="verifyAccount"><button class="pill p" id="verifyAccountButton" type="button">Doğruladım</button><button class="pill" id="resendVerification" type="button">Doğrulama e-postasını tekrar gönder</button></div><div id="profileControls" hidden><img id="profileAvatar" alt="Profil fotoğrafın" width="64" height="64" hidden><label for="profileName">Görünen adın</label><input id="profileName" maxlength="30" autocomplete="nickname"><label class="delete-consent"><input type="checkbox" id="profilePhotoConsent">Seçeceğim profil fotoğrafının hesabımda saklanmasını ve katıldığım odada gösterilmesini kabul ediyorum. Fotoğrafı kaldırarak bu seçimi geri alabilirim.</label><label class="pill photo-picker">Profil fotoğrafı seç<input id="profilePhoto" type="file" accept="image/*"></label><button class="pill" id="removeProfilePhoto" type="button">Fotoğrafı kaldır</button><button class="pill p" id="saveProfile" type="button">Profilini kaydet</button></div><details class="email-login"><summary>Verilerin ve gizlilik</summary><p>Veri dosyası bu cihazdaki kayıtlarını ve en son yüklenen bulut kopyalarını içerir. Diğer cihazlardaki henüz eşitlenmemiş değişiklikler dahil değildir.</p><button class="pill" id="exportAccount" type="button">Verilerimi indir</button><p><a href="/delete-account.html">Hesap silme bilgisi</a> · <a href="mailto:t1orstudios@proton.me">Destek</a></p><details class="delete-account"><summary>Hesabımı sil</summary><p>Çalışma kayıtların, görevlerin, ayarların ve profilin buluttan kalıcı silinir. Bu cihazdaki hesap kopyası da temizlenir. Google hesabın silinmez. Önce verilerini indirebilirsin.</p><p>Diğer cihazlardaki çevrimdışı kopyalar ve oda katılımcılarının aldığı mesaj/fotoğraflar ayrıca kalabilir. Eski oturumların verileri geri yüklemesini önlemek için yalnızca rastgele hesap kimliği ve silmenin başlangıç zamanı ile bir güvenlik kilidi tutulur.</p><label class="delete-consent"><input type="checkbox" id="deleteConsent">Hesabımın ve kayıtlarımın kalıcı silinmesini onaylıyorum.</label><div id="deletePasswordRow" hidden><label for="deletePassword">Mevcut şifren</label><input type="password" id="deletePassword" autocomplete="current-password"></div><button class="pill danger" id="deleteAccount" type="button">Hesabımı kalıcı sil</button></details></details><button class="pill d" id="logoutAccount" type="button">Çıkış yap</button></div><p class="account-note">Giriş yapınca ilerlemen ve ayarların otomatik kaydedilir. Oda arkadaşların görünen adını, profil fotoğrafını, sayaç durumunu ve paylaşılan çalışma sürelerini görür. E-postan odada paylaşılmaz.</p></article><article class="card c0">
 <span class="chip">Sınav geri sayımı</span>
 <div class="big" id="en">—</div>
 <p id="ec"></p>
@@ -191,7 +191,7 @@ Focus For You
 
 <dialog id="imageViewer"><img id="fullPhoto" alt="Sohbette paylaşılan fotoğraf"><form method="dialog"><button class="pill">Kapat</button></form></dialog>
 
-<footer>Focus For You · Kendi ritminde, birlikte odaklan.<span class="author-credit">Made by Efe Özbilgin · <a href="/privacy.html" style="color:inherit">Gizlilik politikası</a> · <a href="mailto:t1orstudios@proton.me" style="color:inherit">İletişim</a></span></footer>
+<footer>Focus For You · Kendi ritminde, birlikte odaklan.<span class="author-credit">Made by Efe Özbilgin · <a href="/privacy.html" style="color:inherit">Gizlilik politikası</a> · <a href="/terms.html" style="color:inherit">Kullanım koşulları</a> · <a href="mailto:t1orstudios@proton.me" style="color:inherit">İletişim</a></span></footer>
 <dialog id="installSheet" aria-label="Uygulamayı kur"><form method="dialog"><button class="sheet-close" aria-label="Kurulum penceresini kapat">Kapat <span aria-hidden="true">×</span></button></form><div class="install-content"></div></dialog>
 <dialog id="accountSheet" aria-label="Hesabın"><form method="dialog"><button class="sheet-close" aria-label="Hesap penceresini kapat">Kapat <span aria-hidden="true">×</span></button></form><div id="accountContent"></div></dialog>
 
@@ -355,6 +355,7 @@ document.addEventListener('visibilitychange',()=>{flush();pm();rk();cd()});
 syncTimer();persistTimer();pm();rk();
 if(run)tm=setInterval(tick,500);
 Study.changeDurations=(focus,rest)=>{if(run||left!==(mode==='f'?focusDuration:breakDuration))return false;Study.preferences.focus=focus;Study.preferences.break=rest;focusDuration=focus*60;breakDuration=rest*60;setm('f');Study.save();return true};
+Study.stopForAccountDeletion=()=>{clearInterval(tm);run=0;mode='f';left=focusDuration;sess=0;grown=false;dead=false;pm();persistTimer()};
 Study.liveSession=()=>{syncTimer();return {worked:Study.totalSeconds(),focus:focusDuration,rest:breakDuration,phase:mode==='f'?'focus':'break',running:!!run,left,total:mode==='f'?focusDuration:breakDuration,rounds:sess}};
 window.FocusData={
  fields:()=>({preferences:JSON.stringify(Study.preferences),tasks:JSON.stringify({t:tasks,a:act}),forest:JSON.stringify(F),exam:$('ed').value}),
@@ -390,7 +391,7 @@ document.addEventListener('pointerup',up);document.addEventListener('pointercanc
 <script src="mobile-ui.js?v=mobile-motion2"></script>
 <script src="motion.js?v=native2"></script>
 <script src="account-ui.js"></script>
-<script type="module">import('./account.js?v=privacy1').catch(()=>{document.getElementById('accountStatus').textContent='Hesap hizmetine bağlanılamadı. İnternet bağlantın gelince sayfayı yeniden aç; cihaz kayıtların korunuyor.'})</script>
+<script type="module">import('./account.js?v=delete1').catch(()=>{document.getElementById('accountStatus').textContent='Hesap hizmetine bağlanılamadı. İnternet bağlantın gelince sayfayı yeniden aç; cihaz kayıtların korunuyor.'})</script>
 </body>
 </html>
 
