@@ -22,6 +22,12 @@ import android.content.ClipData;
 import androidx.core.content.FileProvider;
 import java.nio.charset.StandardCharsets;
 import android.widget.FrameLayout;
+import androidx.credentials.*;
+import androidx.credentials.exceptions.*;
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption;
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
+import android.os.CancellationSignal;
+import org.json.JSONObject;
 public class MainActivity extends Activity {
     private static final String HOME = "https://focusforyou.github.io/";
     private WebView web;
@@ -32,6 +38,10 @@ public class MainActivity extends Activity {
     private File cameraFile;
     private boolean resumed=false,notificationAsked=false,keepSession=false;
     private String sessionState="";
+    private CancellationSignal signInCancellation;
+    private boolean signingIn=false;
+    private static final String GOOGLE_CLIENT="718275780283-9clat2fbif7idmrh7ddm06vlg1m2rmlo.apps.googleusercontent.com";
+    private void googleResult(String token,String error){runOnUiThread(()->{signingIn=false;signInCancellation=null;if(trustedPage())web.evaluateJavascript("window.FocusGoogleResult?.("+JSONObject.quote(token)+","+JSONObject.quote(error)+")",null);});}
     private boolean trustedPage(){if(web==null||web.getUrl()==null)return false;Uri u=Uri.parse(web.getUrl());return "https".equals(u.getScheme())&&"focusforyou.github.io".equals(u.getHost());}
     private void nativeTick(){if(trustedPage())web.evaluateJavascript("window.FocusNative?.heartbeat()",null);}
     private void nativeToggle(){if(trustedPage())web.evaluateJavascript("window.FocusNative?.toggle()",null);}
@@ -61,6 +71,20 @@ public class MainActivity extends Activity {
         try{startActivityForResult(pick,101);}catch(Exception ignored){if(fileCallback!=null)fileCallback.onReceiveValue(null);fileCallback=null;}
     }
     public class BackupBridge {
+        @JavascriptInterface public void googleSignIn(String clientId){
+            runOnUiThread(()->{
+                if(!trustedPage()||!resumed||signingIn||!GOOGLE_CLIENT.equals(clientId))return;
+                signingIn=true;signInCancellation=new CancellationSignal();
+                GetSignInWithGoogleOption option=new GetSignInWithGoogleOption.Builder(GOOGLE_CLIENT).build();
+                GetCredentialRequest request=new GetCredentialRequest.Builder().addCredentialOption(option).build();
+                try{CredentialManager.create(MainActivity.this).getCredentialAsync(MainActivity.this,request,signInCancellation,Runnable::run,
+                    new CredentialManagerCallback<GetCredentialResponse,GetCredentialException>(){
+                        @Override public void onResult(GetCredentialResponse result){try{if(!(result.getCredential() instanceof CustomCredential))throw new IllegalArgumentException();GoogleIdTokenCredential token=GoogleIdTokenCredential.createFrom(result.getCredential().getData());googleResult(token.getIdToken(),"");}catch(Exception ignored){googleResult("","Google giriş sonucu okunamadı. Tekrar dene.");}}
+                        @Override public void onError(GetCredentialException error){googleResult("",error instanceof GetCredentialCancellationException?"Google girişi iptal edildi.":"Google girişi açılamadı. Google Play Hizmetlerini güncelle veya e-postayla giriş yap.");}
+                    });}catch(Exception ignored){googleResult("","Google girişi açılamadı. E-postayla giriş yapabilirsin.");}
+            });
+        }
+        @JavascriptInterface public void clearGoogleSession(){runOnUiThread(()->{if(!trustedPage())return;CredentialManager.create(MainActivity.this).clearCredentialStateAsync(new ClearCredentialStateRequest(),null,Runnable::run,new CredentialManagerCallback<Void,ClearCredentialException>(){public void onResult(Void result){}public void onError(ClearCredentialException error){}});});}
         @JavascriptInterface public void session(boolean active,boolean running,boolean rest,long deadline,long remaining,String room) {
             final String code=room!=null&&room.matches("[1-9][0-9]{4}")?room:"";
             runOnUiThread(()->{
@@ -173,6 +197,6 @@ public class MainActivity extends Activity {
     @Override protected void onSaveInstanceState(Bundle out) { web.saveState(out);super.onSaveInstanceState(out); }
     @Override protected void onPause() { resumed=false;if(!keepSession&&!FocusService.active)web.onPause();super.onPause(); }
     @Override protected void onResume() { super.onResume();resumed=true;if(web!=null){web.onResume();nativeTick();} }
-    @Override protected void onDestroy() { stopService(new Intent(this,FocusService.class));FocusService.heartbeat=null;FocusService.toggle=null;if(web!=null){if(trustedPage())web.evaluateJavascript("typeof flush==='function'&&flush()",null);((FrameLayout)web.getParent()).removeView(web);web.destroy();}super.onDestroy(); }
+    @Override protected void onDestroy() { if(signInCancellation!=null)signInCancellation.cancel();stopService(new Intent(this,FocusService.class));FocusService.heartbeat=null;FocusService.toggle=null;if(web!=null){if(trustedPage())web.evaluateJavascript("typeof flush==='function'&&flush()",null);((FrameLayout)web.getParent()).removeView(web);web.destroy();}super.onDestroy(); }
 }
 
