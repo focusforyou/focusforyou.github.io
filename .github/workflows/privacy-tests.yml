@@ -13,12 +13,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
       - run: npm install --ignore-scripts --no-audit --no-fund
+        working-directory: privacy-tests
+      - run: node -e "require('node:fs').copyFileSync('../firestore.rules','firestore.rules')"
         working-directory: privacy-tests
       - run: npx firebase emulators:exec --only firestore --project demo-focus-deletion "node --test deletion.rules.test.cjs"
         working-directory: privacy-tests

@@ -2,7 +2,7 @@ const {test,before,after}=require('node:test'),fs=require('node:fs');
 const {initializeTestEnvironment,assertFails,assertSucceeds}=require('@firebase/rules-unit-testing');
 const {doc,getDoc,setDoc,deleteDoc,serverTimestamp,collection,getDocs}=require('firebase/firestore');
 let env;
-before(async()=>{env=await initializeTestEnvironment({projectId:'demo-focus-deletion',firestore:{host:'127.0.0.1',port:8080,rules:fs.readFileSync('../firestore.rules','utf8')}})});
+before(async()=>{env=await initializeTestEnvironment({projectId:'demo-focus-deletion',firestore:{host:'127.0.0.1',port:8080,rules:fs.readFileSync('firestore.rules','utf8')}})});
 after(async()=>{await env?.cleanup()});
 test('deletion lock enforces ownership, recent authentication and permanent write blockade',async()=>{
  const now=Math.floor(Date.now()/1000),a=env.authenticatedContext('alice',{email_verified:true,auth_time:now}).firestore(),b=env.authenticatedContext('bob',{email_verified:true,auth_time:now}).firestore(),stale=env.authenticatedContext('alice',{email_verified:true,auth_time:now-3600}).firestore();
