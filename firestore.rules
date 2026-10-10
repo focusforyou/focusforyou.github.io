@@ -122,12 +122,12 @@ service cloud.firestore {
     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ownerUid'])
     && request.resource.data.ownerUid != request.auth.uid
     && exists(/databases/$(database)/documents/rooms/$(rid)/members/$(request.resource.data.ownerUid));
-   allow delete: if leader(rid) && locked(request.auth.uid);
+   allow delete: if (leader(rid) && active()) || (leader(rid) && locked(request.auth.uid));
    match /secrets/{secret} {
     allow get: if moderator(rid) || (leader(rid) && locked(request.auth.uid));
     allow create: if active() && secret == 'password' && getAfter(/databases/$(database)/documents/rooms/$(rid)).data.ownerUid == request.auth.uid
      && request.resource.data.keys().hasOnly(['hash']) && request.resource.data.hash.matches('[a-f0-9]{64}');
-    allow delete: if leader(rid) && locked(request.auth.uid);
+    allow delete: if (leader(rid) && active()) || (leader(rid) && locked(request.auth.uid));
    }
    match /members/{uid} {
     allow get: if self(uid) || member(rid) || moderator(rid) || (leader(rid) && locked(request.auth.uid));
@@ -153,12 +153,15 @@ service cloud.firestore {
    match /messages/{message} {
     // Own-author queries remain available for export and account deletion.
     allow read: if member(rid) || moderator(rid) || (request.auth != null && resource.data.uid == request.auth.uid);
-    allow create: if active() && member(rid) && request.resource.data.keys().hasOnly(['uid','text','image','time'])
+    allow create: if active() && member(rid) && request.resource.data.keys().hasOnly(['uid','text','image','time','replyTo','reactions'])
      && request.resource.data.uid == request.auth.uid && message.matches('[A-Z2-9]{20}')
      && request.resource.data.time == request.time && request.resource.data.text is string && request.resource.data.text.size() <= 2000
      && request.resource.data.image is string && request.resource.data.image.size() <= 450000
      && (request.resource.data.image == '' || request.resource.data.image.matches('data:image/jpeg;base64,[A-Za-z0-9+/]+={0,2}'))
-     && (request.resource.data.text.size() > 0 || request.resource.data.image.size() > 0);
+     && (request.resource.data.text.size() > 0 || request.resource.data.image.size() > 0)
+     && (!('replyTo' in request.resource.data) || (request.resource.data.replyTo is map && request.resource.data.replyTo.keys().hasOnly(['id','sender','text']) && request.resource.data.replyTo.id is string && request.resource.data.replyTo.sender is string && request.resource.data.replyTo.text is string && request.resource.data.replyTo.text.size() <= 500))
+     && (!('reactions' in request.resource.data) || request.resource.data.reactions is map);
+    allow update: if active() && member(rid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']) && request.resource.data.reactions is map;
     allow delete: if request.auth != null && (resource.data.uid == request.auth.uid || moderator(rid));
    }
    match /bans/{uid} {
