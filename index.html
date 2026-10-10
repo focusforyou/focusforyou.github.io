@@ -94,7 +94,7 @@ main{padding:32px 16px}.card{padding:24px}
 @media(min-width:900px) and (max-width:1199px){#calisma>.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.room-chat{grid-column:1/-1}}
 @media(max-width:899px){#calisma>.grid{grid-template-columns:minmax(0,1fr)}}
 </style>
-<link rel="stylesheet" href="mobile-ui.css?v=account-menu2">
+<link rel="stylesheet" href="mobile-ui.css?v=account-menu3">
 </head>
 <body>
 <canvas id="sky" aria-hidden="true"></canvas>
@@ -369,7 +369,7 @@ window.FocusData={
 /* Kartlarda 3D eğilme ve basma efekti */
 if(matchMedia('(hover:hover) and (prefers-reduced-motion:no-preference)').matches){
 let pr=false;
-const fc=e=>e.target.closest&&e.target.closest('.card');
+const fc=e=>{const el=e.target.closest&&e.target.closest('.card');return el&&!el.closest('dialog')?el:null};
 const mv=e=>{const el=fc(e);if(!el)return;const r=el.getBoundingClientRect(),nx=(e.clientX-r.left)/r.width-.5,ny=(e.clientY-r.top)/r.height-.5,s=(pr?-1:1)*(el.matches('[data-calm],.wide,.verdict')||r.width>650||r.height>450?.15:1);
 el.style.setProperty('--ry',(-nx*8*s).toFixed(2)+'deg');el.style.setProperty('--rx',(ny*8*s).toFixed(2)+'deg');
 el.style.setProperty('--mx',((nx+.5)*100).toFixed(1)+'%');el.style.setProperty('--my',((ny+.5)*100).toFixed(1)+'%')};
