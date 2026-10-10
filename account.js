@@ -19,7 +19,7 @@ function renderProfile(){
  by('verifyAccount').hidden=!auth.currentUser||auth.currentUser.emailVerified;
  by('profileControls').hidden=!auth.currentUser?.emailVerified;
  by('accountEmail').textContent=auth.currentUser?.email||'';
- by('deletePasswordRow').hidden=!auth.currentUser?.providerData?.some(p=>p.providerId==='password');
+ if(by('deletePasswordRow'))by('deletePasswordRow').hidden=!auth.currentUser?.providerData?.some(p=>p.providerId==='password');
  if(document.activeElement!==by('profileName'))by('profileName').value=profile.name;
  by('profileAvatar').hidden=!profile.photo;
  if(profile.photo)by('profileAvatar').src=profile.photo;else by('profileAvatar').removeAttribute('src');
@@ -82,7 +82,7 @@ async function bind(user){
  }catch(e){message('Hesap açık, fakat bulut kayıtları henüz bağlanamadı. Cihaz kayıtların korunuyor.');renderProfile()}
 }
 function failure(error){const code=error?.code||'';message(code.includes('popup-closed')?'Giriş penceresi kapatıldı.':code.includes('invalid-credential')?'E-posta veya şifre doğru değil.':code.includes('email-already-in-use')?'Bu e-posta zaten kayıtlı. Giriş yapmayı veya şifre sıfırlamayı dene.':code.includes('weak-password')?'En az 8 karakterlik güçlü bir şifre seç.':code.includes('too-many-requests')?'Çok fazla deneme oldu. Biraz bekleyip tekrar dene.':code.includes('unauthorized-domain')?'Bu sitenin Google giriş ayarı henüz tamamlanmadı.':'İşlem tamamlanamadı. Bağlantını kontrol edip tekrar dene.')}
-async function busy(fn){by('googleLogin').disabled=true;by('emailLogin').disabled=true;by('emailRegister').disabled=true;try{await fn()}catch(e){failure(e)}finally{by('googleLogin').disabled=false;by('emailLogin').disabled=false;by('emailRegister').disabled=false}}
+async function busy(fn){const controls=['googleLogin','emailLogin','emailRegister','saveProfile','removeProfilePhoto','exportAccount','deleteAccount','logoutAccount'];for(const id of controls)if(by(id))by(id).disabled=true;try{await fn()}catch(e){failure(e)}finally{for(const id of controls)if(by(id))by(id).disabled=false}}
 by('googleLogin').onclick=()=>busy(async()=>{
  if(window.FocusAndroid){if(!window.FocusAndroid.googleSignIn){message('APK’de Google girişi için uygulamayı en yeni sürüme güncelle. E-postayla giriş şu anda kullanılabilir.');return}window.FocusAndroid.googleSignIn(googleClientId);return}
  await signInWithPopup(auth,new GoogleAuthProvider());
@@ -135,7 +135,7 @@ async function finishDeletion(user){
  }catch(e){message(deletionLocked?'Silme henüz tamamlanmadı. Hesabın yeni kayıt yazmaya kapatıldı; bağlantını kontrol edip Hesabımı sil ile tekrar dene.':'Silme başlayamadı. Firebase silme kuralları ve bağlantı kontrol edilmeli.');}
  finally{deleting=false;by('deleteAccount').disabled=false;by('deletePassword').value=''}
 }
-by('deleteAccount').onclick=()=>busy(async()=>{
+if(by('deleteAccount'))by('deleteAccount').onclick=()=>busy(async()=>{
  if(deleting||nativeDeleteUid)return;
  const user=auth.currentUser;if(!user)return;
  if(!by('deleteConsent').checked){message('Kalıcı silme onayını işaretle. Önce verilerini indirebilirsin.');return}
