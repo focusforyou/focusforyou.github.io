@@ -1,0 +1,65 @@
+name: Android APK
+on:
+  push:
+    branches: [main]
+    paths: ['android/**', '.github/workflows/android-release.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: android-release
+  cancel-in-progress: false
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Build Android release
+        working-directory: android
+        env:
+          FOCUS_VERSION_CODE: ${{ github.run_number }}
+          FOCUS_VERSION_NAME: 1.${{ github.run_number }}
+        run: gradle --no-daemon assembleRelease lintRelease
+      - name: Sign APK
+        id: signing
+        env:
+          SIGNING_KEY: ${{ secrets.ANDROID_SIGNING_KEY }}
+          SIGNING_CERT: ${{ secrets.ANDROID_SIGNING_CERT }}
+        run: |
+          set -euo pipefail
+          if [ -z "$SIGNING_KEY" ] || [ -z "$SIGNING_CERT" ]; then
+            echo "Signed publication requires ANDROID_SIGNING_KEY and ANDROID_SIGNING_CERT repository secrets." >> "$GITHUB_STEP_SUMMARY"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          printf '%s' "$SIGNING_KEY" | base64 --decode > "$RUNNER_TEMP/focus-key.pk8"
+          printf '%s' "$SIGNING_CERT" | base64 --decode > "$RUNNER_TEMP/focus-cert.pem"
+          trap 'rm -f "$RUNNER_TEMP/focus-key.pk8" "$RUNNER_TEMP/focus-cert.pem"' EXIT
+          APK_SIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+          "$APK_SIGNER" sign --key "$RUNNER_TEMP/focus-key.pk8" --cert "$RUNNER_TEMP/focus-cert.pem" --out FocusForYou.apk android/app/build/outputs/apk/release/app-release-unsigned.apk
+          "$APK_SIGNER" verify --verbose FocusForYou.apk
+          sha256sum FocusForYou.apk > SHA256SUMS.txt
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+      - name: Publish for Obtainium
+        if: steps.signing.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "android-1.${{ github.run_number }}" FocusForYou.apk SHA256SUMS.txt --title "Focus For You 1.${{ github.run_number }}" --notes "Android 8 ve üzeri. Site değişiklikleri uygulama açıldığında yansır. APK güncellemeleri için bu depoyu Obtainium'a ekleyin."
+      - name: Save build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build-diagnostics
+          path: |
+            android/app/build/outputs/apk/release/app-release-unsigned.apk
+            android/app/build/reports/lint-results-release.html
+          if-no-files-found: ignore
+

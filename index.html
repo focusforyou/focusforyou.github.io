@@ -3,7 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mikrobiyoloji Şikâyet Defteri</title>
+<title>Focus For You | Şikâyet Defteri</title>
+<meta name="theme-color" content="#0A1128">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg">
+<script src="study.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
 :root{--tx:#E3E8F5;--mu:#B5BDD6;--pr:#AFC6FF;--on:#0A1A44}
@@ -72,6 +76,12 @@ main{padding:32px 16px}.card{padding:24px}
 .logo{font-size:20px}h2{font-size:28px}
 .card p,.card span{overflow-wrap:anywhere}
 }
+.history{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;align-items:end}
+.history-day{min-width:0;text-align:center;font-size:12px}
+.history-bar{height:90px;display:flex;align-items:flex-end;justify-content:center;margin:8px 0}
+.history-fill{width:80%;border-radius:8px 8px 0 0;background:#AFC6FF;min-height:3px}
+[hidden]{display:none!important}#roomPanel{display:flex;flex-direction:column;gap:16px}#roomMembers{padding-left:20px}
+#roomCode{letter-spacing:.12em;overflow-wrap:anywhere}#roomMembers li{overflow-wrap:anywhere}
 </style>
 </head>
 <body>
@@ -83,6 +93,8 @@ main{padding:32px 16px}.card{padding:24px}
 </div>
 <nav>
 <a class="pill" href="#calisma">Çalışma</a>
+<a class="pill" href="#ilerleme">İlerleme</a>
+<a class="pill" href="#lobi">Lobi</a>
 <a class="pill" href="#sikayetler">Şikâyetler</a>
 <a class="pill" href="#karar">Karar</a>
 <button class="pill p" id="mu" type="button" aria-label="Arka plan müziğini aç veya kapat">Müziği aç</button>
@@ -135,6 +147,31 @@ main{padding:32px 16px}.card{padding:24px}
 </div>
 </section>
 
+<section id="ilerleme">
+<h2>Bugünün küçük adımları</h2>
+<div class="grid">
+<article class="card c4"><span class="chip">Günlük hedef</span><div class="big" id="dailyMinutes">0</div><p>dakika odaklandın</p><progress id="dailyProgress" max="120" value="0" aria-label="Günlük çalışma hedefi" style="width:100%"></progress><p id="dailySummary"></p><label for="dailyGoal">Günlük hedef (dakika)</label><input id="dailyGoal" type="number" min="5" max="1440" value="120"><button class="pill p" id="saveGoal">Hedefi kaydet</button></article>
+<article class="card c1"><h3>Ritmini seç</h3><label for="focusMinutes">Odak süresi (dakika)</label><input id="focusMinutes" type="number" min="1" max="180" value="25"><label for="breakMinutes">Mola süresi (dakika)</label><input id="breakMinutes" type="number" min="1" max="60" value="5"><button class="pill p" id="saveDurations">Süreleri kaydet</button><p id="settingsMessage" role="status"></p><p>Süreleri yeni bir tura başlamadan önce değiştirebilirsin.</p></article>
+<article class="card c2 wide"><h3>Son 7 gün</h3><div id="studyHistory" class="history"></div><p id="weeklySummary"></p><button class="pill" id="exportStudy">Verileri yedekle</button><label for="importStudy">Yedeği geri yükle</label><input id="importStudy" type="file" accept=".json,application/json"><p id="backupMessage" role="status"></p><p>İlerlemen bu cihazda saklanır. Başka cihaza geçerken yedeğini kullan.</p></article>
+</div>
+</section>
+<section id="lobi">
+<h2>Birlikte odaklan</h2>
+<article class="card c1">
+<p>Bir oda aç, kodunu arkadaşına gönder ve aynı odak turunda buluş. Oda sahibi ortak sayacı yönetir.</p>
+<div class="row"><input type="text" id="lobbyName" maxlength="30" placeholder="Takma adın" aria-label="Lobi takma adı"><button class="pill p" id="createRoom">Oda oluştur</button></div>
+<div class="row"><input type="text" id="roomCodeInput" maxlength="10" placeholder="Oda kodu" aria-label="Oda kodu" autocomplete="off" autocapitalize="characters"><button class="pill" id="joinRoom">Odaya katıl</button></div>
+<p id="lobbyStatus" role="status" aria-live="polite"></p>
+<div id="roomPanel" hidden>
+<div class="row"><strong id="roomCode"></strong><button class="pill" id="copyInvite">Davet bağlantısını kopyala</button><button class="pill d" id="leaveRoom">Odadan ayrıl</button></div>
+<h3 id="roomPhase">Odak</h3><div id="roomTime" style="font-size:64px;font-weight:800;font-variant-numeric:tabular-nums">25:00</div>
+<div class="row" id="hostControls"><button class="pill p" id="roomToggle">Başlat</button><button class="pill" id="roomFocus">Odak</button><button class="pill" id="roomBreak">Mola</button><button class="pill d" id="roomReset">Sıfırla</button></div>
+<p id="roomInfo"></p><ul id="roomMembers"></ul>
+</div>
+<p>Ortak oda sayacı kişisel görev sayacından bağımsızdır. Oda sahibi ayrıldığında oda kapanır; bağlantısı kesilirse oda kısa bir süre yeniden bağlanmasını bekler.</p>
+</article>
+</section>
+<section id="kurulum"><h2>Cebinde de yanında</h2><article class="card c5"><h3>Focus For You'yu kur</h3><p>Telefonda uygulama gibi aç; site güncellendiğinde yenilikler de gelir.</p><button class="pill p" id="installApp" hidden>Ana ekrana kur</button><p id="installHelp">Android Chrome menüsünden “Ana ekrana ekle / Uygulamayı yükle”yi seç. iPhone'da Safari → Paylaş → Ana Ekrana Ekle.</p><a class="pill" href="https://github.com/focusforyou/focusforyou.github.io/releases">Android APK ve sürümler</a><p>APK sürümleri yayınlandığında bu depoyu Obtainium'a ekleyebilirsin.</p></article></section>
 <section id="sikayetler">
 <h2>Şikâyet listesi (hepsini yazsak internet yetmez)</h2>
 <div class="grid" id="cg"></div>
@@ -234,6 +271,7 @@ cd();
 setInterval(cd,30000);
 
 /* Orman ve görevler */
+let focusDuration=Study.preferences.focus*60,breakDuration=Study.preferences.break*60;
 const esc=s=>s.replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
 let F={f:0,l:0},grown=false,dead=false,tasks=[],act=null,lastT=Date.now(),lastS=0;
 try{const j=JSON.parse(localStorage.getItem('mikro_forest')||'null');if(j)F={f:Number.isSafeInteger(j.f)&&j.f>=0?j.f:0,l:Number.isSafeInteger(j.l)&&j.l>=0?j.l:0}}catch(e){}
@@ -242,8 +280,8 @@ function svF(){try{localStorage.setItem('mikro_forest',JSON.stringify(F))}catch(
 function svT(){try{localStorage.setItem('mikro_tasks',JSON.stringify({t:tasks,a:act}))}catch(e){}}
 function tf(s){s=Math.ceil(s);return String(s/60|0).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
 function ft(){
-let s='idle';if(dead)s='dead';else if(mode=='b'&&grown)s='done';else if(mode=='f'&&left<1500)s='growing';
-const p=s=='growing'?1-left/1500:s=='done'?1:0,sc=s=='dead'?.7:s=='idle'?.2:.2+.8*p;
+let s='idle';if(dead)s='dead';else if(mode=='b'&&grown)s='done';else if(mode=='f'&&left<focusDuration)s='growing';
+const p=s=='growing'?1-left/focusDuration:s=='done'?1:0,sc=s=='dead'?.7:s=='idle'?.2:.2+.8*p;
 $('tre').setAttribute('transform','translate(90 150) scale('+sc.toFixed(3)+')');
 $('tk').setAttribute('fill',s=='dead'?'#5C4B3A':'#8B6B4A');
 $('lf').setAttribute('fill',s=='dead'?'#8A7A66':s=='done'?'#6BD38B':'#4FB06A');
@@ -261,17 +299,17 @@ return '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;padd
 $('ka').onclick=()=>{syncTimer();const n=$('kn').value.trim();if(!n)return;const m=Math.max(1,Math.min(600,parseInt($('km').value,10)||25)),k={id:Math.max(Date.now(),...tasks.map(k=>k.id+1)),name:n,left:m*60,done:false};tasks.push(k);if(!act)act=k.id;$('kn').value='';persistTimer();rk()};
 $('kl').onclick=e=>{const b=e.target.closest('button');if(!b)return;syncTimer();const i=+b.dataset.i;if(b.dataset.a=='s')act=i;else{tasks=tasks.filter(k=>k.id!==i);if(act===i)nxt()}persistTimer();rk()};
 /* Pomodoro: tüm süreler aynı zaman çizelgesinden hesaplanır. */
-let left=1500,mode='f',run=0,tm,sess=0;
+let left=focusDuration,mode='f',run=0,tm,sess=0;
 try{
 const saved=JSON.parse(localStorage.getItem('mikro_timer')||'null');
-if(saved&&(saved.mode==='f'||saved.mode==='b')&&Number.isFinite(saved.left)&&saved.left>0&&saved.left<=(saved.mode==='f'?1500:300)&&Number.isFinite(saved.checkpoint)&&saved.checkpoint>0&&saved.checkpoint<=Date.now()){
+if(saved&&(saved.mode==='f'||saved.mode==='b')&&Number.isFinite(saved.left)&&saved.left>0&&saved.left<=(saved.mode==='f'?focusDuration:breakDuration)&&Number.isFinite(saved.checkpoint)&&saved.checkpoint>0&&saved.checkpoint<=Date.now()){
 mode=saved.mode;left=saved.left;run=saved.run===1?1:0;
 sess=Number.isSafeInteger(saved.sess)&&saved.sess>=0?saved.sess:0;
 grown=!!saved.grown;dead=!!saved.dead;lastT=saved.checkpoint;
 }
 }catch(e){}
 function persistTimer(){
-svF();svT();
+svF();svT();Study.save();
 try{localStorage.setItem('mikro_timer',JSON.stringify({left,mode,run,sess,grown,dead,checkpoint:lastT}))}catch(e){}
 }
 function consumeTasks(seconds){
@@ -286,23 +324,24 @@ function syncTimer(){
 const now=Date.now();let elapsed=run?Math.max(0,(now-lastT)/1000):0;lastT=now;
 while(elapsed>0){
 const used=Math.min(elapsed,left);
-if(mode==='f')consumeTasks(used);
+if(mode==='f'){consumeTasks(used);Study.record(used,now-(elapsed*1000))}
 left-=used;elapsed-=used;
 if(left<=0){
-if(mode==='f'){sess++;F.f++;grown=true;mode='b';left=300}
-else{grown=false;mode='f';left=1500}
+if(mode==='f'){sess++;F.f++;grown=true;mode='b';left=breakDuration}
+else{grown=false;mode='f';left=focusDuration}
 dead=false;
 }
 }
 if(now-lastS>=5000){persistTimer();lastS=now}
 }
 function pm(){
-const total=mode==='f'?1500:300,seconds=Math.ceil(left);
+const total=mode==='f'?focusDuration:breakDuration,seconds=Math.ceil(left);
 $('tt').textContent=String(seconds/60|0).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
 $('tl').textContent=mode==='f'?'Odak':'Mola';
 $('rg').style.strokeDashoffset=527.79*(1-left/total);
 $('tg').textContent=run?'Duraklat':'Başlat';
 $('ss').textContent=sess+' odak turu tamamlandı';
+$('mf').textContent='Odak '+(focusDuration/60)+' dk';$('mb').textContent='Mola '+(breakDuration/60)+' dk';
 $('mf').className='pill '+(mode==='f'?'p':'d');$('mb').className='pill '+(mode==='b'?'p':'d');
 ft();
 }
@@ -315,7 +354,7 @@ function setm(m){
 syncTimer();clearInterval(tm);run=0;
 const abandoned=mode==='f'&&left<1500;
 if(abandoned)F.l++;
-dead=abandoned;grown=false;mode=m;left=m==='f'?1500:300;
+dead=abandoned;grown=false;mode=m;left=m==='f'?focusDuration:breakDuration;
 persistTimer();pm();rk();
 }
 $('tg').onclick=()=>{
@@ -325,11 +364,12 @@ else{if(mode==='f'){dead=false;grown=false}run=1;lastT=Date.now();tm=setInterval
 persistTimer();pm();rk();
 };
 $('tr').onclick=()=>setm('f');$('mf').onclick=()=>setm('f');$('mb').onclick=()=>setm('b');
-function flush(){syncTimer();persistTimer()}
+function flush(){if(Study.importing)return;syncTimer();persistTimer()}
 addEventListener('pagehide',flush);
 document.addEventListener('visibilitychange',()=>{flush();pm();rk();cd()});
 syncTimer();persistTimer();pm();rk();
 if(run)tm=setInterval(tick,500);
+Study.changeDurations=(focus,rest)=>{if(run||left!==(mode==='f'?focusDuration:breakDuration))return false;Study.preferences.focus=focus;Study.preferences.break=rest;focusDuration=focus*60;breakDuration=rest*60;setm('f');Study.save();return true};
 
 /* Kartlarda 3D eğilme ve basma efekti */
 if(matchMedia('(hover:hover) and (prefers-reduced-motion:no-preference)').matches){
@@ -345,5 +385,9 @@ const up=e=>{if(pr){pr=false;mv(e)}};
 document.addEventListener('pointerup',up);document.addEventListener('pointercancel',up);
 }
 </script>
+<script src="app-config.js"></script>
+<script src="lobby.js"></script>
+<script src="install.js"></script>
 </body>
 </html>
+

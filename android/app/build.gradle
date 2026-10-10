@@ -1,0 +1,14 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'io.github.focusforyou.app'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'io.github.focusforyou.app'
+        minSdk 26
+        targetSdk 35
+        versionCode Integer.parseInt(System.getenv('FOCUS_VERSION_CODE') ?: '1')
+        versionName System.getenv('FOCUS_VERSION_NAME') ?: '1.0'
+    }
+    buildTypes { release { minifyEnabled false } }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
