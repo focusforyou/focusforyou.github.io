@@ -22,5 +22,5 @@ jobs:
         working-directory: privacy-tests
       - run: node -e "require('node:fs').copyFileSync('../firestore.rules','firestore.rules')"
         working-directory: privacy-tests
-      - run: npx firebase emulators:exec --only firestore --project demo-focus-deletion "node --test deletion.rules.test.cjs"
+      - run: npx firebase emulators:exec --only firestore --project demo-focus-deletion "node --test *.rules.test.cjs"
         working-directory: privacy-tests
