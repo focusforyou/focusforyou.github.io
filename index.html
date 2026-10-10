@@ -82,6 +82,13 @@ main{padding:32px 16px}.card{padding:24px}
 .history-fill{width:80%;border-radius:8px 8px 0 0;background:#AFC6FF;min-height:3px}
 [hidden]{display:none!important}#roomPanel{display:flex;flex-direction:column;gap:16px}#roomMembers{padding-left:20px}
 #roomCode{letter-spacing:.12em;overflow-wrap:anywhere}#roomMembers li{overflow-wrap:anywhere}
+
+.timer{align-self:start}.room-card{gap:16px}.room-total{display:flex;flex-direction:column;gap:6px;padding:16px;border-radius:18px;background:rgba(0,0,0,.2)}.room-total strong{font-size:26px;font-variant-numeric:tabular-nums}
+.forest-small{width:100%;border-top:1px solid #ffffff30;padding-top:16px}.forest-small summary{cursor:pointer;font-weight:700}.forest-small .forest{display:flex;gap:16px;padding-top:12px}.forest-small .fi{min-width:0;gap:6px}.forest-small p{font-size:13px}.forest-small #fo{max-height:90px;overflow:auto}
+#roomMembers{list-style:none;padding:0;display:grid;gap:8px}#roomMembers li{display:grid;gap:4px;padding:12px;border-radius:16px;background:rgba(0,0,0,.2)}#roomMembers .member-clock{font-variant-numeric:tabular-nums}#roomMembers small{opacity:.85}
+.room-chat{border-top:1px solid #ffffff30;padding-top:16px}.chat-note{font-size:12px;opacity:.8}#chatMessages{max-height:360px;overflow-y:auto;overflow-wrap:anywhere;display:flex;flex-direction:column;gap:10px;margin:12px 0}.chat-message{background:rgba(0,0,0,.2);border-radius:16px;padding:12px}.chat-message p{white-space:pre-wrap;margin:6px 0}.chat-message small{opacity:.7}.chat-image{max-width:100%;max-height:240px;object-fit:contain;display:block;border-radius:12px;cursor:zoom-in}.chat-image-button{border:0;background:transparent;padding:0;text-align:left;cursor:zoom-in;width:100%}
+#chatForm{display:flex;flex-direction:column;gap:10px}#chatText{width:100%;resize:vertical;font:inherit;color:inherit;background:#0A1128;border:1px solid #ffffff30;border-radius:16px;padding:12px;box-sizing:border-box}.photo-picker{position:relative;cursor:pointer}.photo-picker input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}#chatPreview{max-width:100%;max-height:160px;border-radius:12px}#photoDraft{display:flex;align-items:center;gap:12px}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+#imageViewer{background:#0A1128;color:#D9E2FF;border:0;border-radius:20px;max-width:95vw;padding:16px}#imageViewer::backdrop{background:#000c}#imageViewer img{max-width:85vw;max-height:75vh;object-fit:contain;display:block}#imageViewer button{margin-top:12px}
 </style>
 </head>
 <body>
@@ -102,23 +109,10 @@ Focus For You
 </header>
 
 <main>
-<div class="hero">
-<span class="tag">Resmî olmayan, tamamen haklı görüş</span>
-<h1>Mikrobiyoloji: bakterilerden bile daha sinir bozucu ders.</h1>
-<p>Gözle görülmeyen ama etkisi fazlasıyla görünen bir angarya. Ezberlenecek binlerce isim, sıfır mantık, sonsuz acı.</p>
-<div class="row"><a class="pill p" href="#sikayetler">Şikâyetleri oku</a><a class="pill d" href="#karar">Karara atla</a></div>
-</div>
-
 <section id="calisma">
-<h2>Çalışma köşesi (şikâyetten arta kalan zaman için)</h2>
+<h2>Çalışma alanın</h2>
 <div class="grid">
-<article class="card c0">
-<span class="chip">Sınav geri sayımı</span>
-<div class="big" id="en">—</div>
-<p id="ec"></p>
-<label for="ed" style="font-weight:600">Mikrobiyoloji sınav tarihi</label>
-<input type="date" id="ed">
-</article>
+
 <article class="card c1 timer">
 <div class="row" style="justify-content:center"><button class="pill p" id="mf" type="button">Odak 25 dk</button><button class="pill d" id="mb" type="button">Mola 5 dk</button></div>
 <div class="ring">
@@ -126,7 +120,31 @@ Focus For You
 <div><b id="tt">25:00</b><span id="tl">Odak</span></div>
 </div>
 <div class="row" style="justify-content:center"><button class="pill p" id="tg" type="button">Başlat</button><button class="pill d" id="tr" type="button">Sıfırla</button></div>
-<p id="ss" style="font-size:14px"></p>
+<p id="ss" style="font-size:14px"></p><details class="forest-small"><summary>Ormanın</summary><div class="forest">
+<svg width="90" height="85" viewBox="0 0 180 170" fill="none" aria-hidden="true"><ellipse cx="90" cy="152" rx="64" ry="8" fill="#0F241B"/><g id="tre" transform="translate(90 150) scale(.2)"><rect id="tk" x="-6" y="-60" width="12" height="60" rx="4" fill="#8B6B4A"/><g id="lf" fill="#4FB06A"><circle cx="0" cy="-85" r="38"/><circle cx="-26" cy="-64" r="26"/><circle cx="26" cy="-64" r="26"/></g></g></svg>
+<div class="fi">
+
+<p id="fm"></p>
+<p style="font-size:14px">Odak sırasında sıfırlarsan ya da molaya geçersen ağaç kurur. Duraklatmak serbest.</p>
+<p id="ft" style="font-weight:600"></p>
+<div id="fo" class="row" style="gap:6px"></div>
+</div>
+</div></details>
+</article>
+<article class="card c1 room-card" id="lobi" data-calm="1"><h3>Birlikte odaklan</h3>
+<p>Bir oda aç, kodunu arkadaşına gönder ve birlikte çalış. Herkes kendi odak ve mola sayacını yönetir; odada birbirinizin durumunu görürsünüz.</p>
+<div class="row"><input type="text" id="lobbyName" maxlength="30" placeholder="Takma adın" aria-label="Lobi takma adı"><button class="pill p" id="createRoom">Oda oluştur</button></div>
+<div class="row"><input type="text" id="roomCodeInput" maxlength="10" placeholder="Oda kodu" aria-label="Oda kodu" autocomplete="off" autocapitalize="characters"><button class="pill" id="joinRoom">Odaya katıl</button></div>
+<p id="lobbyStatus" role="status" aria-live="polite"></p>
+<div id="roomPanel" hidden>
+<div class="row"><strong id="roomCode"></strong><button class="pill" id="copyInvite">Davet bağlantısını kopyala</button><button class="pill d" id="leaveRoom">Odadan ayrıl</button></div>
+<div class="room-total"><span>Bu odada toplam çalışma</span><strong id="roomTotal">0 sa 00 dk 00 sn</strong></div>
+<p id="roomInfo"></p><ul id="roomMembers"></ul>
+<div class="room-chat"><h3>Oda sohbeti</h3><p class="chat-note">Mesajlar ve fotoğraflar bu açık odada tutulur; oda kapanınca silinir.</p><div id="chatMessages" role="log" aria-label="Oda mesajları" aria-live="polite"></div>
+<form id="chatForm"><label class="sr-only" for="chatText">Mesajın</label><textarea id="chatText" maxlength="2000" rows="2" placeholder="Bir soru sor veya mesaj yaz…"></textarea><div id="photoDraft" hidden><img id="chatPreview" alt="Göndermeden önce fotoğraf önizlemesi"><button class="pill d" type="button" id="removePhoto">Fotoğrafı kaldır</button></div>
+<div class="row"><label class="pill photo-picker">Galeriden seç<input id="chatPhoto" type="file" accept="image/*"></label><label class="pill photo-picker">Fotoğraf çek<input id="chatCamera" type="file" accept="image/*" capture="environment"></label><button class="pill p" id="sendChat" type="submit">Gönder</button></div><p id="chatStatus" role="status"></p></form></div>
+</div>
+<p>Ücretsiz lobi en fazla 8 kişi içindir. Oda sahibi sayfayı açık tutmalı; sayfayı kapatır veya yenilerse oda kapanır. Telefon uykuya geçerse bağlantı kesilebilir. Bazı okul ve mobil ağları doğrudan bağlantıyı engelleyebilir; bu durumda başka bir ağ dene. Odadan ayrılmak kişisel sayacını durdurmaz.</p>
 </article>
 <article class="card c2 wide" data-calm="1">
 <h3>Görevler</h3>
@@ -134,43 +152,25 @@ Focus For You
 <div class="row"><input type="text" id="kn" aria-label="Görev adı" placeholder="Görev adı (ör. Gram pozitif koklar)" style="flex:1;min-width:220px"><input type="number" id="km" min="1" max="600" value="25" aria-label="Dakika" style="width:110px"><button class="pill p" id="ka" type="button">Ekle</button></div>
 <div id="kl" style="display:flex;flex-direction:column;gap:8px"></div>
 </article>
-<article class="card c5 wide forest">
-<svg width="180" height="170" viewBox="0 0 180 170" fill="none" aria-hidden="true"><ellipse cx="90" cy="152" rx="64" ry="8" fill="#0F241B"/><g id="tre" transform="translate(90 150) scale(.2)"><rect id="tk" x="-6" y="-60" width="12" height="60" rx="4" fill="#8B6B4A"/><g id="lf" fill="#4FB06A"><circle cx="0" cy="-85" r="38"/><circle cx="-26" cy="-64" r="26"/><circle cx="26" cy="-64" r="26"/></g></g></svg>
-<div class="fi">
-<h3>Orman</h3>
-<p id="fm"></p>
-<p style="font-size:14px">Odak sırasında sıfırlarsan ya da molaya geçersen ağaç kurur. Duraklatmak serbest.</p>
-<p id="ft" style="font-weight:600"></p>
-<div id="fo" class="row" style="gap:6px"></div>
-</div>
-</article>
+
 </div>
 </section>
 
 <section id="ilerleme">
 <h2>Bugünün küçük adımları</h2>
-<div class="grid">
+<div class="grid"><article class="card c0">
+<span class="chip">Sınav geri sayımı</span>
+<div class="big" id="en">—</div>
+<p id="ec"></p>
+<label for="ed" style="font-weight:600">Sınav tarihi</label>
+<input type="date" id="ed">
+</article>
 <article class="card c4"><span class="chip">Günlük hedef</span><div class="big" id="dailyMinutes">0</div><p>dakika odaklandın</p><progress id="dailyProgress" max="120" value="0" aria-label="Günlük çalışma hedefi" style="width:100%"></progress><p id="dailySummary"></p><label for="dailyGoal">Günlük hedef (dakika)</label><input id="dailyGoal" type="number" min="5" max="1440" value="120"><button class="pill p" id="saveGoal">Hedefi kaydet</button></article>
 <article class="card c1"><h3>Ritmini seç</h3><label for="focusMinutes">Odak süresi (dakika)</label><input id="focusMinutes" type="number" min="1" max="180" value="25"><label for="breakMinutes">Mola süresi (dakika)</label><input id="breakMinutes" type="number" min="1" max="60" value="5"><button class="pill p" id="saveDurations">Süreleri kaydet</button><p id="settingsMessage" role="status"></p><p>Süreleri yeni bir tura başlamadan önce değiştirebilirsin.</p></article>
 <article class="card c2 wide"><h3>Son 7 gün</h3><div id="studyHistory" class="history"></div><p id="weeklySummary"></p><button class="pill" id="exportStudy">Verileri yedekle</button><label for="importStudy">Yedeği geri yükle</label><input id="importStudy" type="file" accept=".json,application/json"><p id="backupMessage" role="status"></p><p>İlerlemen bu cihazda saklanır. Başka cihaza geçerken yedeğini kullan.</p></article>
 </div>
 </section>
-<section id="lobi">
-<h2>Birlikte odaklan</h2>
-<article class="card c1" data-calm="1">
-<p>Bir oda aç, kodunu arkadaşına gönder ve birlikte çalış. Herkes kendi odak ve mola sayacını yönetir; odada birbirinizin durumunu görürsünüz.</p>
-<div class="row"><input type="text" id="lobbyName" maxlength="30" placeholder="Takma adın" aria-label="Lobi takma adı"><button class="pill p" id="createRoom">Oda oluştur</button></div>
-<div class="row"><input type="text" id="roomCodeInput" maxlength="10" placeholder="Oda kodu" aria-label="Oda kodu" autocomplete="off" autocapitalize="characters"><button class="pill" id="joinRoom">Odaya katıl</button></div>
-<p id="lobbyStatus" role="status" aria-live="polite"></p>
-<div id="roomPanel" hidden>
-<div class="row"><strong id="roomCode"></strong><button class="pill" id="copyInvite">Davet bağlantısını kopyala</button><button class="pill d" id="leaveRoom">Odadan ayrıl</button></div>
-<h3 id="roomPhase">Odak</h3><div id="roomTime" style="font-size:64px;font-weight:800;font-variant-numeric:tabular-nums">25:00</div>
-<a class="pill p" href="#calisma">Kendi sayacını yönet</a>
-<p id="roomInfo"></p><ul id="roomMembers"></ul>
-</div>
-<p>Ücretsiz lobi en fazla 8 kişi içindir. Oda sahibi sayfayı açık tutmalı; sayfayı kapatır veya yenilerse oda kapanır. Telefon uykuya geçerse bağlantı kesilebilir. Bazı okul ve mobil ağları doğrudan bağlantıyı engelleyebilir; bu durumda başka bir ağ dene. Odadan ayrılmak kişisel sayacını durdurmaz.</p>
-</article>
-</section>
+
 <section id="kurulum"><h2>Cebinde de yanında</h2><article class="card c5" data-calm="1"><h3>Focus For You'yu kur</h3><p>Telefonda uygulama gibi aç; site güncellendiğinde yenilikler de gelir.</p><button class="pill p" id="installApp" hidden>Ana ekrana kur</button><p id="installHelp">Android Chrome menüsünden “Ana ekrana ekle / Uygulamayı yükle”yi seç. iPhone'da Safari → Paylaş → Ana Ekrana Ekle.</p><a class="pill" href="https://github.com/focusforyou/focusforyou.github.io/releases">Android APK ve sürümler</a><p>APK sürümleri yayınlandığında bu depoyu Obtainium'a ekleyebilirsin.</p></article></section>
 <section id="sikayetler">
 <h2>Şikâyet listesi (hepsini yazsak internet yetmez)</h2>
@@ -181,7 +181,7 @@ Focus For You
 <h2>Karar: Ders berbat. Final: ders çok berbat.</h2>
 <p style="font-size:18px;line-height:1.5;max-width:640px">Ders puanı: yarım yıldız, o da bakteriler adına verilen jest. Bakteriler masumdur, suçlu müfredattır.</p>
 </section>
-</main>
+</main><dialog id="imageViewer"><img id="fullPhoto" alt="Sohbette paylaşılan fotoğraf"><form method="dialog"><button class="pill">Kapat</button></form></dialog>
 
 <footer>Bu site tamamen duygusal olarak üretilmiştir. Sınavdan sonra güncellenebilir.</footer>
 
@@ -352,7 +352,7 @@ else for(const k of tasks){const label=$('kt'+k.id);if(label)label.textContent=k
 }
 function setm(m){
 syncTimer();clearInterval(tm);run=0;
-const abandoned=mode==='f'&&left<1500;
+const abandoned=mode==='f'&&left<focusDuration;
 if(abandoned)F.l++;
 dead=abandoned;grown=false;mode=m;left=m==='f'?focusDuration:breakDuration;
 persistTimer();pm();rk();
@@ -370,7 +370,7 @@ document.addEventListener('visibilitychange',()=>{flush();pm();rk();cd()});
 syncTimer();persistTimer();pm();rk();
 if(run)tm=setInterval(tick,500);
 Study.changeDurations=(focus,rest)=>{if(run||left!==(mode==='f'?focusDuration:breakDuration))return false;Study.preferences.focus=focus;Study.preferences.break=rest;focusDuration=focus*60;breakDuration=rest*60;setm('f');Study.save();return true};
-Study.liveSession=()=>{syncTimer();return {phase:mode==='f'?'focus':'break',running:!!run,left,total:mode==='f'?focusDuration:breakDuration,rounds:sess}};
+Study.liveSession=()=>{syncTimer();return {worked:Study.totalSeconds(),focus:focusDuration,rest:breakDuration,phase:mode==='f'?'focus':'break',running:!!run,left,total:mode==='f'?focusDuration:breakDuration,rounds:sess}};
 
 /* Kartlarda 3D eğilme ve basma efekti */
 if(matchMedia('(hover:hover) and (prefers-reduced-motion:no-preference)').matches){
@@ -388,6 +388,7 @@ document.addEventListener('pointerup',up);document.addEventListener('pointercanc
 </script>
 <script src="vendor/peerjs-1.5.5.min.js"></script>
 <script src="lobby-model.js"></script>
+<script src="chat.js"></script>
 <script src="lobby-peer.js"></script>
 <script src="install.js"></script>
 </body>

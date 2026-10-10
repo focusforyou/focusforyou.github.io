@@ -16,6 +16,10 @@ import android.webkit.WebViewClient;
 import android.webkit.ValueCallback;
 import android.webkit.JavascriptInterface;
 import java.io.OutputStream;
+import java.io.File;
+import android.provider.MediaStore;
+import android.content.ClipData;
+import androidx.core.content.FileProvider;
 import java.nio.charset.StandardCharsets;
 import android.widget.FrameLayout;
 public class MainActivity extends Activity {
@@ -24,6 +28,33 @@ public class MainActivity extends Activity {
     private boolean errorShown = false;
     private ValueCallback<Uri[]> fileCallback;
     private String backup;
+    private Uri cameraUri;
+    private File cameraFile;
+    private void chooseFile(WebChromeClient.FileChooserParams params) {
+        boolean image=false;for(String type:params.getAcceptTypes())if(type!=null&&type.startsWith("image/"))image=true;
+        Intent pick=new Intent(Intent.ACTION_OPEN_DOCUMENT);pick.addCategory(Intent.CATEGORY_OPENABLE);pick.setType(image?"image/*":"application/json");
+        if(image&&android.os.Build.VERSION.SDK_INT>=33){pick=new Intent(MediaStore.ACTION_PICK_IMAGES);pick.setType("image/*");}
+        final Intent picker=pick;
+        if(image&&params.isCaptureEnabled()) {
+            try {
+                Intent capture=new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                if(capture.resolveActivity(getPackageManager())==null)throw new IllegalStateException("No camera app");
+                File directory=new File(getCacheDir(),"photos");if(!directory.exists()&&!directory.mkdirs())throw new IllegalStateException("No photo directory");
+                if(cameraFile!=null)cameraFile.delete();
+                cameraFile=File.createTempFile("focus-", ".jpg",directory);
+                cameraUri=FileProvider.getUriForFile(this,getPackageName()+".photos",cameraFile);
+                capture.putExtra(MediaStore.EXTRA_OUTPUT,cameraUri);capture.setClipData(ClipData.newRawUri("photo",cameraUri));
+                capture.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                startActivityForResult(capture,103);return;
+            } catch(Exception ignored) {
+                cameraUri=null;
+                new AlertDialog.Builder(this).setMessage("Kamera açılamadı. Galeriden bir fotoğraf seçebilirsin.").setPositiveButton("Galeri",(dialog,which)->{
+                    try{startActivityForResult(picker,101);}catch(Exception error){if(fileCallback!=null)fileCallback.onReceiveValue(null);fileCallback=null;}
+                }).setNegativeButton("İptal",(dialog,which)->{if(fileCallback!=null)fileCallback.onReceiveValue(null);fileCallback=null;}).setOnCancelListener(dialog->{if(fileCallback!=null)fileCallback.onReceiveValue(null);fileCallback=null;}).show();return;
+            }
+        }
+        try{startActivityForResult(pick,101);}catch(Exception ignored){if(fileCallback!=null)fileCallback.onReceiveValue(null);fileCallback=null;}
+    }
     public class BackupBridge {
         @JavascriptInterface public void saveBackup(String value) {
             if(value==null || value.length()>1000000) return;
@@ -39,6 +70,7 @@ public class MainActivity extends Activity {
     }
     @Override public void onCreate(Bundle saved) {
         super.onCreate(saved);
+        File photoDirectory=new File(getCacheDir(),"photos");File[] oldPhotos=photoDirectory.listFiles();if(oldPhotos!=null)for(File photo:oldPhotos)if(System.currentTimeMillis()-photo.lastModified()>86400000)photo.delete();
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.rgb(10,17,40));
         setContentView(root);
@@ -71,8 +103,7 @@ public class MainActivity extends Activity {
             @Override public boolean onShowFileChooser(WebView view,ValueCallback<Uri[]> callback,FileChooserParams params) {
                 if(fileCallback!=null)fileCallback.onReceiveValue(null);
                 fileCallback=callback;
-                Intent intent=new Intent(Intent.ACTION_OPEN_DOCUMENT);intent.addCategory(Intent.CATEGORY_OPENABLE);intent.setType("application/json");
-                try {startActivityForResult(intent,101);}catch(Exception ignored){fileCallback.onReceiveValue(null);fileCallback=null;}
+                chooseFile(params);
                 return true;
             }
         });
@@ -102,6 +133,7 @@ public class MainActivity extends Activity {
     @Override protected void onActivityResult(int request,int result,Intent data) {
         super.onActivityResult(request,result,data);
         if(request==101&&fileCallback!=null){fileCallback.onReceiveValue(result==RESULT_OK&&data!=null&&data.getData()!=null?new Uri[]{data.getData()}:null);fileCallback=null;}
+        if(request==103){if(fileCallback!=null){fileCallback.onReceiveValue(result==RESULT_OK&&cameraUri!=null&&cameraFile!=null&&cameraFile.length()>0?new Uri[]{cameraUri}:null);fileCallback=null;}cameraUri=null;}
         if(request==102&&backup!=null){
             if(result==RESULT_OK&&data!=null&&data.getData()!=null){
                 try(OutputStream out=getContentResolver().openOutputStream(data.getData())){if(out!=null)out.write(backup.getBytes(StandardCharsets.UTF_8));}catch(Exception ignored){new AlertDialog.Builder(this).setMessage("Yedek kaydedilemedi. Tekrar dene.").setPositiveButton("Tamam",null).show();}

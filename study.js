@@ -75,6 +75,6 @@ localStorage.removeItem('mikro_timer');removeEventListener('pagehide',flush);loc
 render();setInterval(render,30000);
 }
 document.addEventListener('DOMContentLoaded',init);
-return {preferences,record,save,render,dateKey};
+return {preferences,record,save,render,dateKey,totalSeconds:()=>Object.values(days).reduce((sum,n)=>sum+n,0)};
 })();
 
