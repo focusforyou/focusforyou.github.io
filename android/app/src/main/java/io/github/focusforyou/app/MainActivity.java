@@ -90,6 +90,10 @@ public class MainActivity extends Activity {
         web = new WebView(this);
         root.addView(web,new FrameLayout.LayoutParams(-1,-1));
         web.setBackgroundColor(Color.rgb(10,17,40));
+        if (getPreferences(MODE_PRIVATE).getInt("tap_ui_revision",0)<1) {
+            web.clearCache(true);
+            getPreferences(MODE_PRIVATE).edit().putInt("tap_ui_revision",1).apply();
+        }
         WebSettings settings = web.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
@@ -118,6 +122,12 @@ public class MainActivity extends Activity {
                 return true;
             }
             @Override public void onPageStarted(WebView view,String url,android.graphics.Bitmap icon) { errorShown=false; }
+            @Override public void onPageFinished(WebView view,String url) {
+                super.onPageFinished(view,url);
+                Uri uri=Uri.parse(url);
+                if (!"https".equals(uri.getScheme()) || !"focusforyou.github.io".equals(uri.getHost())) return;
+                view.evaluateJavascript("(function(){var s=document.getElementById('focus-native-tap-style');if(!s){s=document.createElement('style');s.id='focus-native-tap-style';document.head.appendChild(s);}s.textContent='*{-webkit-tap-highlight-color:transparent !important}';})()",null);
+            }
             @Override public void onReceivedError(WebView view,WebResourceRequest request,WebResourceError error) {
                 if (!request.isForMainFrame() || errorShown || isFinishing()) return;
                 errorShown=true;
