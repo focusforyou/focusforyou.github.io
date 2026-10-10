@@ -102,11 +102,11 @@ main{padding:32px 16px}.card{padding:24px}
 <svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#D9E2FF" stroke-width="2" aria-hidden="true" style="background:#1E3A78;border-radius:14px;padding:6px"><circle cx="20" cy="20" r="12"/><circle cx="16" cy="17" r="2"/><circle cx="24" cy="22" r="2.5"/><circle cx="18" cy="25" r="1.5"/></svg>
 Focus For You
 </div>
-<nav>
-<a class="pill" href="#calisma">Çalışma</a>
-<a class="pill" href="#ilerleme">İlerleme</a>
-<a class="pill" href="#lobi">Lobi</a>
-<a class="pill" href="#kurulum">Uygulamayı kur</a>
+<nav class="top-nav" aria-label="Üst menü">
+<a class="nav-link" href="#calisma">Çalışma</a>
+<a class="nav-link" href="#lobi">Oda</a>
+<a class="nav-link" href="#ilerleme">İlerleme</a>
+<button class="pill app-install-link" type="button" id="openInstall" aria-haspopup="dialog" aria-controls="installSheet">Uygulamayı kur</button>
 <button class="pill p" id="mu" type="button" aria-label="Arka plan müziğini aç veya kapat">Müziği aç</button>
 </nav>
 </header>
@@ -187,7 +187,8 @@ Focus For You
 <dialog id="timerSheet" aria-label="Sayaç detayları"><form method="dialog"><button class="sheet-close" aria-label="Sayaç detaylarını kapat">Kapat <span aria-hidden="true">⌄</span></button></form><div id="timerSlot"></div></dialog>
 <dialog id="imageViewer"><img id="fullPhoto" alt="Sohbette paylaşılan fotoğraf"><form method="dialog"><button class="pill">Kapat</button></form></dialog>
 
-<footer>Focus For You · Kendi ritminde, birlikte odaklan.</footer>
+<footer>Focus For You · Kendi ritminde, birlikte odaklan.<span class="author-credit">Made by Efe Özbilgin</span></footer>
+<dialog id="installSheet" aria-label="Uygulamayı kur"><form method="dialog"><button class="sheet-close" aria-label="Kurulum penceresini kapat">Kapat <span aria-hidden="true">×</span></button></form><div class="install-content"></div></dialog>
 
 <script>
 const $=id=>document.getElementById(id),R=(a,b)=>a+Math.random()*(b-a);
