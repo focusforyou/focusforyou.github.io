@@ -93,7 +93,7 @@ main{padding:32px 16px}.card{padding:24px}
 @media(min-width:900px) and (max-width:1199px){#calisma>.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.room-chat{grid-column:1/-1}}
 @media(max-width:899px){#calisma>.grid{grid-template-columns:minmax(0,1fr)}}
 </style>
-<link rel="stylesheet" href="mobile-ui.css?v=nav2">
+<link rel="stylesheet" href="mobile-ui.css?v=rooms3">
 </head>
 <body>
 <canvas id="sky" aria-hidden="true"></canvas>
@@ -104,7 +104,6 @@ Focus For You
 </div>
 <nav class="top-nav" aria-label="Üst menü">
 <a class="nav-link" href="#calisma">Çalışma</a>
-<a class="nav-link" href="#lobi">Oda</a>
 <a class="nav-link" href="#ilerleme">İlerleme</a>
 <button class="pill app-install-link" type="button" id="openInstall" aria-haspopup="dialog" aria-controls="installSheet">Uygulamayı kur</button>
 <button class="pill p" id="mu" type="button" aria-label="Arka plan müziğini aç veya kapat">Müziği aç</button>
@@ -142,7 +141,7 @@ Focus For You
 <article class="card c1 room-card" id="lobi" data-calm="1"><h3>Birlikte odaklan</h3>
 <p>Bir oda aç, kodunu arkadaşına gönder ve birlikte çalış. Herkes kendi odak ve mola sayacını yönetir; odada birbirinizin durumunu görürsünüz.</p>
 <div class="row"><input type="text" id="lobbyName" maxlength="30" placeholder="Takma adın" aria-label="Lobi takma adı"><button class="pill p" id="createRoom">Oda oluştur</button></div>
-<div class="row"><input type="text" id="roomCodeInput" maxlength="10" placeholder="Oda kodu" aria-label="Oda kodu" autocomplete="off" autocapitalize="characters"><button class="pill" id="joinRoom">Odaya katıl</button></div>
+<div class="row"><input type="text" id="roomCodeInput" maxlength="5" inputmode="numeric" pattern="[1-9][0-9]{4}" placeholder="5 haneli oda numarası" aria-label="Oda kodu" autocomplete="off"><button class="pill" id="joinRoom">Odaya katıl</button></div>
 <p id="lobbyStatus" role="status" aria-live="polite"></p>
 <div id="roomPanel" hidden>
 <div class="row"><strong id="roomCode"></strong><button class="pill" id="copyInvite">Davet bağlantısını kopyala</button><button class="pill d" id="leaveRoom">Odadan ayrıl</button></div>
@@ -161,7 +160,7 @@ Focus For You
 </section>
 
 <section id="ilerleme">
-<h2>Bugünün küçük adımları</h2>
+<h2>İlerlemen</h2>
 <div class="grid"><article class="card c0">
 <span class="chip">Sınav geri sayımı</span>
 <div class="big" id="en">—</div>
@@ -384,7 +383,7 @@ document.addEventListener('pointerup',up);document.addEventListener('pointercanc
 <script src="vendor/peerjs-1.5.5.min.js"></script>
 <script src="lobby-model.js"></script>
 <script src="chat.js"></script>
-<script src="lobby-peer.js"></script>
+<script src="lobby-peer.js?v=rooms3"></script>
 <script src="install.js?v=nav2"></script>
 <script src="mobile-ui.js"></script>
 </body>

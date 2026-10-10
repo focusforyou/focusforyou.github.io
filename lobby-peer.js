@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-const by=id=>document.getElementById(id),PREFIX='focusforyou-room-v2-',LIMIT=8;
+const by=id=>document.getElementById(id),PREFIX='focusforyou-room-v3-',LIMIT=8;
 let peer=null,host=false,code='',name='',upstream=null,joined=false,connecting=false,attempts=0,lastMessage=0;
 let timeout=null,retry=null,signalRetry=null,roomMembers=[];
 const members=new Map(),pending=new Set();
@@ -12,7 +12,7 @@ const send=(conn,data)=>{try{if(conn?.open){conn.send(data);return true}}catch(e
 function retire(id,entry){departed.set(id,entry.timer.roomWorked);members.delete(id)}
 function acceptChat(input,sender){const body=LobbyModel.content(input);if(!body||history.some(m=>m.id===body.id))return;const message={...body,sender,time:Date.now()};history.push(message);while(history.length>60||history.filter(m=>m.image).length>8||history.reduce((n,m)=>n+m.image.length,0)>4500000)history.shift();RoomChat.receive(message);for(const m of members.values())send(m.conn,{type:'chat',message})}
 RoomChat.configure(message=>{if(!joined)return false;if(host){acceptChat(message,name);return true}return send(upstream,{type:'chat-send',version:1,message})});
-function randomCode(){const bytes=crypto.getRandomValues(new Uint8Array(10)),letters='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';return [...bytes].map(n=>letters[n%32]).join('')}
+function randomCode(){const limit=Math.floor(4294967296/90000)*90000;let value;do{value=crypto.getRandomValues(new Uint32Array(1))[0]}while(value>=limit);return String(10000+value%90000)}
 function clear(){
 clearTimeout(timeout);clearTimeout(retry);clearTimeout(signalRetry);timeout=retry=signalRetry=null;
 const old=peer;peer=null;upstream=null;connecting=false;joined=false;host=false;code='';attempts=0;
@@ -92,12 +92,12 @@ status('Odaya bağlısın. Sayacın ve çalışma süren burada canlı paylaşı
 conn.on('close',()=>{if(upstream===conn)retryJoin('Oda bağlantısı kesildi; yeniden bağlanılıyor…')});
 conn.on('error',()=>{if(upstream===conn){upstream=null;conn.close();retryJoin('Bağlantı sorunu; tekrar deneniyor…')}});
 }
-function enter(create){
+function enter(create,collisions=0){
 if(peer||connecting)return;
 name=LobbyModel.cleanName(by('lobbyName').value);
 if(!name){status('1–30 karakterlik bir takma ad yaz.');return}
 code=create?randomCode():by('roomCodeInput').value.trim().toUpperCase().replace(/\s/g,'');
-if(!/^[A-Z2-9]{10}$/.test(code)){status('10 karakterlik oda kodunu yaz.');return}
+if(!/^[1-9][0-9]{4}$/.test(code)){status('5 haneli oda numarasını yaz.');return}
 if(typeof Peer!=='function'){status('Bağlantı aracı yüklenemedi. Sayfayı yenile ve tekrar dene.');return}
 host=create;connecting=true;busy();status('Ücretsiz oda bağlantısı kuruluyor…');by('roomPanel').hidden=false;
 let local;try{local=new Peer(create?PREFIX+code:undefined,{secure:true,debug:0})}catch(e){clear();status('Tarayıcı doğrudan bağlantıyı desteklemiyor. Güncel Chrome veya Safari ile dene.');return}peer=local;
@@ -111,6 +111,7 @@ else if(!upstream)dial();
 local.on('connection',conn=>{if(peer===local)receiveConnection(conn);else conn.close()});
 local.on('error',error=>{
 if(peer!==local)return;
+if(error.type==='unavailable-id'&&create&&collisions<5){clear();enter(true,collisions+1);return}
 if(error.type==='peer-unavailable'){if(upstream){const old=upstream;upstream=null;old.close()}retryJoin('Oda bulunamadı veya oda sahibi çevrimdışı; tekrar deneniyor…');return}
 if(error.type==='network'||error.type==='socket-error'||error.type==='socket-closed'){
 if(connecting){clear();status('Ücretsiz bağlantı hizmetine ulaşılamıyor. Biraz sonra tekrar dene.')}else status('Bağlantı hizmetiyle iletişim kesildi; mevcut oda bağlantıları sürüyor.');return}
@@ -134,7 +135,7 @@ by('copyInvite').onclick=async()=>{
 if(!joined)return;const url=new URL(location.origin+location.pathname);url.searchParams.set('room',code);url.hash='lobi';
 try{await navigator.clipboard.writeText(url.href);status('Davet bağlantısı kopyalandı.')}catch(e){status('Davet bağlantısı: '+url.href)}
 };
-const invite=new URLSearchParams(location.search).get('room');if(invite&&/^[A-Z2-9]{10}$/.test(invite))by('roomCodeInput').value=invite;
+const invite=new URLSearchParams(location.search).get('room');if(invite&&/^[1-9][0-9]{4}$/.test(invite))by('roomCodeInput').value=invite;
 setInterval(()=>{
 if(!joined)return;
 if(host)broadcast();else if(upstream?.open){
