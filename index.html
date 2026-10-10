@@ -27,7 +27,7 @@ h1,h2,h3,p{margin:0}
 .tag{align-self:flex-start;padding:8px 16px;border-radius:999px;background:#0A1128;font-weight:600;font-size:14px}
 .row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
 h2{font-size:36px;font-weight:800}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:16px}
 .card{border-radius:32px;padding:32px;display:flex;flex-direction:column;gap:12px}
 .card h3{font-size:24px;font-weight:800}
 .card p{line-height:1.5}
@@ -46,7 +46,7 @@ input[type=date],input[type=text],input[type=number]{min-height:44px;padding:12p
 .wide{grid-column:1/-1}
 .c5{background:#17352A;color:#CFEFD9}
 .forest{flex-direction:row;flex-wrap:wrap;align-items:center;gap:32px}
-.fi{flex:1;min-width:260px;display:flex;flex-direction:column;gap:12px}
+.fi{flex:1;min-width:min(260px,100%);display:flex;flex-direction:column;gap:12px}
 .pill:disabled{opacity:.6;cursor:default}
 @media(hover:hover) and (prefers-reduced-motion:no-preference){
 .card{position:relative;transform:perspective(900px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateY(var(--ty,0px)) scale(var(--sc,1));transition:transform .4s ease,box-shadow .25s ease}
@@ -61,11 +61,17 @@ input[type=date],input[type=text],input[type=number]{min-height:44px;padding:12p
 .card[data-click]::before{animation:cf .5s ease-out}
 @keyframes cf{from{opacity:1}to{opacity:0}}
 }
-iframe{width:100%;height:352px;border:0;border-radius:12px}
 .verdict{background:#4D2330;color:#FFD9DE;border-radius:48px;padding:56px;text-align:center;align-items:center}
 .verdict h2{font-size:clamp(32px,5vw,56px);line-height:1.1}
 footer{padding:32px;text-align:center;background:rgba(19,27,51,.6);color:var(--mu);font-size:14px}
-@media(max-width:600px){.hero,.verdict{padding:32px;border-radius:32px}header{padding:16px}}
+@media(max-width:600px){
+.hero,.verdict{padding:24px;border-radius:32px}header{padding:16px}
+main{padding:32px 16px}.card{padding:24px}
+.row>input{min-width:0!important;max-width:100%}.row{min-width:0}
+.fi{min-width:0;flex-basis:100%}.grid>*{min-width:0}
+.logo{font-size:20px}h2{font-size:28px}
+.card p,.card span{overflow-wrap:anywhere}
+}
 </style>
 </head>
 <body>
@@ -125,13 +131,6 @@ footer{padding:32px;text-align:center;background:rgba(19,27,51,.6);color:var(--m
 <p id="ft" style="font-weight:600"></p>
 <div id="fo" class="row" style="gap:6px"></div>
 </div>
-</article>
-<article class="card c2 wide" data-calm="1">
-<h3>Çalışma müziği</h3>
-<iframe id="sf" title="Spotify çalar" src="https://open.spotify.com/embed/playlist/37i9dQZF1DWZeKCadgRdKQ" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
-<label for="si" style="font-weight:600">Kendi playlist'ini kullan</label>
-<div class="row"><input type="text" id="si" placeholder="Spotify bağlantısını yapıştır" style="flex:1;min-width:240px"><button class="pill p" id="sb" type="button">Çaları değiştir</button></div>
-<p id="sm" style="font-size:14px"></p>
 </article>
 </div>
 </section>
@@ -206,7 +205,7 @@ cx.globalAlpha=1;
 requestAnimationFrame(frame);
 
 /* Arka plan müziği (tarayıcıda üretilen sakin ambiyans) */
-let ac,mg,lp,dl,ci=0,ct,bt,mon=false,chosen=false;
+let ac,mg,lp,dl,ci=0,ct,bt,mon=false;
 const CH=[[110,220,261.63,329.63,493.88],[87.31,174.61,220,261.63,329.63],[65.41,130.81,196,293.66,329.63],[98,196,246.94,293.66,329.63]],PE=[440,523.25,587.33,659.25,783.99,880];
 function chord(){const n=ac.currentTime;CH[ci++%4].forEach(f=>{const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;o.detune.value=R(-6,6);g.gain.setValueAtTime(0,n);g.gain.linearRampToValueAtTime(.05,n+3);g.gain.linearRampToValueAtTime(.05,n+5.5);g.gain.linearRampToValueAtTime(0,n+9.5);o.connect(g);g.connect(lp);g.connect(dl);o.start(n);o.stop(n+10)})}
 function bell(){const n=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.frequency.value=PE[Math.random()*6|0];g.gain.setValueAtTime(.0001,n);g.gain.linearRampToValueAtTime(.05,n+.02);g.gain.exponentialRampToValueAtTime(.0001,n+4);o.connect(g);g.connect(lp);g.connect(dl);o.start(n);o.stop(n+4.2);bt=setTimeout(bell,2500+Math.random()*4000)}
@@ -220,8 +219,7 @@ chord();clearInterval(ct);ct=setInterval(chord,8000);clearTimeout(bt);bt=setTime
 }else{clearInterval(ct);clearTimeout(bt);if(ac){mg.gain.cancelScheduledValues(ac.currentTime);mg.gain.setTargetAtTime(0,ac.currentTime,.4)}}
 mon=on;$('mu').textContent=on?'Müziği kapat':'Müziği aç';
 }
-$('mu').onclick=()=>{chosen=true;setMusic(!mon)};
-addEventListener('pointerdown',e=>{if(chosen||e.target.closest('#mu'))return;chosen=true;setMusic(true)});
+$('mu').onclick=()=>setMusic(!mon);
 
 /* Sınav geri sayımı */
 function cd(){
@@ -233,12 +231,13 @@ $('en').textContent=n;$('ec').textContent=c;
 $('ed').onchange=()=>{try{localStorage.setItem('ex',$('ed').value)}catch(e){}cd()};
 try{$('ed').value=localStorage.getItem('ex')||''}catch(e){}
 cd();
+setInterval(cd,30000);
 
 /* Orman ve görevler */
 const esc=s=>s.replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
 let F={f:0,l:0},grown=false,dead=false,tasks=[],act=null,lastT=Date.now(),lastS=0;
-try{const j=JSON.parse(localStorage.getItem('mikro_forest')||'null');if(j)F={f:j.f||0,l:j.l||0}}catch(e){}
-try{const j=JSON.parse(localStorage.getItem('mikro_tasks')||'null');if(j&&j.t){tasks=j.t;act=j.a||null}}catch(e){}
+try{const j=JSON.parse(localStorage.getItem('mikro_forest')||'null');if(j)F={f:Number.isSafeInteger(j.f)&&j.f>=0?j.f:0,l:Number.isSafeInteger(j.l)&&j.l>=0?j.l:0}}catch(e){}
+try{const j=JSON.parse(localStorage.getItem('mikro_tasks')||'null');if(j&&Array.isArray(j.t)){tasks=j.t.filter(k=>k&&Number.isSafeInteger(k.id)&&typeof k.name==='string'&&Number.isFinite(k.left)&&k.left>=0&&k.left<=36000).map(k=>({...k,done:!!k.done||k.left===0}));act=tasks.some(k=>k.id===j.a&&!k.done)?j.a:null}}catch(e){}
 function svF(){try{localStorage.setItem('mikro_forest',JSON.stringify(F))}catch(e){}}
 function svT(){try{localStorage.setItem('mikro_tasks',JSON.stringify({t:tasks,a:act}))}catch(e){}}
 function tf(s){s=Math.ceil(s);return String(s/60|0).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
@@ -259,41 +258,79 @@ $('kh').textContent=!tasks.length?'Henüz görev yok. Bir görev ve süre ekle, 
 $('kl').innerHTML=tasks.map(k=>{const a=act===k.id&&!k.done;
 return '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 16px;border-radius:20px;background:'+(a?'#1E3A78':'#0A1128')+'"><span style="flex:1;min-width:160px;font-weight:600;text-decoration:'+(k.done?'line-through':'none')+'">'+esc(k.name)+'</span><span id="kt'+k.id+'" style="font-variant-numeric:tabular-nums">'+(k.done?'Bitti':tf(k.left))+'</span><button type="button" class="pill'+(a?' p':'')+'" data-a="s" data-i="'+k.id+'"'+(k.done?' disabled':'')+'>'+(k.done?'Bitti':a?'Çalışılıyor':'Çalış')+'</button><button type="button" class="pill d" data-a="x" data-i="'+k.id+'">Sil</button></div>'}).join('');
 }
-$('ka').onclick=()=>{const n=$('kn').value.trim();if(!n)return;const m=Math.max(1,Math.min(600,parseInt($('km').value,10)||25)),k={id:Date.now(),name:n,left:m*60,done:false};tasks.push(k);if(!act)act=k.id;$('kn').value='';svT();rk()};
-$('kl').onclick=e=>{const b=e.target.closest('button');if(!b)return;const i=+b.dataset.i;if(b.dataset.a=='s')act=i;else{tasks=tasks.filter(k=>k.id!==i);if(act===i)nxt()}svT();rk()};
-function ktick(){const n=Date.now(),dt=Math.min(70,(n-lastT)/1000);lastT=n;if(mode!='f'||!act)return;const k=tasks.find(x=>x.id===act);if(!k||k.done)return;
-k.left=Math.max(0,k.left-dt);
-if(k.left<=0){k.done=true;nxt();svT();rk()}else{const t=$('kt'+k.id);if(t)t.textContent=tf(k.left);if(n-lastS>5000){lastS=n;svT()}}}
-rk();
-
-/* Pomodoro */
-let left=1500,mode='f',run=0,end,tm,sess=0;
+$('ka').onclick=()=>{syncTimer();const n=$('kn').value.trim();if(!n)return;const m=Math.max(1,Math.min(600,parseInt($('km').value,10)||25)),k={id:Math.max(Date.now(),...tasks.map(k=>k.id+1)),name:n,left:m*60,done:false};tasks.push(k);if(!act)act=k.id;$('kn').value='';persistTimer();rk()};
+$('kl').onclick=e=>{const b=e.target.closest('button');if(!b)return;syncTimer();const i=+b.dataset.i;if(b.dataset.a=='s')act=i;else{tasks=tasks.filter(k=>k.id!==i);if(act===i)nxt()}persistTimer();rk()};
+/* Pomodoro: tüm süreler aynı zaman çizelgesinden hesaplanır. */
+let left=1500,mode='f',run=0,tm,sess=0;
+try{
+const saved=JSON.parse(localStorage.getItem('mikro_timer')||'null');
+if(saved&&(saved.mode==='f'||saved.mode==='b')&&Number.isFinite(saved.left)&&saved.left>0&&saved.left<=(saved.mode==='f'?1500:300)&&Number.isFinite(saved.checkpoint)&&saved.checkpoint>0&&saved.checkpoint<=Date.now()){
+mode=saved.mode;left=saved.left;run=saved.run===1?1:0;
+sess=Number.isSafeInteger(saved.sess)&&saved.sess>=0?saved.sess:0;
+grown=!!saved.grown;dead=!!saved.dead;lastT=saved.checkpoint;
+}
+}catch(e){}
+function persistTimer(){
+svF();svT();
+try{localStorage.setItem('mikro_timer',JSON.stringify({left,mode,run,sess,grown,dead,checkpoint:lastT}))}catch(e){}
+}
+function consumeTasks(seconds){
+while(seconds>0&&act!==null){
+const k=tasks.find(x=>x.id===act&&!x.done);
+if(!k){nxt();if(act===null)break;continue}
+const used=Math.min(seconds,k.left);k.left-=used;seconds-=used;
+if(k.left<=0){k.left=0;k.done=true;nxt()}else break;
+}
+}
+function syncTimer(){
+const now=Date.now();let elapsed=run?Math.max(0,(now-lastT)/1000):0;lastT=now;
+while(elapsed>0){
+const used=Math.min(elapsed,left);
+if(mode==='f')consumeTasks(used);
+left-=used;elapsed-=used;
+if(left<=0){
+if(mode==='f'){sess++;F.f++;grown=true;mode='b';left=300}
+else{grown=false;mode='f';left=1500}
+dead=false;
+}
+}
+if(now-lastS>=5000){persistTimer();lastS=now}
+}
 function pm(){
-const tot=mode=='f'?1500:300;
-$('tt').textContent=String(left/60|0).padStart(2,'0')+':'+String(left%60).padStart(2,'0');
-$('tl').textContent=mode=='f'?'Odak':'Mola';
-$('rg').style.strokeDashoffset=527.79*(1-left/tot);
+const total=mode==='f'?1500:300,seconds=Math.ceil(left);
+$('tt').textContent=String(seconds/60|0).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
+$('tl').textContent=mode==='f'?'Odak':'Mola';
+$('rg').style.strokeDashoffset=527.79*(1-left/total);
 $('tg').textContent=run?'Duraklat':'Başlat';
 $('ss').textContent=sess+' odak turu tamamlandı';
-$('mf').className='pill '+(mode=='f'?'p':'d');$('mb').className='pill '+(mode=='b'?'p':'d');
+$('mf').className='pill '+(mode==='f'?'p':'d');$('mb').className='pill '+(mode==='b'?'p':'d');
 ft();
 }
-function tick(){const r=Math.ceil((end-Date.now())/1000);ktick();
-if(r<=0){if(mode=='f'){sess++;F.f++;svF();grown=true}else grown=false;dead=false;mode=mode=='f'?'b':'f';left=mode=='f'?1500:300;end=Date.now()+left*1000}else left=r;pm()}
-function setm(m){clearInterval(tm);run=0;const ab=mode=='f'&&left<1500&&!grown;if(ab){F.l++;svF()}dead=ab;grown=false;mode=m;left=m=='f'?1500:300;svT();pm()}
-$('tg').onclick=()=>{if(run){clearInterval(tm);run=0;svT()}else{if(mode=='f'){dead=false;grown=false}end=Date.now()+left*1000;lastT=Date.now();run=1;tm=setInterval(tick,500)}pm()};
-$('tr').onclick=()=>setm('f');$('mf').onclick=()=>setm('f');$('mb').onclick=()=>setm('b');
-pm();
-
-/* Spotify */
-function sp(u){
-const m=u.match(/open\.spotify\.com\/(?:intl-[a-z]+\/)?(playlist|album|track|artist|show|episode)\/([A-Za-z0-9]+)/);
-if(!m)return false;$('sf').src='https://open.spotify.com/embed/'+m[1]+'/'+m[2];return true;
+function tick(){
+const before=act;syncTimer();pm();
+if(before!==act)rk();
+else for(const k of tasks){const label=$('kt'+k.id);if(label)label.textContent=k.done?'Bitti':tf(k.left)}
 }
-$('sb').onclick=()=>{const u=$('si').value.trim();
-if(sp(u)){$('sm').textContent='Çalar güncellendi.';try{localStorage.setItem('sp',u)}catch(e){}}
-else $('sm').textContent='Bu bir Spotify bağlantısına benzemiyor. open.spotify.com/playlist/... biçiminde bir bağlantı yapıştır.'};
-try{const u=localStorage.getItem('sp');if(u){$('si').value=u;sp(u)}}catch(e){}
+function setm(m){
+syncTimer();clearInterval(tm);run=0;
+const abandoned=mode==='f'&&left<1500;
+if(abandoned)F.l++;
+dead=abandoned;grown=false;mode=m;left=m==='f'?1500:300;
+persistTimer();pm();rk();
+}
+$('tg').onclick=()=>{
+syncTimer();
+if(run){clearInterval(tm);run=0}
+else{if(mode==='f'){dead=false;grown=false}run=1;lastT=Date.now();tm=setInterval(tick,500)}
+persistTimer();pm();rk();
+};
+$('tr').onclick=()=>setm('f');$('mf').onclick=()=>setm('f');$('mb').onclick=()=>setm('b');
+function flush(){syncTimer();persistTimer()}
+addEventListener('pagehide',flush);
+document.addEventListener('visibilitychange',()=>{flush();pm();rk();cd()});
+syncTimer();persistTimer();pm();rk();
+if(run)tm=setInterval(tick,500);
+
 /* Kartlarda 3D eğilme ve basma efekti */
 if(matchMedia('(hover:hover) and (prefers-reduced-motion:no-preference)').matches){
 let pr=false;
