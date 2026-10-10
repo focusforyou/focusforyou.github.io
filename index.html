@@ -158,17 +158,17 @@ main{padding:32px 16px}.card{padding:24px}
 <section id="lobi">
 <h2>Birlikte odaklan</h2>
 <article class="card c1">
-<p>Bir oda aç, kodunu arkadaşına gönder ve aynı odak turunda buluş. Oda sahibi ortak sayacı yönetir.</p>
+<p>Bir oda aç, kodunu arkadaşına gönder ve birlikte çalış. Herkes kendi odak ve mola sayacını yönetir; odada birbirinizin durumunu görürsünüz.</p>
 <div class="row"><input type="text" id="lobbyName" maxlength="30" placeholder="Takma adın" aria-label="Lobi takma adı"><button class="pill p" id="createRoom">Oda oluştur</button></div>
 <div class="row"><input type="text" id="roomCodeInput" maxlength="10" placeholder="Oda kodu" aria-label="Oda kodu" autocomplete="off" autocapitalize="characters"><button class="pill" id="joinRoom">Odaya katıl</button></div>
 <p id="lobbyStatus" role="status" aria-live="polite"></p>
 <div id="roomPanel" hidden>
 <div class="row"><strong id="roomCode"></strong><button class="pill" id="copyInvite">Davet bağlantısını kopyala</button><button class="pill d" id="leaveRoom">Odadan ayrıl</button></div>
 <h3 id="roomPhase">Odak</h3><div id="roomTime" style="font-size:64px;font-weight:800;font-variant-numeric:tabular-nums">25:00</div>
-<div class="row" id="hostControls"><button class="pill p" id="roomToggle">Başlat</button><button class="pill" id="roomFocus">Odak</button><button class="pill" id="roomBreak">Mola</button><button class="pill d" id="roomReset">Sıfırla</button></div>
+<a class="pill p" href="#calisma">Kendi sayacını yönet</a>
 <p id="roomInfo"></p><ul id="roomMembers"></ul>
 </div>
-<p>Ortak oda sayacı kişisel görev sayacından bağımsızdır. Oda sahibi ayrıldığında oda kapanır; bağlantısı kesilirse oda kısa bir süre yeniden bağlanmasını bekler.</p>
+<p>Ücretsiz lobi en fazla 8 kişi içindir. Oda sahibi sayfayı açık tutmalı; sayfayı kapatır veya yenilerse oda kapanır. Telefon uykuya geçerse bağlantı kesilebilir. Bazı okul ve mobil ağları doğrudan bağlantıyı engelleyebilir; bu durumda başka bir ağ dene. Odadan ayrılmak kişisel sayacını durdurmaz.</p>
 </article>
 </section>
 <section id="kurulum"><h2>Cebinde de yanında</h2><article class="card c5"><h3>Focus For You'yu kur</h3><p>Telefonda uygulama gibi aç; site güncellendiğinde yenilikler de gelir.</p><button class="pill p" id="installApp" hidden>Ana ekrana kur</button><p id="installHelp">Android Chrome menüsünden “Ana ekrana ekle / Uygulamayı yükle”yi seç. iPhone'da Safari → Paylaş → Ana Ekrana Ekle.</p><a class="pill" href="https://github.com/focusforyou/focusforyou.github.io/releases">Android APK ve sürümler</a><p>APK sürümleri yayınlandığında bu depoyu Obtainium'a ekleyebilirsin.</p></article></section>
@@ -370,6 +370,7 @@ document.addEventListener('visibilitychange',()=>{flush();pm();rk();cd()});
 syncTimer();persistTimer();pm();rk();
 if(run)tm=setInterval(tick,500);
 Study.changeDurations=(focus,rest)=>{if(run||left!==(mode==='f'?focusDuration:breakDuration))return false;Study.preferences.focus=focus;Study.preferences.break=rest;focusDuration=focus*60;breakDuration=rest*60;setm('f');Study.save();return true};
+Study.liveSession=()=>{syncTimer();return {phase:mode==='f'?'focus':'break',running:!!run,left,total:mode==='f'?focusDuration:breakDuration,rounds:sess}};
 
 /* Kartlarda 3D eğilme ve basma efekti */
 if(matchMedia('(hover:hover) and (prefers-reduced-motion:no-preference)').matches){
@@ -385,8 +386,9 @@ const up=e=>{if(pr){pr=false;mv(e)}};
 document.addEventListener('pointerup',up);document.addEventListener('pointercancel',up);
 }
 </script>
-<script src="app-config.js"></script>
-<script src="lobby.js"></script>
+<script src="vendor/peerjs-1.5.5.min.js"></script>
+<script src="lobby-model.js"></script>
+<script src="lobby-peer.js"></script>
 <script src="install.js"></script>
 </body>
 </html>
