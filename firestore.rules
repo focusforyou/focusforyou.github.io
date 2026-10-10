@@ -1,10 +1,22 @@
 rules_version = '2';
 service cloud.firestore {
  match /databases/{database}/documents {
+  function self(uid) { return request.auth != null && request.auth.uid == uid; }
   function owner(uid) { return request.auth != null && request.auth.uid == uid && request.auth.token.email_verified == true; }
+  function unlocked(uid) { return !exists(/databases/$(database)/documents/deletions/$(uid)); }
+  function locked(uid) { return exists(/databases/$(database)/documents/deletions/$(uid)); }
+  match /deletions/{uid} {
+   allow get: if self(uid);
+   allow create: if self(uid)
+    && request.auth.token.auth_time * 1000 > request.time.toMillis() - 300000
+    && request.resource.data.keys().hasOnly(['startedAt'])
+    && request.resource.data.startedAt == request.time;
+   // No profile/email is retained here. Updates/deletes would permit resurrection.
+  }
   match /users/{uid}/meta/{document} {
    allow read: if owner(uid);
-   allow create, update: if owner(uid) && document == 'main'
+   allow delete: if self(uid) && locked(uid) && document == 'main';
+   allow create, update: if owner(uid) && unlocked(uid) && document == 'main'
     && request.resource.data.keys().hasOnly(['days', 'fields', 'profile'])
     && request.resource.data.days is map && request.resource.data.days.size() <= 10000
     && request.resource.data.fields is map && request.resource.data.fields.size() <= 4
@@ -15,8 +27,9 @@ service cloud.firestore {
     && request.resource.data.profile.photo is string && request.resource.data.profile.photo.size() <= 40000;
   }
   match /users/{uid}/devices/{device} {
-   allow read: if owner(uid);
-   allow create, update: if owner(uid)
+   allow read: if owner(uid) || (self(uid) && locked(uid));
+   allow delete: if self(uid) && locked(uid);
+   allow create, update: if owner(uid) && unlocked(uid)
     && request.resource.data.keys().hasOnly(['days', 'preferences', 'tasks', 'forest', 'exam'])
     && request.resource.data.days is map && request.resource.data.days.size() <= 10000;
   }

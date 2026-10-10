@@ -1,0 +1,1 @@
+{"name":"focus-privacy-tests","private":true,"devDependencies":{"firebase":"latest","@firebase/rules-unit-testing":"latest","firebase-tools":"latest"}}
