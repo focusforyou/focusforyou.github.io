@@ -8,7 +8,7 @@ after(async()=>{await env?.cleanup()});
 test('moderation enforces global admin, room leader, kick renewal, room bans, app bans and deletion rights',async()=>{
  const now=Math.floor(Date.now()/1000),account=(uid,email=uid+'@example.com',verified=true)=>env.authenticatedContext(uid,{email_verified:verified,email,auth_time:now}).firestore();
  const a=account('modAlice'),b=account('modBob'),c=account('modCharlie'),admin=account('modAdmin','efeozbilgin550@gmail.com'),unverifiedAdmin=account('modFakeAdmin','efeozbilgin550@gmail.com',false);
- const uidA='modAlice',uidB='modBob',uidC='modCharlie',uidAdmin='modAdmin',rid='moderation_room_12345',privateRid='private_mod_room_123';
+ const uidA='modAlice',uidB='modBob',uidC='modCharlie',uidAdmin='modAdmin',rid='23456789',privateRid='34567890';
  const profile=(uid,username)=>({uid,username,name:username,photo:'',exam:'',cosmetics:{tag:username==='efe'?'doctor':'none',nameStyle:'plain',frame:'none',plate:'none'}});
  for(const [db,uid,handle] of [[a,uidA,'mod_alice'],[b,uidB,'mod_bob'],[c,uidC,'mod_charlie'],[admin,uidAdmin,'efe']]){const batch=writeBatch(db);batch.set(doc(db,'usernames',handle),{uid});batch.set(doc(db,'publicProfiles',uid),profile(uid,handle));await assertSucceeds(batch.commit())}
  const timer={phase:'focus',running:true,left:1500,total:1500,worked:800,roomWorked:400,focus:1500,rest:300,rounds:0};
@@ -62,4 +62,3 @@ test('moderation enforces global admin, room leader, kick renewal, room bans, ap
  await assertSucceeds(deleteDoc(doc(b,'rooms',rid,'members',uidB)));await assertSucceeds(deleteDoc(doc(b,'users',uidB,'rooms',rid)));await assertSucceeds(deleteDoc(meta));
  await assertFails(updateDoc(doc(b,'publicProfiles',uidB),{name:'Revive after ban removed'}));
 });
-

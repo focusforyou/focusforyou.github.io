@@ -46,7 +46,7 @@ service cloud.firestore {
     && p.photo is string && p.photo.size() <= 40000
     && (p.photo == '' || p.photo.matches('data:image/jpeg;base64,[A-Za-z0-9+/]+={0,2}')
      || (p.photo.size() < 1500 && p.photo.matches('https://lh[0-9]+[.]googleusercontent[.]com/.*')))
-    && p.exam in ['', 'YKS','LGS','TUS'] && validCosmetics(p.cosmetics,uid);
+    && p.exam in ['', 'YKS','LGS','TUS','OTHER'] && validCosmetics(p.cosmetics,uid);
   }
   match /publicProfiles/{uid} {
    allow read: if active() || self(uid);
@@ -115,7 +115,7 @@ service cloud.firestore {
     && request.resource.data.ownerUid == request.auth.uid && request.resource.data.locked is bool
     && request.resource.data.salt is string && request.resource.data.salt.size() <= 64
     && request.resource.data.createdAt == request.time
-    && ((rid.matches('[A-Za-z0-9_-]{16,40}') && request.resource.data.exam == '')
+    && ((rid.matches('[1-9][0-9]{7}') && request.resource.data.exam == '')
       || (admin() && rid in ['YKS','LGS','TUS'] && request.resource.data.exam == rid && request.resource.data.locked == false));
    // A deleting leader transfers a room to an existing member before losing Auth.
    allow update: if leader(rid) && locked(request.auth.uid)
@@ -234,4 +234,3 @@ service cloud.firestore {
   }
  }
 }
-

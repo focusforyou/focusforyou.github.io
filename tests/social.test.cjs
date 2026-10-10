@@ -201,3 +201,17 @@ test('room ban prevents rejoin and global ban removes social access without stop
 });
 
 
+test('new room codes are eight digits and a collision retries without replacing the existing room',async()=>{
+ const f=fixture();await f.login();let n=0;f.ctx.crypto={randomUUID:()=>crypto.randomUUID(),subtle:crypto.webcrypto.subtle,getRandomValues:a=>{a[0]=n++;return a}};
+ f.put('rooms/10000000',{name:'Existing',ownerUid:'bob',locked:false,salt:'',exam:''});f.node('permanentName').value='New room';await f.node('createPermanent').onclick();await f.settle();
+ assert.equal(f.records.get('rooms/10000000').name,'Existing');assert.equal(f.records.get('rooms/10000001').name,'New room');assert.equal(f.ctx.FocusSocial.active(),'10000001');
+});
+test('cloud cosmetic selections hydrate on another device and saving OTHER keeps the selected appearance without joining an exam room',async()=>{
+ const cloud=profile('alice');cloud.cosmetics={tag:'none',nameStyle:'gold',frame:'gold',plate:'gold'};
+ const first=fixture(),second=fixture();for(const f of [first,second]){f.put('publicProfiles/alice',cloud);await f.login();assert.equal(f.node('nameStyle').value,'gold');assert.equal(f.node('avatarFrame').value,'gold');}
+ second.node('examCategory').value='OTHER';await second.ctx.FocusSocial.saveIdentity();await second.settle();assert.equal(second.records.get('publicProfiles/alice').exam,'OTHER');assert.equal(second.records.get('publicProfiles/alice').cosmetics.plate,'gold');assert.equal(second.ctx.FocusSocial.active(),'');
+});
+test('saved lobby creator cards track cloud profile changes and the directory excludes pinned exam rooms',async()=>{
+ const f=fixture();f.put('rooms/12345678',{name:'Night',ownerUid:'bob',locked:false,salt:'',exam:''});f.put('rooms/TUS',{name:'TUS',ownerUid:'bob',locked:false,salt:'',exam:'TUS'});f.put('users/alice/rooms/12345678',{name:'Night'});f.put('publicProfiles/bob',profile('bob'));await f.login();assert.match(f.node('savedRooms').textContent,/bob/);assert.doesNotMatch(f.node('roomResults').textContent,/TUS/);
+ f.put('publicProfiles/bob',{...profile('bob'),name:'New name',photo:'https://example.com/avatar.png'});f.emit();await f.settle();assert.match(f.node('savedRooms').textContent,/New name/);const owner=f.node('savedRooms').children[0].children[2];assert.equal(owner.children[0].src,'https://example.com/avatar.png');
+});

@@ -1,5 +1,5 @@
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js';
-import {getAuth,GoogleAuthProvider,EmailAuthProvider,reauthenticateWithPopup,reauthenticateWithCredential,signInWithPopup,signInWithCredential,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendEmailVerification,sendPasswordResetEmail,signOut,onAuthStateChanged,reload,getIdToken} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js';
+import {getAuth,setPersistence,browserLocalPersistence,GoogleAuthProvider,EmailAuthProvider,reauthenticateWithPopup,reauthenticateWithCredential,signInWithPopup,signInWithCredential,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendEmailVerification,sendPasswordResetEmail,signOut,onAuthStateChanged,reload,getIdToken} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js';
 import {getFirestore,doc,getDocFromServer,getDocsFromServer,collection,onSnapshot,runTransaction,serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js';
 import {initializeAppCheck,ReCaptchaEnterpriseProvider} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-app-check.js';
 import {firebaseConfig,googleClientId,appCheckSiteKey} from './firebase-config.js';
@@ -11,7 +11,9 @@ const app=initializeApp(firebaseConfig);
 // The APK uses this same web app through HTTPS; do not bypass attestation there.
 if(appCheckSiteKey)initializeAppCheck(app,{provider:new ReCaptchaEnterpriseProvider(appCheckSiteKey),isTokenAutoRefreshEnabled:true});
 const by=id=>document.getElementById(id),auth=getAuth(app),db=getFirestore();auth.languageCode='tr';
+const persistenceReady=setPersistence(auth,browserLocalPersistence);persistenceReady.catch(()=>message('Oturum bu tarayıcıda kalıcı saklanamadı. Tarayıcının site verileri iznini kontrol et.'));
 let uid='',cache={days:{},dirty:{}},base=null,devices=new Map(),devicesLoaded=false,unsub=[],generation=0,syncing=false,ready=false,observed={},avatar='',profile={uid:'',name:'',photo:''};
+let socialReadyUid='',loginIntent=false,loginPendingUid='';
 let onlineBanned=false;
 let deleting=false,deletionLocked=false,nativeDeleteUid='';
 const storedDeviceId=localStorage.getItem('focus_device_id');
@@ -27,11 +29,18 @@ function renderProfile(){
  by('verifyAccount').hidden=!auth.currentUser||auth.currentUser.emailVerified;
  by('profileControls').hidden=!auth.currentUser?.emailVerified;
  by('accountEmail').textContent=auth.currentUser?.email||'';
+ window.FocusAccountUI?.resolved(auth.currentUser);
+ try{if(auth.currentUser)localStorage.setItem('focus_profile_label',profile.name.slice(0,30)||'Profilim');else localStorage.removeItem('focus_profile_label')}catch(e){}
  if(by('deletePasswordRow'))by('deletePasswordRow').hidden=!auth.currentUser?.providerData?.some(p=>p.providerId==='password');
  if(document.activeElement!==by('profileName'))by('profileName').value=profile.name;
  by('profileAvatar').hidden=!profile.photo;
  if(profile.photo)by('profileAvatar').src=profile.photo;else by('profileAvatar').removeAttribute('src');
  window.dispatchEvent(new Event('focus-profile'));
+}
+function settleAccountUI(){
+ if(!uid||!ready||!base||!devicesLoaded||socialReadyUid!==uid||!auth.currentUser?.emailVerified||onlineBanned||deleting||deletionLocked)return;
+ if(window.FocusSocial.needsIdentity?.()){window.FocusAccountUI?.onboarding();return}
+ if(loginPendingUid===uid){window.FocusAccountUI?.closeLogin();if(window.location)window.location.hash='calisma';loginPendingUid='';loginIntent=false}
 }
 function acknowledgeFields(){const own=devices.get(deviceId);for(const [key,value] of Object.entries(cache.dirty))if(own?.[key]?.value===value)delete cache.dirty[key]}
 function applyCloud(){
@@ -43,7 +52,7 @@ function applyCloud(){
  Study.applyDays(merged.days);
  const updates={};for(const key of CloudModel.keys)if(!Object.hasOwn(cache.dirty,key)&&typeof merged.fields[key]==='string')updates[key]=merged.fields[key];
  window.FocusData?.apply(updates);observed=fields();cache.observed={...observed};
- profile=CloudModel.profile({...base.profile,uid});avatar=profile.photo;renderProfile();saveCache();
+ profile=CloudModel.profile({...base.profile,uid});avatar=profile.photo;renderProfile();saveCache();settleAccountUI();
 }
 async function sync(){
  if(!uid||syncing||!ready||deleting||deletionLocked||onlineBanned)return;watchChanges();const owner=uid,revision=generation,target=doc(db,'users',uid,'devices',deviceId),counts=json(cache.days),dirty={...cache.dirty};
@@ -71,6 +80,7 @@ async function bind(user){
  if(previous&&previous!==next){try{const guest=JSON.parse(localStorage.getItem('focus_guest_backup')||'null');if(guest){Study.applyDays(guest.days);window.FocusData?.apply(guest.fields)}}catch(e){}}
  if(next)localStorage.setItem('focus_current_uid',next);else localStorage.removeItem('focus_current_uid');
  generation++;const revision=generation;for(const stop of unsub)stop();unsub=[];ready=false;base=null;devices=new Map();devicesLoaded=false;uid='';
+ socialReadyUid='';if(user&&(loginIntent||window.FocusAccountUI?.mode==='login'))loginPendingUid=user.uid;if(!user){loginPendingUid='';loginIntent=false}
  profile=CloudModel.profile({uid:user?.uid,name:user?.displayName||'Odak arkadaşı',photo:''});avatar=profile.photo;renderProfile();
  onlineBanned=false;
  if(!user){message('Giriş yapınca ilerlemen cihazların arasında otomatik eşitlenir.');return}
@@ -93,36 +103,40 @@ async function bind(user){
   unsub.push(onSnapshot(collection(db,'users',uid,'devices'),snap=>{if(revision!==generation)return;watchChanges();devices=new Map(snap.docs.map(d=>[d.id,d.data()]));devicesLoaded=true;acknowledgeFields();applyCloud()},()=>message('Bulut kayıtlarına bağlantı kesildi; cihaz kayıtları korunuyor.')));
  }catch(e){message('Hesap açık, fakat bulut kayıtları henüz bağlanamadı. Cihaz kayıtların korunuyor.');renderProfile()}
 }
-function failure(error){const code=error?.code||'';message(code.includes('popup-closed')?'Giriş penceresi kapatıldı.':code.includes('invalid-credential')?'E-posta veya şifre doğru değil.':code.includes('email-already-in-use')?'Bu e-posta zaten kayıtlı. Giriş yapmayı veya şifre sıfırlamayı dene.':code.includes('weak-password')?'En az 8 karakterlik güçlü bir şifre seç.':code.includes('too-many-requests')?'Çok fazla deneme oldu. Biraz bekleyip tekrar dene.':code.includes('unauthorized-domain')?'Bu sitenin Google giriş ayarı henüz tamamlanmadı.':'İşlem tamamlanamadı. Bağlantını kontrol edip tekrar dene.')}
+function failure(error){if(error?.message==='account-changed')return;const code=error?.code||'';message(error?.message==='username-taken'?'Bu kullanıcı adı alınmış. Başka bir @kullanıcıadı seç.':error?.message==='invalid-username'?'3–24 küçük harf, rakam veya alt çizgiden oluşan bir @kullanıcıadı yaz.':code.includes('popup-closed')?'Giriş penceresi kapatıldı.':code.includes('invalid-credential')?'E-posta veya şifre doğru değil.':code.includes('email-already-in-use')?'Bu e-posta zaten kayıtlı. Giriş yapmayı veya şifre sıfırlamayı dene.':code.includes('weak-password')?'En az 8 karakterlik güçlü bir şifre seç.':code.includes('too-many-requests')?'Çok fazla deneme oldu. Biraz bekleyip tekrar dene.':code.includes('unauthorized-domain')?'Bu sitenin Google giriş ayarı henüz tamamlanmadı.':'İşlem tamamlanamadı. Bağlantını kontrol edip tekrar dene.')}
 async function busy(fn){const controls=['googleLogin','emailLogin','emailRegister','saveProfile','removeProfilePhoto','exportAccount','deleteAccount','logoutAccount'];for(const id of controls)if(by(id))by(id).disabled=true;try{await fn()}catch(e){failure(e)}finally{for(const id of controls)if(by(id))by(id).disabled=false}}
 by('googleLogin').onclick=()=>busy(async()=>{
+ loginIntent=true;window.FocusAccountUI?.beginLogin();await persistenceReady;
  if(window.FocusAndroid){if(!window.FocusAndroid.googleSignIn){message('APK’de Google girişi için uygulamayı en yeni sürüme güncelle. E-postayla giriş şu anda kullanılabilir.');return}window.FocusAndroid.googleSignIn(googleClientId);return}
  await signInWithPopup(auth,new GoogleAuthProvider());
 });
-window.FocusGoogleResult=async(token,error)=>{const owner=nativeDeleteUid;nativeDeleteUid='';if(error){message(error);return}await busy(async()=>{if(owner){if(auth.currentUser?.uid!==owner)throw Error('account-changed');await reauthenticateWithCredential(auth.currentUser,GoogleAuthProvider.credential(token));await finishDeletion(auth.currentUser)}else await signInWithCredential(auth,GoogleAuthProvider.credential(token))})};
+window.FocusGoogleResult=async(token,error)=>{const owner=nativeDeleteUid;nativeDeleteUid='';if(error){message(error);return}await busy(async()=>{if(owner){if(auth.currentUser?.uid!==owner)throw Error('account-changed');await reauthenticateWithCredential(auth.currentUser,GoogleAuthProvider.credential(token));await finishDeletion(auth.currentUser)}else{loginIntent=true;window.FocusAccountUI?.beginLogin();await persistenceReady;await signInWithCredential(auth,GoogleAuthProvider.credential(token))}})};
 const credentials=()=>({email:by('loginEmail').value.trim(),password:by('loginPassword').value});
-by('emailLogin').onclick=()=>busy(async()=>{const c=credentials();await signInWithEmailAndPassword(auth,c.email,c.password);by('loginPassword').value=''});
-by('emailRegister').onclick=()=>busy(async()=>{const c=credentials();if(c.password.length<8){message('Şifren en az 8 karakter olmalı.');return}const result=await createUserWithEmailAndPassword(auth,c.email,c.password);by('loginPassword').value='';await sendEmailVerification(result.user);message('Doğrulama e-postası gönderildi. Gelen kutunu ve spam klasörünü kontrol et.')});
+by('emailLogin').onclick=()=>busy(async()=>{const c=credentials();loginIntent=true;window.FocusAccountUI?.beginLogin();await persistenceReady;await signInWithEmailAndPassword(auth,c.email,c.password);by('loginPassword').value=''});
+by('emailRegister').onclick=()=>busy(async()=>{const c=credentials();if(c.password.length<8){message('Şifren en az 8 karakter olmalı.');return}loginIntent=true;window.FocusAccountUI?.beginLogin();await persistenceReady;const result=await createUserWithEmailAndPassword(auth,c.email,c.password);by('loginPassword').value='';await sendEmailVerification(result.user);message('Doğrulama e-postası gönderildi. Gelen kutunu ve spam klasörünü kontrol et.')});
 by('resetPassword').onclick=()=>busy(async()=>{const email=by('loginEmail').value.trim();if(!email){message('Önce e-posta adresini yaz.');return}await sendPasswordResetEmail(auth,email);message('Hesap varsa şifre sıfırlama e-postası gönderildi. Gelen kutunu kontrol et.')});
 by('verifyAccountButton').onclick=()=>busy(async()=>{await reload(auth.currentUser);await getIdToken(auth.currentUser,true);await bind(auth.currentUser)});
 by('resendVerification').onclick=()=>busy(async()=>{if(auth.currentUser&&!auth.currentUser.emailVerified){await sendEmailVerification(auth.currentUser);message('Doğrulama e-postası tekrar gönderildi.')}});
 by('logoutAccount').onclick=()=>busy(async()=>{if(Study.liveSession?.().running){message('Çıkış yapmadan önce sayacı duraklat.');return}await sync();saveCache();await window.FocusSocial?.pauseRoom();window.FocusTemporaryRoom?.leaveNow();await signOut(auth);window.FocusAndroid?.clearGoogleSession?.()});
 by('profilePhoto').onchange=async e=>{
  if(!by('profilePhotoConsent').checked){message('Fotoğrafını saklamak ve katıldığın odada göstermek için fotoğraf onayını işaretle.');e.target.value='';return}
- const file=e.target.files[0];if(!file)return;if(!file.type.startsWith('image/')||file.size>20*1024*1024){message('20 MB’tan küçük bir fotoğraf seç.');return}let bitmap;
- try{bitmap=await createImageBitmap(file);const canvas=document.createElement('canvas');canvas.width=canvas.height=128;const ctx=canvas.getContext('2d'),size=Math.min(bitmap.width,bitmap.height);ctx.fillStyle='#fff';ctx.fillRect(0,0,128,128);ctx.drawImage(bitmap,(bitmap.width-size)/2,(bitmap.height-size)/2,size,size,0,0,128,128);avatar=canvas.toDataURL('image/jpeg',.8);if(!CloudModel.photo(avatar))throw Error();by('profileAvatar').src=avatar;by('profileAvatar').hidden=false;message('Fotoğraf hazır. Profilini kaydet’e bas.')}catch(e){message('Fotoğraf açılamadı. JPEG veya PNG ile tekrar dene.')}finally{bitmap?.close();e.target.value=''}
+ const file=e.target.files[0];if(!file)return;if(!file.type.startsWith('image/')||file.size>20*1024*1024){message('20 MB’tan küçük bir fotoğraf seç.');return}const owner=uid,revision=generation;let bitmap;
+ try{bitmap=await createImageBitmap(file);if(owner!==uid||revision!==generation)return;const canvas=document.createElement('canvas');canvas.width=canvas.height=128;const ctx=canvas.getContext('2d'),size=Math.min(bitmap.width,bitmap.height);ctx.fillStyle='#fff';ctx.fillRect(0,0,128,128);ctx.drawImage(bitmap,(bitmap.width-size)/2,(bitmap.height-size)/2,size,size,0,0,128,128);avatar=canvas.toDataURL('image/jpeg',.8);if(!CloudModel.photo(avatar))throw Error();by('profileAvatar').src=avatar;by('profileAvatar').hidden=false;message('Fotoğraf hazır. Profilini kaydet’e bas.')}catch(e){if(owner===uid&&revision===generation)message('Fotoğraf açılamadı. JPEG veya PNG ile tekrar dene.')}finally{bitmap?.close();if(owner===uid&&revision===generation)e.target.value=''}
 };
 by('saveProfile').onclick=()=>busy(async()=>{
  if(!uid||!ready){message('Önce bulut kayıtlarının bağlanmasını bekle.');return}
  const name=by('profileName').value.trim();if(!name||name.length>30){message('1–30 karakterlik bir görünen ad yaz.');return}
  if(avatar!==profile.photo&&avatar&&!by('profilePhotoConsent').checked){message('Yeni fotoğraf için fotoğraf onayını işaretle.');return}
- const next={uid,name,photo:CloudModel.photo(avatar)},ref=doc(db,'users',uid,'meta','main');await runTransaction(db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())throw Error();tx.update(ref,{profile:next})});profile=next;avatar=next.photo;renderProfile();message('Profilin kaydedildi.');by('accountSheet').close();
+ const owner=uid,revision=generation,next={uid:owner,name,photo:CloudModel.photo(avatar)},ref=doc(db,'users',owner,'meta','main'),assertCurrent=()=>{if(owner!==uid||revision!==generation||auth.currentUser?.uid!==owner||deleting||deletionLocked||onlineBanned)throw Error('account-changed')};
+ await runTransaction(db,async tx=>{assertCurrent();const snap=await tx.get(ref);assertCurrent();if(!snap.exists())throw Error();tx.update(ref,{profile:next})});assertCurrent();profile=next;avatar=next.photo;
+ if(!window.FocusSocial.saveIdentity)throw Error('social-profile-not-ready');await window.FocusSocial.saveIdentity();assertCurrent();renderProfile();message('Profilin kaydedildi.');
+ const onboarding=window.FocusAccountUI?.mode==='onboarding';by('accountSheet').close();if(onboarding||loginPendingUid===owner){if(window.location)window.location.hash='calisma';loginPendingUid='';loginIntent=false}
 });
 by('removeProfilePhoto').onclick=()=>busy(async()=>{
  if(!uid||!ready){message('Önce bulut kayıtlarının bağlanmasını bekle.');return}
- const owner=uid,revision=generation,ref=doc(db,'users',owner,'meta','main');
- const next=await runTransaction(db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())throw Error();const next={...CloudModel.profile({...snap.data().profile,uid:owner}),photo:''};tx.update(ref,{profile:next});return next});
- if(owner!==uid||revision!==generation)return;profile=next;avatar='';renderProfile();message('Profil fotoğrafın kaldırıldı. Odadaki katılımcıların daha önce aldığı kopyalar silinmez.');
+ const owner=uid,revision=generation,ref=doc(db,'users',owner,'meta','main'),assertCurrent=()=>{if(owner!==uid||revision!==generation||auth.currentUser?.uid!==owner||deleting||deletionLocked||onlineBanned)throw Error('account-changed')};
+ const next=await runTransaction(db,async tx=>{assertCurrent();const snap=await tx.get(ref);assertCurrent();if(!snap.exists())throw Error();const next={...CloudModel.profile({...snap.data().profile,uid:owner}),photo:''};tx.update(ref,{profile:next});return next});
+ assertCurrent();profile=next;avatar='';if(!window.FocusSocial.needsIdentity?.()){await window.FocusSocial.saveIdentity();assertCurrent()}renderProfile();message('Profil fotoğrafın kaldırıldı. Odadaki katılımcıların daha önce aldığı kopyalar silinmez.');
 });
 by('exportAccount').onclick=()=>busy(async()=>{
  if(onlineBanned&&uid){const owner=uid,revision=generation;const [meta,rows]=await Promise.all([getDocFromServer(doc(db,'users',uid,'meta','main')),getDocsFromServer(collection(db,'users',uid,'devices'))]);if(owner!==uid||revision!==generation)return;base=meta.exists()?meta.data():{};devices=new Map(rows.docs.map(d=>[d.id,d.data()]));devicesLoaded=true;profile=CloudModel.profile({...base.profile,uid});}
@@ -139,6 +153,7 @@ function clearAccountDevice(owner){
  by('lobbyName').value='';window.FocusNative?.pulse();
  profile={uid:'',name:'',photo:''};avatar='';renderProfile();
  localStorage.removeItem('focus_current_uid');localStorage.removeItem('focus_account_'+owner);localStorage.removeItem('focus_guest_backup');
+ localStorage.removeItem('focus_profile_label');
  Study.resetForDeletion?.();Study.applyDays({});window.FocusData?.apply({preferences:JSON.stringify({focus:25,break:5,goal:120}),tasks:'{"t":[],"a":null}',forest:'{"f":0,"l":0}',exam:''});
  for(const key of ['focus_study','mikro_tasks','mikro_forest','mikro_timer','ex'])localStorage.removeItem(key);
 }
@@ -175,10 +190,11 @@ if(by('deleteAccount'))by('deleteAccount').onclick=()=>busy(async()=>{
 window.FocusAccount={profile:()=>({...profile}),record:(date,seconds)=>{if(!uid||deleting||deletionLocked)return;cache.days[date]=Math.min(86400,(cache.days[date]||0)+seconds)},sync};
 initSocial({db,auth});
 onAuthStateChanged(auth,user=>{bind(user).catch(failure)});
+addEventListener('focus-social-ready',event=>{if(event.detail?.uid&&event.detail.uid!==auth.currentUser?.uid)return;socialReadyUid=auth.currentUser?.uid||'';settleAccountUI()});
+addEventListener('focus-identity-ready',event=>{if(event.detail?.uid&&event.detail.uid!==auth.currentUser?.uid)return;settleAccountUI()});
 setInterval(()=>{watchChanges();saveCache();if(!auth.currentUser)localStorage.setItem('focus_guest_backup',JSON.stringify({days:Study.snapshot().days,fields:fields()}))},5000);setInterval(sync,60000);
 addEventListener('online',()=>{if(auth.currentUser?.emailVerified&&!ready)bind(auth.currentUser);else sync()});
 addEventListener('pagehide',()=>{watchChanges();saveCache()});
 document.addEventListener('visibilitychange',()=>{watchChanges();saveCache();if(!document.hidden)sync()});
 
 addEventListener('focus-moderation',event=>{const was=onlineBanned;onlineBanned=!!event.detail.banned;if(onlineBanned){ready=false;message('Çevrimiçi özelliklerin yasaklandı. Kişisel sayaç ve hesap silme açık.')}else if(was&&auth.currentUser)void bind(auth.currentUser).catch(failure)});
-
