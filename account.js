@@ -2,12 +2,13 @@ import {initializeApp} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-
 import {getAuth,GoogleAuthProvider,EmailAuthProvider,reauthenticateWithPopup,reauthenticateWithCredential,signInWithPopup,signInWithCredential,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendEmailVerification,sendPasswordResetEmail,signOut,onAuthStateChanged,reload,getIdToken} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js';
 import {getFirestore,doc,getDocFromServer,collection,onSnapshot,runTransaction,serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js';
 import {firebaseConfig,googleClientId} from './firebase-config.js';
-import {eraseAccount} from './account-delete.js?v=1';
+import {eraseAccount} from './account-delete.js?v=2';
 
 const by=id=>document.getElementById(id),auth=getAuth(initializeApp(firebaseConfig)),db=getFirestore();auth.languageCode='tr';
 let uid='',cache={days:{},dirty:{}},base=null,devices=new Map(),devicesLoaded=false,unsub=[],generation=0,syncing=false,ready=false,observed={},avatar='',profile={uid:'',name:'',photo:''};
 let deleting=false,deletionLocked=false,nativeDeleteUid='';
-const deviceId=localStorage.getItem('focus_device_id')||crypto.randomUUID();localStorage.setItem('focus_device_id',deviceId);
+const storedDeviceId=localStorage.getItem('focus_device_id');
+const deviceId=/^[A-Za-z0-9_-]{8,64}$/.test(storedDeviceId||'')?storedDeviceId:crypto.randomUUID();localStorage.setItem('focus_device_id',deviceId);
 const message=value=>by('accountStatus').textContent=value;
 const json=value=>JSON.parse(JSON.stringify(value));
 function saveCache(){if(uid)try{localStorage.setItem('focus_account_'+uid,JSON.stringify(cache))}catch(e){message('Cihaz hafızası dolu. Kayıtların buluta ulaşması için internet bağlantını açık tut.')}}
@@ -64,7 +65,7 @@ async function bind(user){
  generation++;const revision=generation;for(const stop of unsub)stop();unsub=[];ready=false;base=null;devices=new Map();devicesLoaded=false;uid='';
  profile=CloudModel.profile({uid:user?.uid,name:user?.displayName||'Odak arkadaşı',photo:''});avatar=profile.photo;renderProfile();
  if(!user){message('Giriş yapınca ilerlemen cihazların arasında otomatik eşitlenir.');return}
- try{const lockRef=doc(db,'deletions',user.uid),lock=await getDocFromServer(lockRef);if(revision!==generation)return;if(lock.exists()){deletionLocked=true;ready=false;clearAccountDevice(user.uid);message('Bu hesabın silinmesi başlamış. Hesabımı sil ile işlemi tamamlayabilirsin.');return}unsub.push(onSnapshot(lockRef,snap=>{if(revision!==generation||deleting||!snap.exists())return;receiveDeletion(user.uid);},()=>{}));}catch(e){if(e.code!=='permission-denied'){message('Hesap durumu sunucudan doğrulanamadı. İnternet bağlantını kontrol et.');return}}
+ try{const lockRef=doc(db,'deletions',user.uid),lock=await getDocFromServer(lockRef);if(revision!==generation)return;if(lock.exists()){deletionLocked=true;ready=false;clearAccountDevice(user.uid);message('Yarım kalan hesap silme işlemi sürdürülüyor…');await finishDeletion(user);return}unsub.push(onSnapshot(lockRef,snap=>{if(revision!==generation||deleting||!snap.exists())return;receiveDeletion(user.uid);},()=>{}));}catch(e){if(e.code!=='permission-denied'){message('Hesap durumu sunucudan doğrulanamadı. İnternet bağlantını kontrol et.');return}}
  if(!user.emailVerified){message('Bulut kayıtlarını kullanmak için e-postanı doğrula, ardından Doğruladım’a bas.');return}
  uid=user.uid;try{cache=JSON.parse(localStorage.getItem('focus_account_'+uid)||'null')||{days:{},dirty:{}}}catch(e){cache={days:{},dirty:{}}}
  cache.days=CloudModel.days(cache.days);cache.dirty=cache.dirty&&typeof cache.dirty==='object'?cache.dirty:{};
@@ -141,7 +142,7 @@ async function finishDeletion(user){
  try{
   await eraseAccount({db,user,locked:deletionLocked,assertCurrent:()=>{if(auth.currentUser?.uid!==owner)throw Error('account-changed')},onLocked:async()=>{deletionLocked=true;ready=false;generation++;for(const stop of unsub)stop();unsub=[];localStorage.setItem('focus_delete_notice',JSON.stringify({uid:owner}));localStorage.removeItem('focus_delete_notice');clearAccountDevice(owner);uid='';cache={days:{},dirty:{}};message('Bulut kayıtların ve hesabın siliniyor… Pencereyi açık tut.')}});
   uid='';clearAccountDevice(owner);window.FocusAndroid?.clearGoogleSession?.();deleting=false;deletionLocked=false;await bind(null);by('deleteConsent').checked=false;message('Hesabın ve bulut kayıtların silindi. Bu cihazdaki çalışma kopyası temizlendi. Google hesabın silinmedi.');
- }catch(e){message(deletionLocked?'Silme henüz tamamlanmadı. Hesabın yeni kayıt yazmaya kapatıldı; bağlantını kontrol edip Hesabımı sil ile tekrar dene.':'Silme başlayamadı. Firebase silme kuralları ve bağlantı kontrol edilmeli.');}
+ }catch(e){message(e.code==='auth/requires-recent-login'?'Silme kilidi korunuyor. Hesabımı sil düğmesine basıp Google veya şifrenle yeniden doğrulanarak tamamla.':deletionLocked?'Silme henüz tamamlanmadı. Hesabın yeni kayıt yazmaya kapatıldı; bağlantını kontrol edip Hesabımı sil ile tekrar dene.':'Silme başlayamadı. Firebase silme kuralları ve bağlantı kontrol edilmeli.');}
  finally{deleting=false;by('deleteAccount').disabled=false;by('deletePassword').value=''}
 }
 if(by('deleteAccount'))by('deleteAccount').onclick=()=>busy(async()=>{

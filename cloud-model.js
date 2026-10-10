@@ -1,12 +1,15 @@
 'use strict';
 const CloudModel=(()=>{
 const keys=['preferences','tasks','forest','exam'];
+const fieldLimits={preferences:2048,tasks:65536,forest:4096,exam:256};
+function fieldValue(key,value){return typeof value==='string'&&value.length<=fieldLimits[key]?value:undefined}
 function days(input){const out={};if(!input||typeof input!=='object'||Array.isArray(input))return out;for(const [date,n] of Object.entries(input))if(/^\d{4}-\d{2}-\d{2}$/.test(date)&&Number.isFinite(n)&&n>=0&&n<=86400)out[date]=n;return out}
 const time=value=>typeof value?.toMillis==='function'?value.toMillis():0;
 function combine(base,devices){
- const total=days(base?.days),fields={...(base?.fields||{})},latest={};
+ const total=days(base?.days),fields={},latest={};
+ for(const key of keys){const value=fieldValue(key,base?.fields?.[key]);if(value!==undefined)fields[key]=value}
  for(const device of devices){for(const [date,n] of Object.entries(days(device.days)))total[date]=Math.min(86400,(total[date]||0)+n);
- for(const key of keys)if(typeof device[key]?.value==='string'&&time(device[key].at)>=(latest[key]||0)){fields[key]=device[key].value;latest[key]=time(device[key].at)}}
+ for(const key of keys){const value=fieldValue(key,device[key]?.value);if(value!==undefined&&time(device[key].at)>=(latest[key]||0)){fields[key]=value;latest[key]=time(device[key].at)}}}
  return {days:total,fields};
 }
 function photo(value){if(typeof value!=='string')return '';if(value.length<=40000&&/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(value))return value;try{const url=new URL(value);return value.length<1500&&url.protocol==='https:'&&/^lh\d+\.googleusercontent\.com$/.test(url.hostname)?value:''}catch(e){return ''}}

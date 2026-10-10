@@ -5,6 +5,17 @@ service cloud.firestore {
   function owner(uid) { return request.auth != null && request.auth.uid == uid && request.auth.token.email_verified == true; }
   function unlocked(uid) { return !exists(/databases/$(database)/documents/deletions/$(uid)); }
   function locked(uid) { return exists(/databases/$(database)/documents/deletions/$(uid)); }
+  // Fields are timestamped JSON strings in the existing sync format.
+  function field(data, key, maximum) {
+   return !(key in data) || (data[key] is map
+    && data[key].keys().hasAll(['value', 'at'])
+    && data[key].keys().hasOnly(['value', 'at'])
+    && data[key].value is string && data[key].value.size() <= maximum
+    && data[key].at is timestamp && data[key].at <= request.time);
+  }
+  function baseline(data, key, maximum) {
+   return !(key in data) || (data[key] is string && data[key].size() <= maximum);
+  }
   match /deletions/{uid} {
    allow get: if self(uid);
    allow create: if self(uid)
@@ -14,12 +25,17 @@ service cloud.firestore {
    // No profile/email is retained here. Updates/deletes would permit resurrection.
   }
   match /users/{uid}/meta/{document} {
-   allow read: if owner(uid);
+   allow read: if owner(uid) || (self(uid) && locked(uid) && document == 'main');
    allow delete: if self(uid) && locked(uid) && document == 'main';
    allow create, update: if owner(uid) && unlocked(uid) && document == 'main'
     && request.resource.data.keys().hasOnly(['days', 'fields', 'profile'])
     && request.resource.data.days is map && request.resource.data.days.size() <= 10000
     && request.resource.data.fields is map && request.resource.data.fields.size() <= 4
+    && request.resource.data.fields.keys().hasOnly(['preferences', 'tasks', 'forest', 'exam'])
+    && baseline(request.resource.data.fields, 'preferences', 2048)
+    && baseline(request.resource.data.fields, 'tasks', 65536)
+    && baseline(request.resource.data.fields, 'forest', 4096)
+    && baseline(request.resource.data.fields, 'exam', 256)
     && request.resource.data.profile is map
     && request.resource.data.profile.keys().hasOnly(['uid', 'name', 'photo'])
     && request.resource.data.profile.uid == uid
@@ -30,8 +46,13 @@ service cloud.firestore {
    allow read: if owner(uid) || (self(uid) && locked(uid));
    allow delete: if self(uid) && locked(uid);
    allow create, update: if owner(uid) && unlocked(uid)
+    && device.matches('[A-Za-z0-9_-]{8,64}')
     && request.resource.data.keys().hasOnly(['days', 'preferences', 'tasks', 'forest', 'exam'])
-    && request.resource.data.days is map && request.resource.data.days.size() <= 10000;
+    && request.resource.data.days is map && request.resource.data.days.size() <= 10000
+    && field(request.resource.data, 'preferences', 2048)
+    && field(request.resource.data, 'tasks', 65536)
+    && field(request.resource.data, 'forest', 4096)
+    && field(request.resource.data, 'exam', 256);
   }
  }
 }
