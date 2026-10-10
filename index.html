@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg">
 <script src="cloud-model.js?v=offline1"></script>
-<script src="study.js?v=accounts1"></script>
+<script src="study.js?v=cloud2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
 :root{--tx:#E3E8F5;--mu:#B5BDD6;--pr:#AFC6FF;--on:#0A1A44}
@@ -94,7 +94,7 @@ main{padding:32px 16px}.card{padding:24px}
 @media(min-width:900px) and (max-width:1199px){#calisma>.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.room-chat{grid-column:1/-1}}
 @media(max-width:899px){#calisma>.grid{grid-template-columns:minmax(0,1fr)}}
 </style>
-<link rel="stylesheet" href="mobile-ui.css?v=account-menu4">
+<link rel="stylesheet" href="mobile-ui.css?v=navigation1">
 </head>
 <body>
 <canvas id="sky" aria-hidden="true"></canvas>
@@ -173,7 +173,7 @@ Focus For You
 </article>
 <article class="card c4"><span class="chip">Günlük hedef</span><div class="big" id="dailyMinutes">0</div><p>dakika odaklandın</p><progress id="dailyProgress" max="120" value="0" aria-label="Günlük çalışma hedefi" style="width:100%"></progress><p id="dailySummary"></p><label for="dailyGoal">Günlük hedef (dakika)</label><input id="dailyGoal" type="number" min="5" max="1440" value="120"><button class="pill p" id="saveGoal">Hedefi kaydet</button></article>
 <article class="card c1"><h3>Ritmini seç</h3><label for="focusMinutes">Odak süresi (dakika)</label><input id="focusMinutes" type="number" min="1" max="180" value="25"><label for="breakMinutes">Mola süresi (dakika)</label><input id="breakMinutes" type="number" min="1" max="60" value="5"><button class="pill p" id="saveDurations">Süreleri kaydet</button><p id="settingsMessage" role="status"></p><p>Süreleri yeni bir tura başlamadan önce değiştirebilirsin.</p></article>
-<article class="card c2 wide"><h3>Son 7 gün</h3><div id="studyHistory" class="history"></div><p id="weeklySummary"></p><details id="localBackup"><summary>Cihaz yedeği</summary><button class="pill" id="exportStudy">Verileri yedekle</button><label for="importStudy">Yedeği geri yükle</label><input id="importStudy" type="file" accept=".json,application/json"><p id="backupMessage" role="status"></p><p>Hesap kullanmadan çalışıyorsan kayıtlarını buradan başka cihaza taşıyabilirsin.</p></details></article>
+<article class="card c2 wide"><h3>Son 7 gün</h3><div id="studyHistory" class="history"></div><p id="weeklySummary"></p></article>
 <article class="card c3 motion-card" data-calm="1"><h3>Gökyüzü</h3><p>Telefonunu hafif eğerek yıldızları hareket ettir.</p><button class="pill" id="toggleMotion" type="button" aria-pressed="false">Telefon hareketini aç</button><p id="motionStatus" role="status"></p></article>
 </div>
 </section>
@@ -348,7 +348,7 @@ else{if(mode==='f'){dead=false;grown=false}run=1;lastT=Date.now();tm=setInterval
 persistTimer();pm();rk();
 };
 $('tr').onclick=()=>setm('f');$('mf').onclick=()=>setm('f');$('mb').onclick=()=>setm('b');
-function flush(){if(Study.importing)return;syncTimer();persistTimer()}
+function flush(){syncTimer();persistTimer()}
 addEventListener('pagehide',flush);
 document.addEventListener('visibilitychange',()=>{flush();pm();rk();cd()});
 syncTimer();persistTimer();pm();rk();
@@ -386,7 +386,7 @@ document.addEventListener('pointerup',up);document.addEventListener('pointercanc
 <script src="native-session.js?v=1"></script>
 <script src="lobby-peer.js?v=profiles1"></script>
 <script src="install.js?v=nav2"></script>
-<script src="mobile-ui.js"></script>
+<script src="mobile-ui.js?v=navigation1"></script>
 <script src="motion.js"></script>
 <script src="account-ui.js"></script>
 <script type="module">import('./account.js').catch(()=>{document.getElementById('accountStatus').textContent='Hesap hizmetine bağlanılamadı. İnternet bağlantın gelince sayfayı yeniden aç; cihaz kayıtların korunuyor.'})</script>

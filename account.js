@@ -20,7 +20,6 @@ function renderProfile(){
  if(document.activeElement!==by('profileName'))by('profileName').value=profile.name;
  by('profileAvatar').hidden=!profile.photo;
  if(profile.photo)by('profileAvatar').src=profile.photo;else by('profileAvatar').removeAttribute('src');
- by('localBackup').hidden=ready;
  window.dispatchEvent(new Event('focus-profile'));
 }
 function acknowledgeFields(){const own=devices.get(deviceId);for(const [key,value] of Object.entries(cache.dirty))if(own?.[key]?.value===value)delete cache.dirty[key]}

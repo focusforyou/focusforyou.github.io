@@ -46,32 +46,6 @@ const ok=Study.changeDurations?.(focus,rest);
 by('settingsMessage').textContent=ok?'Süreler kaydedildi.':'Önce devam eden turu sıfırla; sonra süreleri değiştirebilirsin.';
 by('focusMinutes').value=preferences.focus;by('breakMinutes').value=preferences.break;
 };
-by('exportStudy').onclick=()=>{
-if(typeof flush==='function')flush();
-const data={version:1,study:{preferences,days},forest:localStorage.getItem('mikro_forest'),tasks:localStorage.getItem('mikro_tasks'),exam:localStorage.getItem('ex')};
-if(window.FocusAndroid?.saveBackup){window.FocusAndroid.saveBackup(JSON.stringify(data,null,2));return}
-const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='focus-yedek-'+dateKey(new Date())+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
-};
-by('importStudy').onchange=async e=>{
-try{
-const file=e.target.files[0];if(!file)return;if(file.size>1000000)throw Error('Dosya çok büyük.');
-const data=JSON.parse(await file.text());
-if(data.version!==1||!data.study||!data.study.preferences)throw Error('Geçerli bir Focus yedeği seç.');
-if(typeof run!=='undefined'&&run)throw Error('Yedek yüklemeden önce sayacı duraklat.');
-if(!confirm('Bu cihazdaki görevler ve ilerleme yedekteki verilerle değiştirilecek. Devam edilsin mi?'))return;
-const p=data.study.preferences;
-const restored={focus:clamp(p.focus,1,180),break:clamp(p.break,1,60),goal:clamp(p.goal,5,1440)};
-let taskData=null,forestData=null;
-if(data.tasks){taskData=JSON.parse(data.tasks);if(!Array.isArray(taskData.t)||taskData.t.length>10000||taskData.t.some(k=>!k||!Number.isSafeInteger(k.id)||typeof k.name!=='string'||!Number.isFinite(k.left)||k.left<0||k.left>36000))throw Error('Görev yedeği geçersiz.')}
-if(data.forest){forestData=JSON.parse(data.forest);if(!Number.isSafeInteger(forestData.f)||forestData.f<0||!Number.isSafeInteger(forestData.l)||forestData.l<0)throw Error('Orman yedeği geçersiz.')}
-Study.importing=true;
-localStorage.setItem('focus_study',JSON.stringify({version:1,preferences:restored,days:cleanDays(data.study.days)}));
-if(taskData)localStorage.setItem('mikro_tasks',JSON.stringify(taskData));else localStorage.removeItem('mikro_tasks');
-if(forestData)localStorage.setItem('mikro_forest',JSON.stringify(forestData));else localStorage.removeItem('mikro_forest');
-if(typeof data.exam==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(data.exam))localStorage.setItem('ex',data.exam);else localStorage.removeItem('ex');
-localStorage.removeItem('mikro_timer');removeEventListener('pagehide',flush);location.reload();
-}catch(error){by('backupMessage').textContent=error.message||'Yedek yüklenemedi.'}
-};
 render();setInterval(render,30000);
 }
 document.addEventListener('DOMContentLoaded',init);
