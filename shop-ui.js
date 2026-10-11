@@ -15,12 +15,12 @@
    else{const name=document.createElement('strong');name.textContent='Focus';name.className=(item.kind==='name'?'name-':'plate-')+item.value;preview.append(name)}
    const label=document.createElement('h4');label.textContent=item.label;
    const button=document.createElement('button');button.type='button';button.className='pill';
-   const owned=store?.owned?.(item.id);button.textContent=owned?'Envanterinde':'1.000 saat · Satın al';button.disabled=!!owned||!state.uid||state.balance<item.cost;
+   const owned=store?.owned?.(item.id);button.textContent=owned?'Envanterinde':'1.000 saat · Satın al';button.disabled=!!owned||!state.uid||state.banned||state.balance<item.cost;
    button.onclick=()=>act(async()=>{await store.purchase(item.id);by('shopStatus').textContent='Envanterine eklendi. Profilinden kullanabilirsin.'},button);
    card.append(preview,label,button);list.append(card);
   }
  }
- function error(e){const map={'sign-in-required':'Önce giriş yap.','insufficient-hours':'Bu kozmetik için 1.000 saat kullanılabilir bakiye gerekiyor.','already-owned':'Bu kozmetik zaten envanterinde.','invalid-username':'Geçerli bir @kullanıcıadı yaz.','user-not-found':'Bu kullanıcı bulunamadı.','invalid-tag':'Etiket 1–24 karakter olmalı.','admin-required':'Bu işlem yöneticiye özel.'};return map[e?.message]||'İşlem tamamlanamadı. İnternet bağlantını kontrol et.'}
+ function error(e){const map={'sign-in-required':'Önce giriş yap.','insufficient-hours':'Bu kozmetik için 1.000 saat kullanılabilir bakiye gerekiyor.','already-owned':'Bu kozmetik zaten envanterinde.','invalid-username':'Geçerli bir @kullanıcıadı yaz.','user-not-found':'Bu kullanıcı bulunamadı.','invalid-tag':'Etiket 1–24 karakter olmalı.','admin-required':'Bu işlem yöneticiye özel.','online-banned':'Çevrimiçi özelliklerin yasaklı.'};return map[e?.message]||'İşlem tamamlanamadı. İnternet bağlantını kontrol et.'}
  async function act(fn,button){if(button)button.disabled=true;try{await fn()}catch(e){by('shopStatus').textContent=error(e)}finally{render()}}
  by('openCosmeticShop').onclick=()=>{render();modal.showModal()};
  by('closeCosmeticShop').onclick=()=>modal.close();
