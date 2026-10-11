@@ -131,3 +131,8 @@ body.theme-light .chat-roster-avatar-fallback{background:#dbe4f5;color:#20407a}
 body.theme-light .chat-roster-status{color:#5a6e90}
 body.theme-light .doctor-tag{color:#b45309;text-shadow:none}
 body.theme-light .system-tag{color:#0f766e;text-shadow:none}
+
+/* Off-screen chat rows do not need continuous cosmetic animation or full paint. */
+.chat-message{content-visibility:auto;contain-intrinsic-size:auto 100px}
+
+button[aria-busy="true"]{cursor:progress;opacity:.72}button.nudge-sent{background:rgba(114,211,168,.18);color:#bcebd0;border-color:rgba(114,211,168,.45)}

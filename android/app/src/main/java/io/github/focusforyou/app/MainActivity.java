@@ -61,6 +61,7 @@ public class MainActivity extends Activity {
     private File cameraFile;
     private boolean resumed=false,notificationAsked=false,keepSession=false;
     private String sessionState="";
+    private String sessionRoom="";
     private CancellationSignal signInCancellation;
     private boolean signingIn=false;
     private static final String GOOGLE_CLIENT="718275780283-9clat2fbif7idmrh7ddm06vlg1m2rmlo.apps.googleusercontent.com";
@@ -68,6 +69,8 @@ public class MainActivity extends Activity {
     private boolean trustedPage(){if(web==null||web.getUrl()==null)return false;Uri u=Uri.parse(web.getUrl());return "https".equals(u.getScheme())&&"focusforyou.github.io".equals(u.getHost());}
     private void nativeTick(){if(trustedPage())web.evaluateJavascript("window.FocusNative?.heartbeat()",null);}
     private void nativeToggle(){if(trustedPage())web.evaluateJavascript("window.FocusNative?.toggle()",null);}
+    private void updatePushForegroundRoom(){FocusPush.setForegroundRoom(resumed&&trustedPage()?sessionRoom:"");}
+    private void pushResult(String token){runOnUiThread(()->{if(trustedPage())web.evaluateJavascript("window.FocusPush?.receiveToken("+JSONObject.quote(token)+")",null);});}
     private void chooseFile(WebChromeClient.FileChooserParams params) {
         boolean image=false;for(String type:params.getAcceptTypes())if(type!=null&&type.startsWith("image/"))image=true;
         Intent pick=new Intent(Intent.ACTION_OPEN_DOCUMENT);pick.addCategory(Intent.CATEGORY_OPENABLE);pick.setType(image?"image/*":"application/json");
@@ -94,6 +97,15 @@ public class MainActivity extends Activity {
         try{startActivityForResult(pick,101);}catch(Exception ignored){if(fileCallback!=null)fileCallback.onReceiveValue(null);fileCallback=null;}
     }
     public class BackupBridge {
+        @JavascriptInterface public void pushToken(){runOnUiThread(()->{
+            if(!trustedPage()||!resumed)return;
+            if(!FocusPush.initialize(MainActivity.this)){pushResult("");return;}
+            if(android.os.Build.VERSION.SDK_INT>=33&&checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)!=android.content.pm.PackageManager.PERMISSION_GRANTED){
+                if(!notificationAsked){notificationAsked=true;requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS},202);}
+                return;
+            }
+            FocusPush.requestToken(MainActivity.this,MainActivity.this::pushResult);
+        });}
         @JavascriptInterface public void sound(String kind){
             if(!"alarm".equals(kind)&&!"nudge".equals(kind))return;
             runOnUiThread(()->{if(trustedPage())FocusSound.play(kind);});
@@ -118,6 +130,7 @@ public class MainActivity extends Activity {
             runOnUiThread(()->{
                 if(!trustedPage())return;
                 keepSession=active;
+                sessionRoom=active?code:"";updatePushForegroundRoom();
                 String state=active+":"+running+":"+rest+":"+(deadline/1000)+":"+(running?0:remaining)+":"+code;
                 if(state.equals(sessionState))return;
                 if(!active){sessionState=state;stopService(new Intent(MainActivity.this,FocusService.class));return;}
@@ -209,7 +222,7 @@ public class MainActivity extends Activity {
                 }
                 return true;
             }
-            @Override public void onPageStarted(WebView view,String url,android.graphics.Bitmap icon) { errorShown=false;motionRequested=false;updateMotion(); }
+            @Override public void onPageStarted(WebView view,String url,android.graphics.Bitmap icon) { errorShown=false;motionRequested=false;sessionRoom="";updatePushForegroundRoom();updateMotion(); }
             @Override public void onPageFinished(WebView view,String url) {
                 super.onPageFinished(view,url);
                 Uri uri=Uri.parse(url);
@@ -225,7 +238,16 @@ public class MainActivity extends Activity {
                     .setNegativeButton("Kapat",null).show();
             }
         });
-        if (saved==null || web.restoreState(saved)==null) web.loadUrl(HOME);
+        String pushDestination=FocusPush.destination(getIntent());
+        if(getIntent()!=null)getIntent().removeExtra("roomId");
+        if(pushDestination!=null)web.loadUrl(pushDestination);
+        else if (saved==null || web.restoreState(saved)==null) web.loadUrl(HOME);
+    }
+    @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);String destination=FocusPush.destination(intent);if(intent!=null)intent.removeExtra("roomId");if(destination!=null&&web!=null)web.loadUrl(destination);}
+    @Override public void onRequestPermissionsResult(int request,String[] permissions,int[] results){
+        super.onRequestPermissionsResult(request,permissions,results);
+        if(request==202&&results.length>0&&results[0]==android.content.pm.PackageManager.PERMISSION_GRANTED&&trustedPage())FocusPush.requestToken(this,this::pushResult);
+        else if(request==202&&trustedPage())pushResult("");
     }
     @Override public void onBackPressed() { if(web.canGoBack())web.goBack();else if(keepSession||FocusService.active)moveTaskToBack(true);else super.onBackPressed(); }
     @Override protected void onActivityResult(int request,int result,Intent data) {
@@ -239,8 +261,9 @@ public class MainActivity extends Activity {
         }
     }
     @Override protected void onSaveInstanceState(Bundle out) { web.saveState(out);super.onSaveInstanceState(out); }
-    @Override protected void onPause() { resumed=false;updateMotion();if(!keepSession&&!FocusService.active)web.onPause();super.onPause(); }
-    @Override protected void onResume() { super.onResume();resumed=true;updateMotion();if(web!=null){web.onResume();nativeTick();} }
-    @Override protected void onDestroy() { resumed=false;updateMotion();if(signInCancellation!=null)signInCancellation.cancel();stopService(new Intent(this,FocusService.class));FocusService.heartbeat=null;FocusService.toggle=null;if(web!=null){if(trustedPage())web.evaluateJavascript("typeof flush==='function'&&flush()",null);((FrameLayout)web.getParent()).removeView(web);web.destroy();}super.onDestroy(); }
+    @Override protected void onPause() { resumed=false;updatePushForegroundRoom();updateMotion();if(!keepSession&&!FocusService.active)web.onPause();super.onPause(); }
+    @Override protected void onResume() { super.onResume();resumed=true;updatePushForegroundRoom();updateMotion();if(web!=null){web.onResume();nativeTick();} }
+    @Override protected void onDestroy() { resumed=false;updatePushForegroundRoom();updateMotion();if(signInCancellation!=null)signInCancellation.cancel();stopService(new Intent(this,FocusService.class));FocusService.heartbeat=null;FocusService.toggle=null;if(web!=null){if(trustedPage())web.evaluateJavascript("typeof flush==='function'&&flush()",null);((FrameLayout)web.getParent()).removeView(web);web.destroy();}super.onDestroy(); }
 }
+
 

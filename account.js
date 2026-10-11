@@ -3,9 +3,10 @@ import {getAuth,setPersistence,browserLocalPersistence,GoogleAuthProvider,EmailA
 import {getFirestore,doc,getDocFromServer,getDocsFromServer,collection,onSnapshot,runTransaction,serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js';
 import {initializeAppCheck,ReCaptchaEnterpriseProvider} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-app-check.js';
 import {firebaseConfig,googleClientId,appCheckSiteKey} from './firebase-config.js';
-import {eraseAccount} from './account-delete.js?v=features1';
+import {eraseAccount} from './account-delete.js?v=push1';
 import {initCosmeticStore} from './cosmetic-store.js?v=features2';
-import {initSocial} from './social.js?v=perf2';
+import {initSocial} from './social.js?v=push1';
+import {initPush} from './push-client.js?v=push1';
 
 const app=initializeApp(firebaseConfig);
 // Enable only after the matching web provider is registered in Firebase.
@@ -76,6 +77,7 @@ async function sync(){
 }
 async function bind(user){
  if(deleting)return;
+ window.FocusPush?.bind(user);
  window.FocusCosmeticStore?.stop();window.FocusSocial?.stop();
  deletionLocked=false;
  const previous=localStorage.getItem('focus_current_uid')||'',next=user?.emailVerified?user.uid:'';
@@ -132,7 +134,7 @@ by('emailRegister').onclick=()=>busy(async()=>{const c=credentials();if(c.passwo
 by('resetPassword').onclick=()=>busy(async()=>{const email=by('loginEmail').value.trim();if(!email){message('Önce e-posta adresini yaz.');return}await sendPasswordResetEmail(auth,email);message('Hesap varsa şifre sıfırlama e-postası gönderildi. Gelen kutunu kontrol et.')});
 by('verifyAccountButton').onclick=()=>busy(async()=>{const user=auth.currentUser;if(!user)return;const revision=generation;await reload(user);if(auth.currentUser?.uid!==user.uid||revision!==generation)throw Error('account-changed');await getIdToken(user,true);if(auth.currentUser?.uid!==user.uid||revision!==generation)throw Error('account-changed');await bind(user)});
 by('resendVerification').onclick=()=>busy(async()=>{if(auth.currentUser&&!auth.currentUser.emailVerified){await sendEmailVerification(auth.currentUser);message('Doğrulama e-postası tekrar gönderildi.')}});
-by('logoutAccount').onclick=()=>busy(async()=>{if(Study.liveSession?.().running){message('Çıkış yapmadan önce sayacı duraklat.');return}await sync();saveCache();await window.FocusSocial?.pauseRoom();window.FocusTemporaryRoom?.leaveNow();await signOut(auth);window.FocusAndroid?.clearGoogleSession?.()});
+by('logoutAccount').onclick=()=>busy(async()=>{if(Study.liveSession?.().running){message('Çıkış yapmadan önce sayacı duraklat.');return}await sync();saveCache();await window.FocusPush?.unregister();await window.FocusSocial?.pauseRoom();window.FocusTemporaryRoom?.leaveNow();await signOut(auth);window.FocusAndroid?.clearGoogleSession?.()});
 by('profilePhoto').onchange=async e=>{
  if(!by('profilePhotoConsent').checked){message('Fotoğrafını saklamak ve katıldığın odada göstermek için fotoğraf onayını işaretle.');e.target.value='';return}
  const file=e.target.files[0];if(!file)return;if(!file.type.startsWith('image/')||file.size>20*1024*1024){message('20 MB’tan küçük bir fotoğraf seç.');return}const owner=uid,revision=generation;let bitmap;
@@ -185,7 +187,7 @@ addEventListener('storage',event=>{if(event.key!=='focus_delete_notice'||!event.
 async function finishDeletion(user){
  const owner=user.uid;if(auth.currentUser?.uid!==owner)throw Error('account-changed');deleting=true;by('deleteAccount').disabled=true;
  try{
-  await eraseAccount({db,user,locked:deletionLocked,assertCurrent:()=>{if(auth.currentUser?.uid!==owner)throw Error('account-changed')},onLocked:async()=>{deletionLocked=true;ready=false;generation++;for(const stop of unsub)stop();unsub=[];localStorage.setItem('focus_delete_notice',JSON.stringify({uid:owner}));localStorage.removeItem('focus_delete_notice');clearAccountDevice(owner);uid='';cache={days:{},dirty:{}};message('Bulut kayıtların ve hesabın siliniyor… Pencereyi açık tut.')}});
+  await eraseAccount({db,user,locked:deletionLocked,erasePush:owner=>window.FocusPush?.erase(owner),assertCurrent:()=>{if(auth.currentUser?.uid!==owner)throw Error('account-changed')},onLocked:async()=>{deletionLocked=true;ready=false;generation++;for(const stop of unsub)stop();unsub=[];localStorage.setItem('focus_delete_notice',JSON.stringify({uid:owner}));localStorage.removeItem('focus_delete_notice');clearAccountDevice(owner);uid='';cache={days:{},dirty:{}};message('Bulut kayıtların ve hesabın siliniyor… Pencereyi açık tut.')}});
   if(auth.currentUser&&auth.currentUser.uid!==owner)throw Error('account-changed');uid='';clearAccountDevice(owner);window.FocusAndroid?.clearGoogleSession?.();deleting=false;deletionLocked=false;await bind(null);by('deleteConsent').checked=false;message('Hesabın ve bulut kayıtların silindi. Bu cihazdaki çalışma kopyası temizlendi. Google hesabın silinmedi.');
  }catch(e){if(e.message!=='account-changed')message(e.code==='auth/requires-recent-login'?'Silme kilidi korunuyor. Hesabımı sil düğmesine basıp Google veya şifrenle yeniden doğrulanarak tamamla.':deletionLocked?'Silme henüz tamamlanmadı. Hesabın yeni kayıt yazmaya kapatıldı; bağlantını kontrol edip Hesabımı sil ile tekrar dene.':'Silme başlayamadı. Firebase silme kuralları ve bağlantı kontrol edilmeli.');}
  finally{deleting=false;by('deleteAccount').disabled=false;by('deletePassword').value='';if(auth.currentUser&&auth.currentUser.uid!==owner)await bind(auth.currentUser)}
@@ -206,7 +208,7 @@ if(by('deleteAccount'))by('deleteAccount').onclick=()=>busy(async()=>{
 });
 window.FocusAccount={profile:()=>({...profile}),record:(date,seconds)=>{if(!uid||deleting||deletionLocked||!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(seconds)||seconds<=0)return;cache.days[date]=Math.min(86400,(cache.days[date]||0)+seconds)},sync};
 by('profileName').oninput=()=>{nameDraft=true};
-initCosmeticStore({db,auth});initSocial({db,auth});
+initCosmeticStore({db,auth});initSocial({db,auth});initPush({auth});
 onAuthStateChanged(auth,user=>{const pending=bind(user),revision=generation;pending.catch(e=>{if(revision===generation&&auth.currentUser?.uid===user?.uid)failure(e)})});
 addEventListener('focus-social-ready',event=>{if(event.detail?.uid&&event.detail.uid!==auth.currentUser?.uid)return;socialReadyUid=auth.currentUser?.uid||'';settleAccountUI()});
 addEventListener('focus-identity-ready',event=>{if(event.detail?.uid&&event.detail.uid!==auth.currentUser?.uid)return;settleAccountUI()});

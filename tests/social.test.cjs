@@ -65,7 +65,7 @@ function fixture(){
   serverTimestamp:()=>{const at=clock;return {toMillis:()=>at}},
   setDoc:async(r,data)=>{if(r.path.includes('/roomProofs/')){const rid=r.path.split('/').at(-1);if(data.hash!==records.get('rooms/'+rid+'/secrets/password')?.hash)throw Object.assign(Error('wrong-password'),{code:'permission-denied'})}apply('set',r,data);notify()},
   updateDoc:async(r,data)=>{apply('update',r,data);notify()},deleteDoc:async r=>{apply('delete',r);notify()},
-  writeBatch:()=>{const writes=[];return {set:(r,data)=>writes.push(['set',r,data]),delete:r=>writes.push(['delete',r]),commit:async()=>{for(const w of writes)apply(...w);notify()}}},
+  writeBatch:()=>{const writes=[];return {set:(r,data)=>writes.push(['set',r,data]),update:(r,data)=>writes.push(['update',r,data]),delete:r=>writes.push(['delete',r]),commit:async()=>{for(const w of writes)apply(...w);notify()}}},
   runTransaction:async(_,fn)=>{const writes=[];const result=await fn({get:async r=>select(r),set:(r,data)=>writes.push(['set',r,data]),update:(r,data)=>writes.push(['update',r,data])});for(const w of writes)apply(...w);notify();return result},
   Study:{localSeconds:()=>seconds,liveSession:()=>timer({worked:seconds})},
   FocusAccount:{profile:()=>({uid:ctx.auth.currentUser?.uid,name:ctx.auth.currentUser?.uid||'Alice',photo:''})},FocusTemporaryRoom:{leaveNow:()=>events.push('temporary-left')},FocusNative:{room:id=>events.push('native:'+id)},
@@ -391,8 +391,56 @@ test('hidden documents and hidden tab views skip roster painting and resume with
 test('friend name opens profile and separate friendship controls keep their action',async()=>{
  const f=fixture();f.put('friendships/alice_bob',{from:'alice',to:'bob',uids:['alice','bob'],state:'accepted'});f.put('publicProfiles/bob',profile('bob'));await f.login();const row=f.node('friendList').children[0];let target='';f.ctx.openMemberProfile=uid=>target=uid;row.children[0].click();assert.equal(target,'bob');await row.children.at(-1).click();await f.settle();assert.equal(f.records.has('friendships/alice_bob'),false);
 });
-test('poke requires another fresh member in the active room and throttles writes',async()=>{
- const f=fixture();f.put('rooms/'+OPEN,{name:'Focus',ownerUid:'alice',locked:false});await f.login();await f.join(OPEN);f.put(`rooms/${OPEN}/members/bob`,{uid:'bob',online:true,presenceAt:{toMillis:()=>f.ctx.Date.now()},timer:timer()});f.emit();await f.settle();assert.equal(await f.ctx.FocusSocial.poke('alice'),false);assert.equal(await f.ctx.FocusSocial.poke('outsider'),false);assert.equal(await f.ctx.FocusSocial.poke('bob'),true);const n=f.records.get(`rooms/${OPEN}/nudges/bob`);assert.equal(n.from,'alice');assert.equal(n.to,'bob');assert.equal(await f.ctx.FocusSocial.poke('bob'),false);f.work(11);assert.equal(await f.ctx.FocusSocial.poke('bob'),true);f.records.get(`rooms/${OPEN}/members/bob`).online=false;f.emit();await f.settle();f.work(11);assert.equal(await f.ctx.FocusSocial.poke('bob'),false);
+test('poke allows offline room members and throttles writes',async()=>{
+ const f=fixture();f.put('rooms/'+OPEN,{name:'Focus',ownerUid:'alice',locked:false});await f.login();await f.join(OPEN);f.put(`rooms/${OPEN}/members/bob`,{uid:'bob',online:true,presenceAt:{toMillis:()=>f.ctx.Date.now()},timer:timer()});f.emit();await f.settle();assert.equal(await f.ctx.FocusSocial.poke('alice'),false);assert.equal(await f.ctx.FocusSocial.poke('outsider'),false);assert.equal(await f.ctx.FocusSocial.poke('bob'),true);const n=f.records.get(`rooms/${OPEN}/nudges/bob`);assert.equal(n.from,'alice');assert.equal(n.to,'bob');assert.equal(await f.ctx.FocusSocial.poke('bob'),false);f.work(11);assert.equal(await f.ctx.FocusSocial.poke('bob'),true);f.records.get(`rooms/${OPEN}/members/bob`).online=false;f.emit();await f.settle();f.work(11);assert.equal(await f.ctx.FocusSocial.poke('bob'),true);
+});
+test('nudge atomically refreshes the sender heartbeat without changing its timer',async()=>{
+ const f=fixture();f.put('rooms/'+OPEN,{name:'Focus',ownerUid:'alice',locked:false});await f.login();await f.join(OPEN);
+ f.put(`rooms/${OPEN}/members/bob`,{uid:'bob',online:false,timer:timer()});f.emit();await f.settle();f.work(2);
+ const before=f.records.get(`rooms/${OPEN}/members/alice`).timer,original=f.ctx.writeBatch,writes=[];let commits=0;
+ f.ctx.writeBatch=(...args)=>{const batch=original(...args),update=batch.update,set=batch.set,commit=batch.commit;batch.update=(r,data)=>{writes.push(['update',r.path,data]);return update(r,data)};batch.set=(r,data)=>{writes.push(['set',r.path,data]);return set(r,data)};batch.commit=async()=>{commits++;return commit()};return batch};
+ assert.equal(await f.ctx.FocusSocial.poke('bob'),true);assert.equal(commits,1);assert.equal(writes.length,2);
+ assert.equal(writes[0][0],'update');assert.equal(writes[0][1],`rooms/${OPEN}/members/alice`);assert.deepEqual(Object.keys(writes[0][2]),['presenceAt']);
+ assert.equal(writes[1][1],`rooms/${OPEN}/nudges/bob`);assert.equal(writes[0][2].presenceAt.toMillis(),writes[1][2].at.toMillis());
+ assert.equal(f.records.get(`rooms/${OPEN}/members/alice`).timer,before);
+});
+test('delayed nudge sends once, paints success after acknowledgment and expires with hidden rosters',async()=>{
+ const f=fixture();f.put('rooms/'+OPEN,{name:'Focus',ownerUid:'alice',locked:false});await f.login();await f.join(OPEN);
+ f.put(`rooms/${OPEN}/members/bob`,{uid:'bob',online:false,timer:timer()});f.emit();await f.settle();
+ const button=f.node('memberProfilePokeBtn');f.ctx.FocusSocial.setupPokeButton('bob');
+ let release;const gate=new Promise(resolve=>release=resolve),original=f.ctx.writeBatch;let writes=0;
+ f.ctx.writeBatch=(...args)=>{const batch=original(...args),set=batch.set,commit=batch.commit;let nudge=false;batch.set=(r,data)=>{nudge ||= r.path.includes('/nudges/');return set(r,data)};batch.commit=async()=>{if(nudge){writes++;await gate}return commit()};return batch};
+ const send=f.ctx.FocusSocial.poke('bob');await f.settle();assert.equal(button.disabled,true);assert.equal(button.textContent,'Gönderiliyor…');
+ assert.equal(await f.ctx.FocusSocial.poke('bob'),false);assert.equal(writes,1);release();assert.equal(await send,true);assert.match(button.textContent,/Dürtüldü ✓/);
+ for(const id of ['roomMembers','homeLobbyList','chatRosterList'])f.node(id).paintVisible=false;
+ f.work(11);await f.tick();assert.equal(button.disabled,false);assert.equal(button.textContent,'Dürt');
+});
+test('failed nudge offers an immediate retry without consuming the cooldown',async()=>{
+ const f=fixture();f.put('rooms/'+OPEN,{name:'Focus',ownerUid:'alice',locked:false});await f.login();await f.join(OPEN);
+ f.put(`rooms/${OPEN}/members/bob`,{uid:'bob',online:false,timer:timer()});f.emit();await f.settle();
+ const button=f.node('memberProfilePokeBtn');f.ctx.FocusSocial.setupPokeButton('bob');const original=f.ctx.writeBatch;let fail=true;
+ f.ctx.writeBatch=(...args)=>{const batch=original(...args),set=batch.set,commit=batch.commit;let nudge=false;batch.set=(r,data)=>{nudge ||= r.path.includes('/nudges/');return set(r,data)};batch.commit=async()=>{if(nudge&&fail){fail=false;throw Error('network-failure')}return commit()};return batch};
+ await button.onclick();assert.equal(button.disabled,false);assert.equal(button.textContent,'Tekrar dene');
+ await button.onclick();assert.match(button.textContent,/Dürtüldü ✓/);assert.equal(f.records.get(`rooms/${OPEN}/nudges/bob`).from,'alice');
+});
+test('account switch releases a pending join immediately and old completion cannot unlock the next join',async()=>{
+ const f=fixture();f.put('rooms/'+OPEN,{name:'Focus',ownerUid:'alice',locked:false});await f.login();
+ const control=f.node('joinPermanent');control.textContent='Katıl';control.value=OPEN;f.node('roomSearch').value=OPEN;
+ const original=f.ctx.getDocFromServer;const releases=[];f.ctx.getDocFromServer=async r=>{if(r.path==='rooms/'+OPEN)await new Promise(resolve=>releases.push(resolve));return original(r)};
+ const first=control.onclick();await f.settle();assert.equal(control.disabled,true);
+ await f.login('bob');assert.equal(control.disabled,false);assert.equal(control._pending,false);assert.equal(control.textContent,'Katıl');
+ const second=control.onclick();await f.settle();assert.equal(control.disabled,true);assert.equal(releases.length,2);
+ releases[0]();await first;assert.equal(control.disabled,true);assert.equal(control.textContent,'Bağlanılıyor…');
+ releases[1]();await second;await f.settle();assert.equal(control.disabled,false);assert.equal(control.textContent,'Katıl');assert.equal(f.ctx.FocusSocial.uid(),'bob');
+});
+test('late nudge acknowledgment from the previous account does not start the new account cooldown',async()=>{
+ const f=fixture();f.put('rooms/'+OPEN,{name:'Focus',ownerUid:'alice',locked:false});await f.login();await f.join(OPEN);
+ f.put(`rooms/${OPEN}/members/bob`,{uid:'bob',online:false,timer:timer()});f.emit();await f.settle();
+ const original=f.ctx.writeBatch;let release,hold=true;
+ f.ctx.writeBatch=(...args)=>{const batch=original(...args),set=batch.set,commit=batch.commit;let nudge=false;batch.set=(r,data)=>{nudge ||= r.path.includes('/nudges/');return set(r,data)};batch.commit=async()=>{if(nudge&&hold){hold=false;await new Promise(resolve=>release=resolve)}return commit()};return batch};
+ const previous=f.ctx.FocusSocial.poke('bob');const rejected=assert.rejects(previous,/account-changed/);await f.settle();await f.login('bob');await f.join(OPEN);
+ f.ctx.FocusSocial.setupPokeButton('alice');assert.equal(f.node('memberProfilePokeBtn').disabled,false);
+ release();await rejected;assert.equal(f.node('memberProfilePokeBtn').disabled,false);assert.equal(await f.ctx.FocusSocial.poke('alice'),true);
 });
 test('nudge receiver ignores initial cache and duplicate events, sound is limited to once per 10s',async()=>{
  const f=fixture();let sounds=0;f.ctx.FocusSound={play:type=>{assert.equal(type,'nudge');sounds++}};f.put('rooms/'+OPEN,{name:'Focus',ownerUid:'alice',locked:false});f.put(`rooms/${OPEN}/nudges/alice`,{from:'bob',to:'alice',at:{toMillis:()=>f.ctx.Date.now()}});await f.login();await f.join(OPEN);assert.equal(sounds,0);f.work(1);const at=f.ctx.Date.now();f.put(`rooms/${OPEN}/nudges/alice`,{from:'bob',to:'alice',at:{toMillis:()=>at}});f.emit();await f.settle();assert.equal(sounds,1);f.emit();assert.equal(sounds,1);f.work(1);const next=f.ctx.Date.now();f.put(`rooms/${OPEN}/nudges/alice`,{from:'charlie',to:'alice',at:{toMillis:()=>next}});f.emit();assert.equal(sounds,1);f.work(11);const last=f.ctx.Date.now();f.put(`rooms/${OPEN}/nudges/alice`,{from:'bob',to:'alice',at:{toMillis:()=>last}});f.emit();assert.equal(sounds,2);assert.match(f.node('nudgeNotice').textContent,/dürttü/);const sub=f.subscriptions.find(s=>s.q.path===`rooms/${OPEN}/nudges/alice`);await f.ctx.FocusSocial.pauseRoom();f.work(11);sub.fn({exists:()=>true,data:()=>({from:'bob',to:'alice',at:{toMillis:()=>f.ctx.Date.now()}})});assert.equal(sounds,2);

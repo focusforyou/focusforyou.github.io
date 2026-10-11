@@ -3,10 +3,11 @@ import {deleteUser} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-aut
 import {eraseSocial} from './social-delete.js';
 
 // An immutable lock prevents still-valid tokens and old/offline clients from recreating data.
-export async function eraseAccount({db,user,locked,assertCurrent,onLocked}){
+export async function eraseAccount({db,user,locked,assertCurrent,onLocked,erasePush}){
  assertCurrent();
  if(!locked)await setDoc(doc(db,'deletions',user.uid),{startedAt:serverTimestamp()});
  assertCurrent();await onLocked();
+ if(erasePush){assertCurrent();await erasePush(user);assertCurrent()}
  await eraseSocial({db,uid:user.uid,assertCurrent});
  for(let page=0;page<1000;page++){
   assertCurrent();const rows=await getDocsFromServer(query(collection(db,'users',user.uid,'devices'),limit(200)));
@@ -23,4 +24,5 @@ export async function eraseAccount({db,user,locked,assertCurrent,onLocked}){
  // Auth is last: a failed/interrupted cleanup can be resumed by the same account.
  assertCurrent();await deleteUser(user);
 }
+
 

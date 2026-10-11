@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "718275780283",
+    "project_id": "focus-for-you-dd88b",
+    "storage_bucket": "focus-for-you-dd88b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:718275780283:android:c6c3a322cfb8d2de5a139e",
+        "android_client_info": {
+          "package_name": "io.github.focusforyou.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "718275780283-mv5b9epo93ur1e1dipr1l903tgv99vnq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "io.github.focusforyou.app",
+            "certificate_hash": "fdd03505d6b47021bde3264bc40397e6646c08b9"
+          }
+        },
+        {
+          "client_id": "718275780283-9clat2fbif7idmrh7ddm06vlg1m2rmlo.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC39iWn9YSHs37N_mC0pMCrbtFsvlNRC0c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "718275780283-9clat2fbif7idmrh7ddm06vlg1m2rmlo.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

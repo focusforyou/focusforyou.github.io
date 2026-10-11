@@ -57,9 +57,11 @@ test('nudges require same active room, server cooldown and own identity, and loc
  await env.withSecurityRulesDisabled(async ctx=>{const db=ctx.firestore();await setDoc(doc(db,'rooms',rid),{name:'Nudges',ownerUid:'nudgeA',locked:false,salt:'',exam:'',createdAt:serverTimestamp()});for(const uid of ['nudgeA','nudgeB'])await setDoc(doc(db,'rooms',rid,'members',uid),{uid,online:true,presenceAt:serverTimestamp(),joinedAt:serverTimestamp(),timer})});
  await assertFails(setDoc(doc(c,'rooms',rid,'nudges','nudgeB'),{from:'nudgeOutside',to:'nudgeB',at:serverTimestamp()}));
  await assertFails(setDoc(receipt,{from:'nudgeB',to:'nudgeB',at:serverTimestamp()}));
- await assertSucceeds(setDoc(receipt,{from:'nudgeA',to:'nudgeB',at:serverTimestamp()}));await assertSucceeds(getDoc(doc(b,'rooms',rid,'nudges','nudgeB')));
- await assertFails(setDoc(receipt,{from:'nudgeA',to:'nudgeB',at:serverTimestamp()}));
+ const poke=()=>{const batch=writeBatch(a);batch.update(doc(a,'rooms',rid,'members','nudgeA'),{presenceAt:serverTimestamp()});batch.set(receipt,{from:'nudgeA',to:'nudgeB',at:serverTimestamp()});return batch.commit()};
+ await assertSucceeds(poke());await assertSucceeds(getDoc(doc(b,'rooms',rid,'nudges','nudgeB')));
+ await assertFails(poke());
  await assertSucceeds(setDoc(doc(a,'deletions','nudgeA'),{startedAt:serverTimestamp()}));
  const result=await assertSucceeds(getDocs(query(collectionGroup(a,'nudges'),where('from','==','nudgeA'))));require('node:assert/strict').equal(result.size,1);
  await assertFails(getDocs(query(collectionGroup(a,'nudges'),where('from','==','nudgeB'))));await assertSucceeds(deleteDoc(receipt));
 });
+

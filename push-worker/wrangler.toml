@@ -1,0 +1,15 @@
+name = "focus-nudges"
+main = "worker.mjs"
+compatibility_date = "2026-10-12"
+workers_dev = true
+
+[vars]
+FIREBASE_PROJECT_ID = "focus-for-you-dd88b"
+SITE_ORIGIN = "https://focusforyou.github.io"
+
+[[kv_namespaces]]
+binding = "PUSH_KV"
+id = "9783873bbc1e47b7a5ef48ef7276998e"
+
+# Set FIREBASE_API_KEY and FCM_SERVICE_ACCOUNT_JSON using Worker secrets.
+# Never commit a service-account JSON or enable a paid Workers plan.

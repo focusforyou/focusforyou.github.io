@@ -1,5 +1,18 @@
 plugins { id 'com.android.application' }
+// Public client configuration only. No service-account credentials belong in the APK.
+def firebaseFile = file('google-services.json')
+def firebaseConfig = firebaseFile.exists() ? new groovy.json.JsonSlurper().parse(firebaseFile) : [:]
+def firebaseClient = firebaseConfig.client?.find { it.client_info?.android_client_info?.package_name == 'io.github.focusforyou.app' }
+if (firebaseFile.exists() && !firebaseClient) throw new GradleException('google-services.json must contain io.github.focusforyou.app')
+def pushConfig = [
+    FIREBASE_APP_ID: System.getenv('FOCUS_FIREBASE_APP_ID') ?: firebaseClient?.client_info?.mobilesdk_app_id ?: '',
+    FIREBASE_API_KEY: System.getenv('FOCUS_FIREBASE_API_KEY') ?: firebaseClient?.api_key?.getAt(0)?.current_key ?: '',
+    FIREBASE_PROJECT_ID: System.getenv('FOCUS_FIREBASE_PROJECT_ID') ?: firebaseConfig.project_info?.project_id ?: '',
+    FIREBASE_SENDER_ID: System.getenv('FOCUS_FIREBASE_SENDER_ID') ?: firebaseConfig.project_info?.project_number ?: ''
+]
 dependencies {
+ implementation platform('com.google.firebase:firebase-bom:34.19.0')
+ implementation 'com.google.firebase:firebase-messaging'
  implementation 'androidx.core:core:1.15.0'
  implementation 'androidx.credentials:credentials:1.5.0'
  implementation 'androidx.credentials:credentials-play-services-auth:1.5.0'
@@ -8,13 +21,16 @@ dependencies {
 android {
     namespace 'io.github.focusforyou.app'
     compileSdk 35
+    buildFeatures { buildConfig true }
     defaultConfig {
         applicationId 'io.github.focusforyou.app'
         minSdk 26
         targetSdk 35
-        versionCode Integer.parseInt(System.getenv('FOCUS_VERSION_CODE') ?: '13')
-        versionName System.getenv('FOCUS_VERSION_NAME') ?: '1.13'
+        versionCode Integer.parseInt(System.getenv('FOCUS_VERSION_CODE') ?: '14')
+        versionName System.getenv('FOCUS_VERSION_NAME') ?: '1.14'
+        pushConfig.each { key, value -> buildConfigField 'String', key, groovy.json.JsonOutput.toJson(value.toString()) }
     }
     buildTypes { release { minifyEnabled false } }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
+

@@ -16,6 +16,20 @@ service cloud.firestore {
   function kicked(rid,uid) { return exists(/databases/$(database)/documents/rooms/$(rid)/kicks/$(uid)) && get(/databases/$(database)/documents/rooms/$(rid)/members/$(uid)).data.joinedAt <= get(/databases/$(database)/documents/rooms/$(rid)/kicks/$(uid)).data.at; }
   function roomAllowed(rid) { return admin() || (!exists(/databases/$(database)/documents/rooms/$(rid)/bans/$(request.auth.uid)) && !kicked(rid,request.auth.uid)); }
   function member(rid) { return active() && exists(/databases/$(database)/documents/rooms/$(rid)/members/$(request.auth.uid)) && roomAllowed(rid); }
+  // A protected administrator ignores sanctions, but never a deletion lock or
+  // a missing membership. The repeated target paths are cached by rule reads.
+  function nudgeTarget(rid,uid) {
+   return unlocked(uid) && exists(/databases/$(database)/documents/rooms/$(rid)/members/$(uid))
+    && (immune(uid) || (!exists(/databases/$(database)/documents/appBans/$(uid))
+     && !exists(/databases/$(database)/documents/rooms/$(rid)/bans/$(uid)) && !kicked(rid,uid)));
+  }
+  function nudgeHeartbeat(rid) {
+   let after = getAfter(/databases/$(database)/documents/rooms/$(rid)/members/$(request.auth.uid)).data;
+   // presenceAt must equal this request's server timestamp. Thus the same
+   // atomic request must include a member update authorized by that path's
+   // independent active()/roomAllowed() rule; an old heartbeat cannot attest it.
+   return after.uid == request.auth.uid && after.presenceAt == request.time;
+  }
   function moderator(rid) { return active() && (admin() || (leader(rid) && roomAllowed(rid))); }
   function joiningAllowed(rid) { return admin() || (!exists(/databases/$(database)/documents/rooms/$(rid)/bans/$(request.auth.uid)) && (!exists(/databases/$(database)/documents/rooms/$(rid)/kicks/$(request.auth.uid)) || get(/databases/$(database)/documents/rooms/$(rid)/kicks/$(request.auth.uid)).data.at < request.time)); }
   function validModeration(m) { return m.keys().hasOnly(['by','at']) && m.by == request.auth.uid && m.at == request.time; }
@@ -262,14 +276,16 @@ service cloud.firestore {
     allow delete: if moderator(rid) || (self(uid) && locked(uid)) || (leader(rid) && locked(request.auth.uid));
    }
    match /nudges/{uid} {
-    allow get: if self(uid) || member(rid);
+    // Sender get uses at most nine unique documents. Worker checks
+    // the sender's own membership and sanctions separately before FCM.
+    allow get: if self(uid) || (active() && resource.data.from == request.auth.uid
+     && roomOpen(rid) && nudgeTarget(rid,uid));
     allow list: if moderator(rid) || (leader(rid) && locked(request.auth.uid));
-    allow create, update: if active() && member(rid) && roomOpen(rid) && uid != request.auth.uid
+    allow create, update: if active() && nudgeHeartbeat(rid) && roomOpen(rid) && uid != request.auth.uid
      && request.resource.data.keys().hasOnly(['from','to','at']) && request.resource.data.from == request.auth.uid
      && request.resource.data.to == uid && request.resource.data.at == request.time
-     && unlocked(uid) && !exists(/databases/$(database)/documents/appBans/$(uid))
-     && exists(/databases/$(database)/documents/rooms/$(rid)/members/$(uid))
-     && (!exists(/databases/$(database)/documents/rooms/$(rid)/nudges/$(uid)) || resource.data.at < request.time - duration.value(10,'s'));
+     && nudgeTarget(rid,uid)
+     && (resource == null || resource.data.at < request.time - duration.value(10,'s'));
     allow delete: if moderator(rid) || (leader(rid) && locked(request.auth.uid));
    }
   }
@@ -338,3 +354,4 @@ service cloud.firestore {
   }
  }
 }
+

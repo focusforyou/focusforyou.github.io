@@ -9,3 +9,7 @@ export const firebaseConfig={
 export const googleClientId='718275780283-9clat2fbif7idmrh7ddm06vlg1m2rmlo.apps.googleusercontent.com';
 // Public site key, never a secret key. Empty until the provider is registered.
 export const appCheckSiteKey='';
+
+
+// Enabled only when the authenticated service is fully deployed.
+export const pushEndpoint='https://focus-nudges.efeozbilgin550.workers.dev';

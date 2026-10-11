@@ -16,3 +16,14 @@ test('server verification failure or leftover records preserve Auth for retry',a
 test('changing account while device page loads prevents the cleanup batch',async()=>{
  const f=fixture();let current=true;const original=f.ctx.getDocsFromServer;f.ctx.getDocsFromServer=async q=>{const rows=await original(q);current=false;return rows};await assert.rejects(f.ctx.eraseAccount({db:{},user:{uid:'alice'},locked:true,assertCurrent(){if(!current)throw Error('account-changed')},onLocked(){}}),/account-changed/);assert.equal(f.events.includes('batch'),false);assert.equal(f.auth,true);
 });
+test('push erasure precedes social data and failure preserves Auth and all retryable records',async()=>{
+ const f=fixture({count:1,locked:true});await assert.rejects(f.ctx.eraseAccount({db:{},user:{uid:'alice'},locked:true,assertCurrent(){},onLocked(){},erasePush:async()=>{f.events.push('push');throw Error('push-cleanup-failed')}}),/push-cleanup-failed/);
+ assert.deepEqual(f.events,['push']);assert.equal(f.auth,true);assert.equal(f.devices,1);assert.equal(f.meta,true);
+ const success=fixture({count:1,locked:true});await success.ctx.eraseAccount({db:{},user:{uid:'alice'},locked:true,assertCurrent(){},onLocked(){},erasePush:async owner=>{assert.equal(owner.uid,'alice');success.events.push('push')}});
+ assert.deepEqual(success.events,['push','social','batch','meta','auth']);assert.equal(success.auth,false);
+});
+test('account switch during push erasure aborts before deleting any cloud or Auth records',async()=>{
+ const f=fixture({count:1});let current=true;await assert.rejects(f.ctx.eraseAccount({db:{},user:{uid:'alice'},locked:true,assertCurrent(){if(!current)throw Error('account-changed')},onLocked(){},erasePush:async()=>{current=false}}),/account-changed/);
+ assert.equal(f.auth,true);assert.equal(f.devices,1);assert.equal(f.meta,true);assert.deepEqual(f.events,[]);
+});
+
