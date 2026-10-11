@@ -62,3 +62,21 @@ test('zero-width encoded reply metadata extracts cleanly and renders reply quote
  assert.ok(actions);
  assert.equal(actions.children.length,2);
 });
+test('empty-text reply or structured replyTo is not dropped and reactions render properly',()=>{
+ const {chat,list}=setup();
+ const msg1={id:'D'.repeat(20),text:'',image:'',replyTo:{id:'A'.repeat(20),sender:'Alice',text:'Previous comment'},sender:'Bob',avatar:'',time:30000};
+ chat.receive(msg1);
+ assert.equal(list.children.length,1);
+ const item1=list.children[0];
+ const quote1=item1.children.find(c=>c.className==='chat-reply-quote');
+ assert.ok(quote1);
+ assert.equal(quote1.children[0].textContent,'Alice');
+ assert.equal(quote1.children[1].textContent,'Previous comment');
+
+ chat.updateReactions(msg1.id,{'👍':['uid1','uid2'],'🔥':['uid1']});
+ const reactionsBox=item1.children.find(c=>c.className==='chat-reactions');
+ assert.ok(reactionsBox);
+ assert.equal(reactionsBox.children.length,2);
+ assert.match(reactionsBox.children[0].textContent,/👍 2/);
+ assert.match(reactionsBox.children[1].textContent,/🔥 1/);
+});

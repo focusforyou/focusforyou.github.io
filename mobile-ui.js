@@ -17,6 +17,7 @@ function sync(){by('miniTime').textContent=by('tt').textContent;by('miniPhase').
 function layout(){expand(false);if(mobile.matches)by('timerSlot').append(timer);else home.insertBefore(timer,next);select(view);sync()}
 by('openTimer').onclick=()=>{sync();expand(sheet.inert)};by('closeTimer').onclick=()=>expand(false);by('miniToggle').onclick=()=>by('tg').click();
 addEventListener('keydown',e=>{if(e.key==='Escape')expand(false)});
+addEventListener('pointerdown',e=>{if(!sheet.inert&&by('miniTimer')&&!by('miniTimer').contains(e.target))expand(false)});
 document.querySelectorAll('.mobile-nav button').forEach(button=>button.onclick=()=>select(button.dataset.view,true));
 document.querySelectorAll('header nav a').forEach(link=>link.addEventListener('click',event=>{const target=link.getAttribute('href');if(!['#calisma','#lobi','#ilerleme','#kurulum','#ayarlar'].includes(target)||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;event.preventDefault();if(location.hash!==target)history.pushState(null,'',target);select(hashView(),true)}));
 const observer=new MutationObserver(sync);for(const id of ['tt','tl','tg'])observer.observe(by(id),{childList:true,subtree:true,characterData:true});mobile.addEventListener('change',layout);layout();

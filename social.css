@@ -94,3 +94,34 @@
 .chat-roster-status{font-size:11px;color:#8da3ca}
 @media (max-width:899px){.chat-roster-pane{display:none!important}}
 
+@media (hover: none) {
+  .chat-actions{opacity:.85;pointer-events:auto;visibility:visible}
+}
+
+/* Light Theme Overrides */
+body.theme-light .chat-actions{background:#ffffffea;border:1px solid rgba(0,0,0,0.15);box-shadow:0 2px 10px rgba(0,0,0,0.12)}
+body.theme-light .chat-message:hover .chat-actions,
+body.theme-light .chat-actions:hover{background:#f3f6fc;border-color:rgba(30,80,200,0.35)}
+body.theme-light .chat-action-btn{color:#2a3d60}
+body.theme-light .chat-action-btn:hover{color:#000;background:rgba(0,0,0,0.08)}
+body.theme-light .reaction-picker{background:#fffffff5;border:1px solid rgba(0,0,0,0.15);box-shadow:0 8px 24px rgba(0,0,0,0.18)}
+body.theme-light .reaction-emoji:hover{background:rgba(0,0,0,0.08)}
+body.theme-light .reaction-pill{background:rgba(0,0,0,0.05);border-color:rgba(0,0,0,0.1);color:#1c2438}
+body.theme-light .reaction-pill:hover{background:rgba(0,0,0,0.1)}
+body.theme-light .reaction-pill.has-me{background:rgba(40,100,240,0.15);border-color:#2a66d8;color:#1845a0}
+body.theme-light .chat-reply-quote{background:rgba(0,0,0,0.05);border-left-color:#2a66d8}
+body.theme-light .chat-reply-quote:hover{background:rgba(0,0,0,0.09)}
+body.theme-light .chat-reply-quote strong{color:#1f4ea8}
+body.theme-light .chat-reply-quote p{color:#4a5b78}
+body.theme-light .home-lobby-co-workers{background:rgba(255,255,255,0.7);border-color:rgba(0,0,0,0.1)}
+body.theme-light .home-lobby-member{background:rgba(0,0,0,0.06);color:#1c2438}
+body.theme-light .home-lobby-member:hover{background:rgba(0,0,0,0.12)}
+body.theme-light .stat-pill{background:rgba(0,0,0,0.05);border:1px solid rgba(0,0,0,0.06)}
+body.theme-light .stat-pill strong{color:#1a233a}
+body.theme-light .stat-pill small{color:#5a6882}
+body.theme-light .chat-roster-pane{border-right-color:rgba(0,0,0,0.08)}
+body.theme-light .chat-roster-title{color:#3a4b6e;border-bottom-color:rgba(0,0,0,0.08)}
+body.theme-light .chat-roster-item{background:rgba(0,0,0,0.04);color:#1a233a}
+body.theme-light .chat-roster-item:hover{background:rgba(0,0,0,0.08)}
+body.theme-light .chat-roster-avatar-fallback{background:#dbe4f5;color:#20407a}
+body.theme-light .chat-roster-status{color:#5a6e90}
