@@ -1,4 +1,4 @@
-import {doc,collection,query,where,limit,getDocsFromServer,getDocFromServer,writeBatch,deleteDoc,updateDoc} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js';
+import {doc,collection,collectionGroup,query,where,limit,getDocsFromServer,getDocFromServer,writeBatch,deleteDoc,updateDoc} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js';
 
 // Membership bookmarks are mandatory and outlive membership cleanup. They let
 // an interrupted deletion find every room containing this user's messages.
@@ -16,6 +16,11 @@ export async function eraseSocial({db,uid,assertCurrent}){
   }
   throw Error('social-cleanup-limit');
  };
+ // Find legacy orphan messages too. A missing index safely preserves Auth and
+ // the deletion lock for a later retry instead of abandoning personal data.
+ const allOwnMessages=query(collectionGroup(db,'messages'),where('uid','==',uid));
+ await drain(allOwnMessages);
+ if(!(await readDocs(query(allOwnMessages,limit(1)))).empty)throw Error('social-messages-remain');
  const ownRooms=query(collection(db,'rooms'),where('ownerUid','==',uid));
  const owned=await readDocs(ownRooms);
  for(const r of owned.docs){
@@ -56,7 +61,7 @@ export async function eraseSocial({db,uid,assertCurrent}){
  }
  await remove(profileRef);await remove(doc(db,'entitlements',uid));
  await remove(doc(db,'appBans',uid));
- for(const q of [collection(db,'users',uid,'rooms'),collection(db,'users',uid,'roomProofs'),ownRooms,query(collection(db,'friendships'),where('uids','array-contains',uid)),query(collection(db,'roomInvites'),where('from','==',uid)),query(collection(db,'roomInvites'),where('to','==',uid))]){
+ for(const q of [allOwnMessages,collection(db,'users',uid,'rooms'),collection(db,'users',uid,'roomProofs'),ownRooms,query(collection(db,'friendships'),where('uids','array-contains',uid)),query(collection(db,'roomInvites'),where('from','==',uid)),query(collection(db,'roomInvites'),where('to','==',uid))]){
   if(!(await readDocs(query(q,limit(1)))).empty)throw Error('social-cleanup-not-empty');
  }
  if((await readDoc(profileRef)).exists()||(await readDoc(doc(db,'entitlements',uid))).exists()||(await readDoc(doc(db,'appBans',uid))).exists())throw Error('social-profile-remains');

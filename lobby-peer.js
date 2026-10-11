@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 (()=>{
 const by=id=>document.getElementById(id),PREFIX='focusforyou-room-v3-',LIMIT=8;
 let peer=null,host=false,code='',name='',upstream=null,joined=false,connecting=false,attempts=0,lastMessage=0;
@@ -25,7 +25,7 @@ function acceptChat(input,sender,profile){
 }
 function acceptReaction(messageId,emoji,fromUid){
   const msg=history.find(m=>m.id===messageId);
-  if(!msg)return;
+  if(!msg||!['👍','❤️','🔥','👏','🎯','💡','🎉'].includes(emoji))return;
   if(!msg.reactions)msg.reactions={};
   const list=new Set(msg.reactions[emoji]||[]);
   if(list.has(fromUid))list.delete(fromUid);
@@ -46,7 +46,7 @@ function sendChat(message){
   return send(upstream,{type:'chat-send',version:1,message})
 }
 RoomChat.configure(sendChat,{onReaction:sendReaction});
-function randomCode(){const limit=Math.floor(4294967296/90000)*90000;let value;do{value=crypto.getRandomValues(new Uint8Array(1))[0]}while(value>=limit);return String(10000+value%90000)}
+function randomCode(){const limit=Math.floor(4294967296/90000)*90000;let value;do{value=crypto.getRandomValues(new Uint32Array(1))[0]}while(value>=limit);return String(10000+value%90000)}
 function clear(){
  clearTimeout(timeout);clearTimeout(retry);clearTimeout(signalRetry);timeout=retry=signalRetry=null;
  const old=peer;peer=null;upstream=null;connecting=false;joined=false;host=false;code='';attempts=0;
@@ -150,7 +150,7 @@ function receiveConnection(conn){
   const m=members.get(conn.peer);if(!m||m.conn!==conn)return;
   if(data.type==='presence'){m.timer=LobbyModel.cleanTimer(data.timer);if(data.profile!==undefined)m.profile=LobbyModel.profile(data.profile);m.seen=Date.now()}
   else if(data.type==='chat-send'){if(Date.now()-m.chatAt>700){m.chatAt=Date.now();acceptChat(data.message,m.name,m.profile)}else send(conn,{type:'chat-error',id:data.message?.id})}
-  else if(data.type==='reaction-send'){acceptReaction(data.messageId,data.emoji,data.fromUid||conn.peer)}
+  else if(data.type==='reaction-send'){acceptReaction(data.messageId,data.emoji,conn.peer)}
   else if(data.type==='leave'){retire(conn.peer,m);conn.close();broadcast()}
  });
  const closed=()=>{clearTimeout(handshake);pending.delete(conn);if(members.get(conn.peer)?.conn===conn){retire(conn.peer,members.get(conn.peer));broadcast()}};

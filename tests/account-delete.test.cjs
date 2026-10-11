@@ -13,3 +13,6 @@ test('changing the signed-in account aborts before touching its data',async()=>{
 
 test('server verification failure or leftover records preserve Auth for retry',async()=>{for(const failAt of ['verify','remaining-meta','remaining-device']){const f=fixture({failAt,count:1});await assert.rejects(f.run());assert.equal(f.auth,true);assert.equal(f.events.includes('auth'),false)}});
 
+test('changing account while device page loads prevents the cleanup batch',async()=>{
+ const f=fixture();let current=true;const original=f.ctx.getDocsFromServer;f.ctx.getDocsFromServer=async q=>{const rows=await original(q);current=false;return rows};await assert.rejects(f.ctx.eraseAccount({db:{},user:{uid:'alice'},locked:true,assertCurrent(){if(!current)throw Error('account-changed')},onLocked(){}}),/account-changed/);assert.equal(f.events.includes('batch'),false);assert.equal(f.auth,true);
+});

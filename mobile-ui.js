@@ -1,7 +1,7 @@
 'use strict';
 (()=>{
 const by=id=>document.getElementById(id),mobile=matchMedia('(max-width:899px)'),timer=document.querySelector('.timer'),home=timer.parentNode,next=timer.nextSibling,sheet=by('timerSheet');
-const hashView=()=>location.hash==='#lobi'?'room':location.hash==='#ilerleme'||location.hash==='#kurulum'?'progress':location.hash==='#ayarlar'?'settings':'work';
+const hashView=()=>location.hash==='#lobi'?'room':location.hash==='#chat'?'chat':location.hash==='#ilerleme'||location.hash==='#kurulum'?'progress':location.hash==='#ayarlar'?'settings':'work';
 let view=hashView();
 const titles={work:'Çalışma alanın',room:'Birlikte çalış',chat:'Oda sohbeti',progress:'İlerlemen',settings:'Ayarlar'};
 const order=["work","room","chat","progress","settings"];let transition,ghostAnimation,ghost;
@@ -18,7 +18,7 @@ function layout(){expand(false);if(mobile.matches)by('timerSlot').append(timer);
 by('openTimer').onclick=()=>{sync();expand(sheet.inert)};by('closeTimer').onclick=()=>expand(false);by('miniToggle').onclick=()=>by('tg').click();
 addEventListener('keydown',e=>{if(e.key==='Escape')expand(false)});
 addEventListener('pointerdown',e=>{if(!sheet.inert&&by('miniTimer')&&!by('miniTimer').contains(e.target))expand(false)});
-document.querySelectorAll('.mobile-nav button').forEach(button=>button.onclick=()=>select(button.dataset.view,true));
+document.querySelectorAll('.mobile-nav button').forEach(button=>button.onclick=()=>{const target={work:'#calisma',room:'#lobi',chat:'#chat',progress:'#ilerleme',settings:'#ayarlar'}[button.dataset.view];if(target&&location.hash!==target)history.pushState(null,'',target);select(button.dataset.view,true)});
 document.querySelectorAll('header nav a').forEach(link=>link.addEventListener('click',event=>{const target=link.getAttribute('href');if(!['#calisma','#lobi','#ilerleme','#kurulum','#ayarlar'].includes(target)||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;event.preventDefault();if(location.hash!==target)history.pushState(null,'',target);select(hashView(),true)}));
 const observer=new MutationObserver(sync);for(const id of ['tt','tl','tg'])observer.observe(by(id),{childList:true,subtree:true,characterData:true});mobile.addEventListener('change',layout);layout();
 addEventListener('hashchange',()=>select(hashView(),true));

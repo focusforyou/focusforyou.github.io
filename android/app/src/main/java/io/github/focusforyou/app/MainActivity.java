@@ -110,7 +110,7 @@ public class MainActivity extends Activity {
         }
         @JavascriptInterface public void clearGoogleSession(){runOnUiThread(()->{if(!trustedPage())return;CredentialManager.create(MainActivity.this).clearCredentialStateAsync(new ClearCredentialStateRequest(),null,Runnable::run,new CredentialManagerCallback<Void,ClearCredentialException>(){public void onResult(Void result){}public void onError(ClearCredentialException error){}});});}
         @JavascriptInterface public void session(boolean active,boolean running,boolean rest,long deadline,long remaining,String room) {
-            final String code=room!=null&&room.matches("[1-9][0-9]{4}")?room:"";
+            final String code=room!=null&&room.matches("(?:YKS|LGS|TUS|[1-9][0-9]{4}|[1-9][0-9]{7}|[A-Za-z0-9_-]{16,40})")?room:"";
             runOnUiThread(()->{
                 if(!trustedPage())return;
                 keepSession=active;

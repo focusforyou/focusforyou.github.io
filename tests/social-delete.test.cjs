@@ -15,11 +15,13 @@ function fixture(){
  };
  const ctx={
   doc:(_, ...p)=>ref(p.join('/')),collection:(_, ...p)=>({path:p.join('/'),clauses:[]}),
+  collectionGroup:(_,name)=>({path:name,group:true,clauses:[]}),
   where:(field,op,value)=>({kind:'where',field,op,value}),limit:value=>({kind:'limit',value}),
   query:(base,...clauses)=>({...base,clauses:[...(base.clauses||[]),...clauses]}),
   getDocsFromServer:async q=>{
    const depth=q.path.split('/').length+1;
-   let paths=[...records.keys()].filter(p=>p.startsWith(q.path+'/')&&p.split('/').length===depth).sort();
+   if(fail==='read:'+q.path){fail='';throw Error('missing-index')}
+   let paths=[...records.keys()].filter(p=>q.group?p.split('/').at(-2)===q.path:p.startsWith(q.path+'/')&&p.split('/').length===depth).sort();
    for(const c of q.clauses||[]){
     if(c.kind==='where')paths=paths.filter(p=>c.op==='array-contains'?records.get(p)[c.field]?.includes(c.value):records.get(p)[c.field]===c.value);
     if(c.kind==='limit')paths=paths.slice(0,c.value);
@@ -98,5 +100,12 @@ test('failed social cleanup keeps Auth and private metadata available for retry'
 
 test('already cleaned and legacy accounts without social profiles remain deletable',async()=>{
  const f=fixture();await f.run();await f.run();await f.account();assert.equal(f.events.at(-1),'auth');
+});
+
+test('legacy orphan messages are removed without room roots or bookmarks',async()=>{
+ const f=fixture();f.put('rooms/missing/messages/own',{uid:'alice'});f.put('rooms/missing/messages/other',{uid:'bob'});await f.account();assert.equal(f.records.has('rooms/missing/messages/own'),false);assert.equal(f.records.has('rooms/missing/messages/other'),true);assert.equal(f.events.at(-1),'auth');
+});
+test('missing group index preserves Auth and bookmarks until retry',async()=>{
+ const f=fixture();populate(f);f.failOnce('read:messages');await assert.rejects(f.account(),/missing-index/);assert.equal(f.events.includes('auth'),false);assert.equal(f.records.has('users/alice/rooms/shared'),true);await f.account();assert.equal(f.events.at(-1),'auth');
 });
 

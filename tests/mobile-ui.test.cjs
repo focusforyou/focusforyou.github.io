@@ -37,4 +37,12 @@ test('Settings view activates via mobile nav button and desktop hash link',()=>{
  assert.equal(app.body.dataset.view,'settings');
 });
 
+test('Mobile tab navigation keeps URL and back navigation aligned with the selected view',()=>{
+ const app=setup();app.buttons[2].click();
+ assert.equal(app.location.hash,'#chat');assert.equal(app.body.dataset.view,'chat');
+ assert.equal(setup(app.location.hash).body.dataset.view,'chat');
+ app.buttons[4].click();assert.equal(app.location.hash,'#ayarlar');
+ app.location.hash='#chat';app.events.popstate();assert.equal(app.body.dataset.view,'chat');
+});
+
 

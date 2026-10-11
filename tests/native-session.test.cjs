@@ -15,6 +15,20 @@ test('notification follows timer, paused state, room leave and background action
  document.hidden=true;api.heartbeat();assert.equal(roomPulses,1);
  api.room('');assert.equal(calls.at(-1)[0],false);
  api.room('invalid');assert.equal(calls.at(-1)[5],'');
+ for(const room of ['12345678','YKS','TUS','LGS','legacy_room_123456789']){
+  api.room(room);assert.equal(calls.at(-1)[0],true);assert.equal(calls.at(-1)[5],room);
+ }
+ for(const room of ['01234567','123456','<script>','x'.repeat(41)]){
+  api.room(room);assert.equal(calls.at(-1)[5],'');
+ }
  delete window.FocusAndroid;assert.doesNotThrow(()=>api.pulse());
+});
+
+test('Android bridge validates all supported room identifiers',()=>{
+ const source=fs.readFileSync('android/app/src/main/java/io/github/focusforyou/app/MainActivity.java','utf8');
+ const pattern=source.match(/room\.matches\("([^"]+)"\)/)[1];
+ const valid=new RegExp('^(?:'+pattern+')$');
+ for(const room of ['12345','12345678','TUS','legacy_room_123456789'])assert.equal(valid.test(room),true);
+ for(const room of ['01234567','123456','malicious\nroom'])assert.equal(valid.test(room),false);
 });
 

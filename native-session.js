@@ -15,5 +15,5 @@ document.addEventListener('click',()=>queueMicrotask(pulse));
 document.addEventListener('visibilitychange',pulse);
 setInterval(pulse,1000);
 function heartbeat(){pulse();if(document.hidden)window.FocusRoomHeartbeat?.()}
-return {pulse,heartbeat,toggle,room:code=>{room=/^[1-9][0-9]{4}$/.test(code)?code:'';pulse()}};
+return {pulse,heartbeat,toggle,room:code=>{room=typeof code==='string'&&/^(?:YKS|LGS|TUS|[1-9][0-9]{4}|[1-9][0-9]{7}|[A-Za-z0-9_-]{16,40})$/.test(code)?code:'';pulse()}};
 })();

@@ -11,7 +11,7 @@ function fixture(storage=new Map(),options={}){
  doc:(_, ...p)=>p.join('/'),collection:(_, ...p)=>p.join('/'),serverTimestamp:()=>({toMillis:()=>++clock}),
  getDocFromServer:async path=>{if(offline)throw Error('offline');return snap(path)},
  runTransaction:async(_,fn)=>{if(offline)throw Error('offline');return fn({get:async path=>snap(path),set:(path,value)=>rows.set(path,value),update:(path,value)=>rows.set(path,{...rows.get(path),...value})})},
- onSnapshot:(path,fn)=>{const s={path,fn,active:true};subscriptions.push(s);return ()=>s.active=false},onAuthStateChanged:(_,fn)=>authChange=fn,
+ onSnapshot:(path,fn,error)=>{const s={path,fn,error,active:true};subscriptions.push(s);return ()=>s.active=false},onAuthStateChanged:(_,fn)=>authChange=fn,
  signOut:async()=>{ctx.auth.currentUser=null;authChange(null)},GoogleAuthProvider:class{},EmailAuthProvider:{credential:()=>({})},reauthenticateWithPopup:async()=>{},reauthenticateWithCredential:async()=>{},signInWithPopup:async()=>{},signInWithCredential:async()=>{},signInWithEmailAndPassword:async()=>{},createUserWithEmailAndPassword:async()=>{},sendEmailVerification:async()=>{},sendPasswordResetEmail:async()=>{},reload:async()=>{},getIdToken:async()=>{},
  Study:{snapshot:()=>({days:copy(daily)}),applyDays:d=>daily=copy(d),liveSession:()=>({running:false})},FocusData:{fields:()=>({...fields}),apply:f=>Object.assign(fields,f)},dispatchEvent:()=>{}};
  ctx.FocusAccountUI={mode:'',resolved(){},beginLogin(){this.mode='login'},onboarding(){this.mode='onboarding';node('accountSheet').showModal()},closeLogin(){if(this.mode==='login'||this.mode==='onboarding'){node('accountSheet').close();this.mode=''}}};
@@ -114,3 +114,24 @@ test('offline boot without Firebase SDK preserves work and changed preferences f
 });
 
 test('cloud merge ignores oversized or malformed fields from existing records',()=>{const out=Model.combine({days:{},fields:{tasks:'x'.repeat(65537),exam:42,preferences:'{"focus":25}',unexpected:'bad'}},[{days:[],tasks:{value:[],at:{toMillis:()=>10}},preferences:{value:'x'.repeat(2049),at:{toMillis:()=>10}}}]);assert.deepEqual(out,{days:{},fields:{preferences:'{"focus":25}'}})});
+test('banned account cache stays separate from previous account',async()=>{
+ const f=fixture();await f.login();f.emit();f.work(90);f.watch();f.rows.set('appBans/bob',{at:0});await f.login('bob');f.work(10);f.watch();assert.equal(JSON.parse(f.storage.get('focus_account_bob')).days['2026-10-10'],10);
+});
+test('stale listener error cannot disable a newer account',async()=>{
+ const f=fixture();await f.login();f.emit();const stale=f.subscriptions.find(s=>s.path==='users/alice/meta/main');await f.login('bob');f.emit();const before=f.node('accountStatus').textContent;stale.error();assert.equal(f.node('accountStatus').textContent,before);f.node('profileName').value='Bob changed';await f.node('saveProfile').onclick();assert.equal(f.rows.get('users/bob/meta/main').profile.name,'Bob changed');
+});
+test('typed name survives background snapshots after blur',async()=>{
+ const f=fixture();await f.login();f.emit();f.node('profileName').value='My draft';f.node('profileName').oninput();f.emit();assert.equal(f.node('profileName').value,'My draft');
+});
+test('account switch during sync stops stale device write',async()=>{
+ const f=fixture();await f.login();f.emit();f.work(20);const original=f.ctx.runTransaction;let release;f.ctx.runTransaction=(db,fn)=>original(db,tx=>fn({...tx,get:async path=>path==='users/alice/devices/device-a'?new Promise(resolve=>release=()=>resolve(tx.get(path))):tx.get(path)}));const sync=f.ctx.FocusAccount.sync();await f.settle();await f.login('bob');f.emit();release();await sync;assert.equal(f.rows.has('users/alice/devices/device-a'),false);
+});
+test('account switch during deletion initializes the new account safely',async()=>{
+ const f=fixture();await f.login();f.emit();f.ctx.auth.currentUser.providerData=[{providerId:'google.com'}];f.node('deleteConsent').checked=true;let release;f.ctx.eraseAccount=async o=>{await o.onLocked();await new Promise(resolve=>release=resolve);o.assertCurrent()};const deleting=f.node('deleteAccount').onclick();await f.settle();await f.login('bob');release();await deleting;f.emit();assert.equal(f.ctx.FocusAccount.profile().uid,'bob');assert.equal(f.rows.has('users/bob/meta/main'),true);
+});
+test('selected photo remains a draft through cloud hydration and is saved',async()=>{
+ const f=fixture();await f.login();f.emit();const photo='data:image/jpeg;base64,AAAA';f.ctx.createImageBitmap=async()=>({width:128,height:128,close(){}});f.ctx.document.createElement=()=>({getContext:()=>({fillRect(){},drawImage(){}}),toDataURL:()=>photo});f.node('profilePhotoConsent').checked=true;await f.node('profilePhoto').onchange({target:{files:[{type:'image/jpeg',size:4}],value:'photo'}});f.emit();assert.equal(f.node('profileAvatar').src,photo);await f.node('saveProfile').onclick();assert.equal(f.rows.get('users/alice/meta/main').profile.photo,photo);
+});
+test('old bootstrap read cannot initialize an account after switching identity',async()=>{
+ const f=fixture();const original=f.ctx.runTransaction;let release;f.ctx.runTransaction=(db,fn)=>original(db,tx=>fn({...tx,get:async path=>path==='users/alice/meta/main'?new Promise(resolve=>release=()=>resolve(tx.get(path))):tx.get(path)}));await f.login();await f.login('bob');release();await f.settle();assert.equal(f.rows.has('users/alice/meta/main'),false);assert.equal(f.rows.has('users/bob/meta/main'),true);
+});

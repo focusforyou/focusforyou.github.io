@@ -1,7 +1,7 @@
 'use strict';
 (()=>{
  const by=id=>document.getElementById(id),panel=by('friendsPanel'),toggle=by('friendsToggle'),create=by('createRoomSheet');
- function friends(open){panel.hidden=!open;toggle.setAttribute('aria-expanded',String(open));if(open){panel.animate?.([{opacity:0,transform:'translateY(12px) scale(.98)'},{opacity:1,transform:'translateY(0) scale(1)'}],{duration:220,easing:'cubic-bezier(.22,.8,.25,1)'});by('friendUsername')?.focus()}}
+ function friends(open){const restore=!open&&panel.contains(document.activeElement);panel.hidden=!open;toggle.setAttribute('aria-expanded',String(open));if(open){if(!matchMedia('(prefers-reduced-motion:reduce)').matches)panel.animate?.([{opacity:0,transform:'translateY(12px) scale(.98)'},{opacity:1,transform:'translateY(0) scale(1)'}],{duration:220,easing:'cubic-bezier(.22,.8,.25,1)'});if(by('friendsMember')&&!by('friendsMember').hidden)by('friendUsername')?.focus();else by('closeFriends').focus()}else if(restore)toggle.focus()}
  toggle.onclick=()=>friends(panel.hidden);by('closeFriends').onclick=()=>friends(false);
  document.addEventListener('pointerdown',e=>{if(!panel.hidden&&!panel.contains(e.target)&&!toggle.contains(e.target))friends(false)});
  addEventListener('keydown',e=>{if(e.key==='Escape')friends(false)});
@@ -24,8 +24,12 @@
   const p=(window.FocusSocial?.getProfile?window.FocusSocial.getProfile(targetUid):null)||extraData||{};
   const name=p.name||fallbackName||'Kullanıcı';
   by('memberProfileTitle').textContent=name;
+  window.SocialModel?.decorate(by('memberProfileTitle'),{...p,username:null});
+  const goldFrame=window.SocialModel?.cosmetics(p.cosmetics).frame==='gold';
+  by('memberProfileAvatar').classList.toggle('frame-gold',goldFrame);
+  by('memberProfileFallback').classList.toggle('frame-gold',goldFrame);
   by('memberProfileHandle').textContent='@'+(p.username||'kullanici');
-  if(p.exam){by('memberProfileExam').textContent=p.exam;by('memberProfileExam').hidden=false}else by('memberProfileExam').hidden=true;
+  if(p.exam){by('memberProfileExam').textContent=p.exam==='OTHER'?'Diğer':p.exam;by('memberProfileExam').hidden=false}else by('memberProfileExam').hidden=true;
   if(p.photo){
    by('memberProfileAvatar').src=p.photo;by('memberProfileAvatar').hidden=false;by('memberProfileFallback').hidden=true;
   }else{

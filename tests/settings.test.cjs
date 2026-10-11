@@ -63,10 +63,12 @@ function setup(initialStorage={}){
   breakMinutes:oBreak,
   settingsSaveDurations:saveBtn,
   saveDurations:origSave,
-  settingsDurationsFeedback:fb
+  settingsDurationsFeedback:fb,
+  settingsMessage:new Element('span')
  };
 
  let skyResumed=false;
+ const listeners={};
  const ctx={
   document:{
    readyState:'complete',
@@ -82,6 +84,7 @@ function setup(initialStorage={}){
   },
   CustomEvent:class{constructor(name,data){this.name=name;this.detail=data.detail;}},
   dispatchEvent:()=>{},
+  addEventListener:(name,fn)=>listeners[name]=fn,
   FocusSky:{resume:()=>{skyResumed=true;}},
   setTimeout:globalThis.setTimeout,
   clearTimeout:globalThis.clearTimeout,
@@ -91,7 +94,7 @@ function setup(initialStorage={}){
  vm.createContext(ctx);
  vm.runInContext(fs.readFileSync('settings.js','utf8'),ctx);
 
- return {ctx,storage,docElement,body,metaTheme,sky,elements,isSkyResumed:()=>skyResumed,isOrigSaved:()=>origSaveClicked};
+ return {ctx,storage,docElement,body,metaTheme,sky,elements,listeners,isSkyResumed:()=>skyResumed,isOrigSaved:()=>origSaveClicked};
 }
 
 test('Default settings are dark theme and background animation on', ()=>{
@@ -105,6 +108,26 @@ test('Default settings are dark theme and background animation on', ()=>{
  assert.equal(app.elements.bgAnimOffBtn.attrs['aria-pressed'],'false');
  assert.equal(app.ctx.FocusSettings.theme,'dark');
  assert.equal(app.ctx.FocusSettings.anim,true);
+});
+
+test('Rejected duration change shows timer rejection and restores current durations',()=>{
+ const app=setup();
+ app.elements.saveDurations.events.click=()=>{
+  app.elements.focusMinutes.value='30';app.elements.breakMinutes.value='10';
+  app.elements.settingsMessage.textContent='Önce devam eden turu sıfırla; sonra süreleri değiştirebilirsin.';
+ };
+ app.elements.settingsFocusMinutes.value='45';app.elements.settingsBreakMinutes.value='15';
+ app.elements.settingsSaveDurations.click();
+ assert.equal(app.elements.settingsFocusMinutes.value,'30');
+ assert.equal(app.elements.settingsBreakMinutes.value,'10');
+ assert.match(app.elements.settingsDurationsFeedback.textContent,/Önce devam eden turu/);
+});
+
+test('Cloud duration hydration updates visible settings fields',()=>{
+ const app=setup();app.elements.focusMinutes.value='50';app.elements.breakMinutes.value='20';
+ app.listeners['focus-preferences-change']();
+ assert.equal(app.elements.settingsFocusMinutes.value,'50');
+ assert.equal(app.elements.settingsBreakMinutes.value,'20');
 });
 
 test('Switching to light theme updates classes, meta theme color and localStorage', ()=>{

@@ -88,13 +88,22 @@
    if(oFocus&&sFocus)oFocus.value=sFocus.value;
    if(oBreak&&sBreak)oBreak.value=sBreak.value;
    by('saveDurations')?.click();
+   if(sFocus&&oFocus)sFocus.value=oFocus.value;
+   if(sBreak&&oBreak)sBreak.value=oBreak.value;
    const fb=by('settingsDurationsFeedback');
    if(fb){
-    fb.textContent='Süreler kaydedildi!';
-    setTimeout(()=>{if(fb)fb.textContent='';},2500);
+    fb.textContent=by('settingsMessage')?.textContent||'Süreler kaydedildi!';
+    const message=fb.textContent;
+    setTimeout(()=>{if(fb.textContent===message)fb.textContent='';},2500);
    }
   });
  }
+
+ window.addEventListener('focus-preferences-change',()=>{
+  for(const [target,source] of [['settingsFocusMinutes','focusMinutes'],['settingsBreakMinutes','breakMinutes']]){
+   if(by(target)&&by(source))by(target).value=by(source).value;
+  }
+ });
 
  if(document.readyState==='loading'){
   document.addEventListener('DOMContentLoaded',init);
