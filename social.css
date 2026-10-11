@@ -33,18 +33,20 @@
 .chat-reply-quote strong{color:var(--pr);display:block;margin-bottom:2px}
 .chat-reply-quote p{margin:0;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* Desktop Hover Message Actions */
+/* Desktop & Mobile Message Actions */
 .chat-message{position:relative;transition:transform .15s ease-out,background .2s}
-.chat-actions{position:absolute;top:6px;right:6px;display:flex;gap:4px;opacity:0;pointer-events:none;transition:opacity .15s;background:#0d162ed9;border:1px solid rgba(255,255,255,0.15);border-radius:999px;padding:2px 6px;backdrop-filter:blur(6px);z-index:2}
-.chat-message:hover .chat-actions{opacity:1;pointer-events:auto}
-.chat-action-btn{background:none;border:0;color:var(--mu);padding:4px 6px;font-size:13px;cursor:pointer;border-radius:8px;transition:color .15s,background .15s}
-.chat-action-btn:hover{color:#fff;background:rgba(255,255,255,0.15)}
+.chat-actions{position:absolute;top:6px;right:6px;display:flex;align-items:center;gap:2px;background:#132145f0;border:1px solid rgba(175,198,255,0.3);border-radius:999px;padding:2px 6px;backdrop-filter:blur(8px);z-index:4;opacity:0.85;transition:opacity .15s ease,transform .15s ease,background .15s ease;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
+.chat-message:hover .chat-actions,.chat-actions:hover{opacity:1;background:#1a2c5a;border-color:rgba(175,198,255,0.6);transform:scale(1.04)}
+.chat-message:has(.chat-delete) .chat-actions,.chat-message.has-delete .chat-actions{right:62px}
+.chat-action-btn{background:none;border:0;color:#d4e2ff;padding:4px 6px;font-size:14px;line-height:1;cursor:pointer;border-radius:6px;transition:color .15s,background .15s,transform .1s;display:inline-flex;align-items:center;justify-content:center}
+.chat-action-btn:hover{color:#fff;background:rgba(255,255,255,0.22);transform:scale(1.15)}
+.chat-action-btn:active{transform:scale(0.95)}
 
 /* Floating Reaction Picker */
-.reaction-picker{position:absolute;bottom:calc(100% + 4px);right:0;display:flex;gap:4px;padding:6px 8px;background:#101a33f5;border:1px solid rgba(175,198,255,0.3);border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,0.5);backdrop-filter:blur(10px);z-index:10;animation:popIn .15s ease-out}
-.reaction-emoji{background:none;border:0;font-size:18px;cursor:pointer;padding:4px 6px;border-radius:50%;transition:transform .15s}
-.reaction-emoji:hover{transform:scale(1.25);background:rgba(255,255,255,0.15)}
-@keyframes popIn{from{opacity:0;transform:scale(0.8) translateY(6px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.reaction-picker{position:absolute;top:4px;right:4px;display:flex;gap:4px;padding:4px 8px;background:#0c152ef8;border:1px solid rgba(175,198,255,0.45);border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,0.65);backdrop-filter:blur(10px);z-index:10;animation:popIn .15s ease-out}
+.reaction-emoji{background:none;border:0;font-size:18px;line-height:1;cursor:pointer;padding:4px 6px;border-radius:50%;transition:transform .15s,background .15s}
+.reaction-emoji:hover{transform:scale(1.28);background:rgba(255,255,255,0.18)}
+@keyframes popIn{from{opacity:0;transform:scale(0.85) translateY(-4px)}to{opacity:1;transform:scale(1) translateY(0)}}
 
 /* Reactions under message */
 .chat-reactions{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}

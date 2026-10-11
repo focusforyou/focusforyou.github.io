@@ -44,3 +44,21 @@ test('retain and reset clear identity rows so a later same-ID message is created
  chat.receive({...message,sender:'Second'},identity);assert.equal(list.children.length,1);assert.notEqual(list.children[0],original);
  chat.reset();assert.equal(list.children.length,0);chat.receive({...message,sender:'Third'},identity);assert.equal(list.children.length,1);assert.match(list.children[0].textContent,/Third/);
 });
+test('zero-width encoded reply metadata extracts cleanly and renders reply quote with action buttons',()=>{
+ const {chat,list}=setup();
+ const meta=JSON.stringify({id:'A'.repeat(20),sender:'Original Author',text:'Original message snippet'});
+ const rawText='\u200B\u200C'+meta+'\u200C\u200BReply message content';
+ const message={id:'C'.repeat(20),text:rawText,image:'',sender:'Replier',avatar:'',time:20000};
+ chat.receive(message);
+ assert.equal(list.children.length,1);
+ const item=list.children[0];
+ const quote=item.children.find(c=>c.className==='chat-reply-quote');
+ assert.ok(quote);
+ assert.equal(quote.children[0].textContent,'Original Author');
+ assert.equal(quote.children[1].textContent,'Original message snippet');
+ const body=item.children.find(c=>c.tagName==='p');
+ assert.equal(body.textContent,'Reply message content');
+ const actions=item.children.find(c=>c.className==='chat-actions');
+ assert.ok(actions);
+ assert.equal(actions.children.length,2);
+});

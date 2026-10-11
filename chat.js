@@ -34,7 +34,10 @@ function setReply(msg){
     by('replyDraft').hidden=false;
   }
   const input=by('chatText');
-  if(input)input.focus();
+  if(input){
+    input.focus();
+    if(typeof input.scrollIntoView==='function')input.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
 }
 
 function scrollToBottom(smooth=false){
@@ -44,6 +47,9 @@ function scrollToBottom(smooth=false){
     list.scrollTo({top:list.scrollHeight,behavior:'smooth'});
   }else{
     list.scrollTop=list.scrollHeight;
+  }
+  if(typeof requestAnimationFrame==='function'){
+    requestAnimationFrame(()=>{list.scrollTop=list.scrollHeight});
   }
 }
 
@@ -205,6 +211,7 @@ function receive(input,identity,onDelete){
   header(row,message,identity);
 
   if(onDelete){
+    item.classList.add('has-delete');
     const remove=document.createElement('button');
     remove.className='chat-delete';
     remove.type='button';
@@ -221,12 +228,14 @@ function receive(input,identity,onDelete){
   replyBtn.type='button';
   replyBtn.textContent='↩';
   replyBtn.title='Yanıtla';
+  replyBtn.setAttribute('aria-label','Mesajı yanıtla');
   replyBtn.onclick=e=>{e.stopPropagation();setReply(message)};
   const reactBtn=document.createElement('button');
   reactBtn.className='chat-action-btn';
   reactBtn.type='button';
   reactBtn.textContent='😊';
   reactBtn.title='Tepki ver';
+  reactBtn.setAttribute('aria-label','Tepki bırak');
   reactBtn.onclick=e=>{e.stopPropagation();showPicker(item,message)};
   actions.append(replyBtn,reactBtn);
   item.append(actions);
