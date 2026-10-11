@@ -35,8 +35,8 @@
 
 /* Desktop & Mobile Message Actions */
 .chat-message{position:relative;transition:transform .15s ease-out,background .2s}
-.chat-actions{position:absolute;top:6px;right:6px;display:flex;align-items:center;gap:2px;background:#132145f0;border:1px solid rgba(175,198,255,0.3);border-radius:999px;padding:2px 6px;backdrop-filter:blur(8px);z-index:4;opacity:0.85;transition:opacity .15s ease,transform .15s ease,background .15s ease;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
-.chat-message:hover .chat-actions,.chat-actions:hover{opacity:1;background:#1a2c5a;border-color:rgba(175,198,255,0.6);transform:scale(1.04)}
+.chat-actions{position:absolute;top:6px;right:6px;display:flex;align-items:center;gap:2px;background:#132145f0;border:1px solid rgba(175,198,255,0.3);border-radius:999px;padding:2px 6px;backdrop-filter:blur(8px);z-index:4;opacity:0;pointer-events:none;visibility:hidden;transition:opacity .18s ease,transform .18s ease,visibility .18s,background .15s ease;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
+.chat-message:hover .chat-actions,.chat-message:focus-within .chat-actions,.chat-actions:hover,.chat-actions:focus-within{opacity:1;pointer-events:auto;visibility:visible;background:#1a2c5a;border-color:rgba(175,198,255,0.6);transform:scale(1.04)}
 .chat-message:has(.chat-delete) .chat-actions,.chat-message.has-delete .chat-actions{right:62px}
 .chat-action-btn{background:none;border:0;color:#d4e2ff;padding:4px 6px;font-size:14px;line-height:1;cursor:pointer;border-radius:6px;transition:color .15s,background .15s,transform .1s;display:inline-flex;align-items:center;justify-content:center}
 .chat-action-btn:hover{color:#fff;background:rgba(255,255,255,0.22);transform:scale(1.15)}
