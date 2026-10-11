@@ -278,3 +278,35 @@ test('reopening app restores last joined room from storage',async()=>{
  assert.equal(f.ctx.FocusSocial.active(),'44444444');
 });
 
+test('obsolete rooms are excluded while #72775905 and exams are preserved',async()=>{
+ const f=fixture();
+ f.put('rooms/21795044',{name:'Obsolete 1',ownerUid:'bob',locked:false,salt:'',exam:''});
+ f.put('rooms/72775905',{name:'Valid Room',ownerUid:'bob',locked:false,salt:'',exam:''});
+ f.put('rooms/YKS',{name:'YKS çalışma odası',ownerUid:'focusforyou',locked:false,salt:'',exam:'YKS',unlimited:true});
+ f.put('users/alice/rooms/21795044',{name:'Obsolete 1'});
+ f.put('users/alice/rooms/72775905',{name:'Valid Room'});
+ f.put('users/alice/rooms/YKS',{name:'YKS çalışma odası'});
+ f.put('publicProfiles/alice',profile('alice'));
+ await f.login('alice');
+ const cards=f.node('savedRooms').children;
+ assert.equal(cards.length,2);
+ assert.match(cards[0].textContent,/Valid Room/);
+ assert.match(cards[1].textContent,/YKS/);
+ assert.doesNotMatch(f.node('savedRooms').textContent,/Obsolete 1/);
+});
+
+test('admin can permanently delete room by ID using admin moderation tool',async()=>{
+ const f=fixture();
+ f.put('rooms/99999999',{name:'Unwanted Room',ownerUid:'bob',locked:false,salt:'',exam:''});
+ f.put('publicProfiles/admin',profile('admin'));
+ f.put('publicProfiles/bob',profile('bob'));
+ f.ctx.auth.currentUser={uid:'admin',emailVerified:true,email:'efeozbilgin550@gmail.com'};
+ await f.ctx.FocusSocial.bind(f.ctx.auth.currentUser);
+ await f.settle();
+ f.node('adminDeleteRoomId').value='99999999';
+ await f.node('adminDeleteRoomBtn').onclick();
+ await f.settle();
+ assert.equal(f.records.has('rooms/99999999'),false);
+});
+
+
