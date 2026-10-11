@@ -45,4 +45,15 @@ test('Mobile tab navigation keeps URL and back navigation aligned with the selec
  app.location.hash='#chat';app.events.popstate();assert.equal(app.body.dataset.view,'chat');
 });
 
+test('Desktop popup uses the original timer outside work and returns it without adding another ticker',()=>{
+ const app=setup();app.media.matches=false;app.resize();assert.equal(app.timer.parentNode,app.home);
+ app.links[1].events.click({preventDefault(){}});
+ assert.equal(app.timer.parentNode,app.ids.timerSlot);
+ app.ids.openTimer.click();assert.equal(app.ids.timerSheet.inert,false);
+ app.ids.miniToggle.click();app.refresh();assert.equal(app.toggles(),1);
+ app.ids.tt.textContent='09:41';app.refresh();assert.equal(app.ids.miniTime.textContent,'09:41');
+ app.links[0].events.click({preventDefault(){}});assert.equal(app.timer.parentNode,app.home);
+ assert.equal(app.ids.timerSheet.inert,true);assert.deepEqual(app.home.children,[app.timer,app.task]);
+});
+
 

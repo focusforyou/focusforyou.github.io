@@ -109,3 +109,9 @@ test('missing group index preserves Auth and bookmarks until retry',async()=>{
  const f=fixture();populate(f);f.failOnce('read:messages');await assert.rejects(f.account(),/missing-index/);assert.equal(f.events.includes('auth'),false);assert.equal(f.records.has('users/alice/rooms/shared'),true);await f.account();assert.equal(f.events.at(-1),'auth');
 });
 
+test('account cleanup removes wallet and all sent/received nudge receipts before Auth',async()=>{
+ const f=fixture();f.put('wallets/alice',{balance:3});f.put('rooms/legacy/nudges/alice',{from:'bob',to:'alice'});f.put('rooms/legacy/nudges/bob',{from:'alice',to:'bob'});f.put('rooms/legacy/nudges/charlie',{from:'bob',to:'charlie'});await f.account();assert.equal(f.records.has('wallets/alice'),false);assert.equal(f.records.has('rooms/legacy/nudges/alice'),false);assert.equal(f.records.has('rooms/legacy/nudges/bob'),false);assert.equal(f.records.has('rooms/legacy/nudges/charlie'),true);assert.equal(f.events.at(-1),'auth');
+});
+test('missing nudge index prevents deleting inventory, wallet and Auth and allows retry',async()=>{
+ const f=fixture();populate(f);f.put('wallets/alice',{balance:3});f.put('rooms/legacy/nudges/bob',{from:'alice',to:'bob'});f.failOnce('read:nudges');await assert.rejects(f.account(),/missing-index/);assert.equal(f.events.includes('auth'),false);assert.equal(f.records.has('wallets/alice'),true);assert.equal(f.records.has('entitlements/alice'),true);assert.equal(f.records.has('users/alice/rooms/shared'),true);await f.account();assert.equal(f.records.has('rooms/legacy/nudges/bob'),false);assert.equal(f.events.at(-1),'auth');
+});

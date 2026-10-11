@@ -140,7 +140,7 @@ function header(row,message,identity){
       row.avatar.referrerPolicy='no-referrer';
       row.item.prepend(row.avatar);
     }
-    row.avatar.className='chat-avatar'+(identity?.cosmetics?.frame==='gold'?' frame-gold':'');
+    row.avatar.className='chat-avatar'+(window.SocialModel?.cosmetics(identity?.cosmetics).frame!=='none'&&window.SocialModel?' frame-'+SocialModel.cosmetics(identity?.cosmetics).frame:'');
     row.avatar.src=message.avatar;
     if(row.avatar.style)row.avatar.style.cursor='pointer';
     row.avatar.onclick=e=>{

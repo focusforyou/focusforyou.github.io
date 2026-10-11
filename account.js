@@ -3,8 +3,9 @@ import {getAuth,setPersistence,browserLocalPersistence,GoogleAuthProvider,EmailA
 import {getFirestore,doc,getDocFromServer,getDocsFromServer,collection,onSnapshot,runTransaction,serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js';
 import {initializeAppCheck,ReCaptchaEnterpriseProvider} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-app-check.js';
 import {firebaseConfig,googleClientId,appCheckSiteKey} from './firebase-config.js';
-import {eraseAccount} from './account-delete.js?v=perf1';
-import {initSocial} from './social.js?v=perf1';
+import {eraseAccount} from './account-delete.js?v=features1';
+import {initCosmeticStore} from './cosmetic-store.js?v=features1';
+import {initSocial} from './social.js?v=features1';
 
 const app=initializeApp(firebaseConfig);
 // Enable only after the matching web provider is registered in Firebase.
@@ -75,7 +76,7 @@ async function sync(){
 }
 async function bind(user){
  if(deleting)return;
- window.FocusSocial?.stop();
+ window.FocusCosmeticStore?.stop();window.FocusSocial?.stop();
  deletionLocked=false;
  const previous=localStorage.getItem('focus_current_uid')||'',next=user?.emailVerified?user.uid:'';
  if(previous&&previous!==next){try{const guest=JSON.parse(localStorage.getItem('focus_guest_backup')||'null');if(guest){Study.applyDays(guest.days);window.FocusData?.apply(guest.fields)}}catch(e){}}
@@ -101,6 +102,7 @@ async function bind(user){
  if(!cache||typeof cache!=='object'||Array.isArray(cache))cache={days:{},dirty:{}};
  cache.days=CloudModel.days(cache.days);cache.dirty=CloudModel.combine({fields:cache.dirty},[]).fields;
  if(onlineBanned){window.FocusSocial.bind(user).catch(e=>{if(revision===generation)failure(e)});message('Çevrimiçi özelliklerin yasaklandı. Kişisel sayacını kullanabilir, verilerini indirebilir veya hesabını silebilirsin.');return}
+ window.FocusCosmeticStore.bind(user);
  observed=fields();for(const [key,value] of Object.entries(observed))if(typeof cache.observed?.[key]==='string'&&value!==cache.observed[key])cache.dirty[key]=value;cache.observed={...observed};saveCache();
  const ref=doc(db,'users',uid,'meta','main');
  if(cache.seed)cache.seed={days:CloudModel.days(cache.seed.days),fields:CloudModel.combine({fields:cache.seed.fields},[]).fields};
@@ -156,17 +158,18 @@ by('exportAccount').onclick=()=>busy(async()=>{
  if(!uid||(!ready&&!onlineBanned)||!base||!devicesLoaded){message('Verilerini indirmek için önce bulut kayıtlarının yüklenmesini bekle.');return}
  watchChanges();const owner=uid,revision=generation;
  const social=await window.FocusSocial.exportData();
+ const shopRows=await Promise.all(['wallets','entitlements'].map(c=>getDocFromServer(doc(db,c,owner))));const cosmetics={wallet:shopRows[0].exists()?shopRows[0].data():null,inventory:shopRows[1].exists()?shopRows[1].data():null};
  if(owner!==uid||revision!==generation||auth.currentUser?.uid!==owner)return;
- const value=JSON.stringify({social,format:'focus-for-you-data-v1',exportedAt:new Date().toISOString(),account:{uid:owner,email:auth.currentUser.email,profile:{...profile}},cloud:{baseline:json(base),devices:[...devices].map(([id,data])=>({id,data:json(data)}))},currentDevice:{days:json(cache.days),pendingFields:json(cache.dirty),visibleDays:Study.snapshot().days,settings:fields()}},null,2);
+ const value=JSON.stringify({social,cosmetics,format:'focus-for-you-data-v1',exportedAt:new Date().toISOString(),account:{uid:owner,email:auth.currentUser.email,profile:{...profile}},cloud:{baseline:json(base),devices:[...devices].map(([id,data])=>({id,data:json(data)}))},currentDevice:{days:json(cache.days),pendingFields:json(cache.dirty),visibleDays:Study.snapshot().days,settings:fields()}},null,2);
  if(owner!==uid||revision!==generation)return;
  if(window.FocusAndroid){if(!window.FocusAndroid.saveBackup){message('Verilerini indirmek için APK’yi güncelle veya siteyi tarayıcıda aç.');return}if(new TextEncoder().encode(value).length>1000000){message('Dosya APK için büyük. Hesabınla tarayıcıdan giriş yapıp Verilerimi indir’i kullan.');return}window.FocusAndroid.saveBackup(value);message('Verilerini kaydetmek için açılan pencerede dosya konumunu seç.');return}
  const url=URL.createObjectURL(new Blob([value],{type:'application/json'})),link=document.createElement('a');link.href=url;link.download='focus-for-you-verilerim.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),30000);message('Veri dosyan hazır. Dosya kişisel kayıtlarını içerir; herkese açık paylaşma.');
 });
 function clearAccountDevice(owner){
- window.FocusSocial?.stop();sessionStorage.removeItem('focus_active_room_'+owner);by('leaveRoom')?.click();Study.stopForAccountDeletion?.();
+ window.FocusCosmeticStore?.stop();window.FocusSocial?.stop();sessionStorage.removeItem('focus_active_room_'+owner);by('leaveRoom')?.click();Study.stopForAccountDeletion?.();
  by('lobbyName').value='';window.FocusNative?.pulse();
  profile={uid:'',name:'',photo:''};avatar='';photoDraft=false;nameDraft=false;renderProfile();
- localStorage.removeItem('focus_current_uid');localStorage.removeItem('focus_account_'+owner);localStorage.removeItem('focus_guest_backup');localStorage.removeItem('focus_room_cards_'+owner);
+ localStorage.removeItem('focus_current_uid');localStorage.removeItem('focus_account_'+owner);localStorage.removeItem('focus_room_cards_'+owner);localStorage.removeItem('focus_guest_backup');localStorage.removeItem('focus_room_cards_'+owner);
  localStorage.removeItem('focus_profile_label');localStorage.removeItem('focus_profile_uid');
  Study.resetForDeletion?.();Study.applyDays({});window.FocusData?.apply({preferences:JSON.stringify({focus:25,break:5,goal:120}),tasks:'{"t":[],"a":null}',forest:'{"f":0,"l":0}',exam:''});
  for(const key of ['focus_study','mikro_tasks','mikro_forest','mikro_timer','ex'])localStorage.removeItem(key);
@@ -203,7 +206,7 @@ if(by('deleteAccount'))by('deleteAccount').onclick=()=>busy(async()=>{
 });
 window.FocusAccount={profile:()=>({...profile}),record:(date,seconds)=>{if(!uid||deleting||deletionLocked||!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(seconds)||seconds<=0)return;cache.days[date]=Math.min(86400,(cache.days[date]||0)+seconds)},sync};
 by('profileName').oninput=()=>{nameDraft=true};
-initSocial({db,auth});
+initCosmeticStore({db,auth});initSocial({db,auth});
 onAuthStateChanged(auth,user=>{const pending=bind(user),revision=generation;pending.catch(e=>{if(revision===generation&&auth.currentUser?.uid===user?.uid)failure(e)})});
 addEventListener('focus-social-ready',event=>{if(event.detail?.uid&&event.detail.uid!==auth.currentUser?.uid)return;socialReadyUid=auth.currentUser?.uid||'';settleAccountUI()});
 addEventListener('focus-identity-ready',event=>{if(event.detail?.uid&&event.detail.uid!==auth.currentUser?.uid)return;settleAccountUI()});

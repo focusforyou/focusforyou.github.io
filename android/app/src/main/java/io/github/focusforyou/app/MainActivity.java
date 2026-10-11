@@ -94,6 +94,10 @@ public class MainActivity extends Activity {
         try{startActivityForResult(pick,101);}catch(Exception ignored){if(fileCallback!=null)fileCallback.onReceiveValue(null);fileCallback=null;}
     }
     public class BackupBridge {
+        @JavascriptInterface public void sound(String kind){
+            if(!"alarm".equals(kind)&&!"nudge".equals(kind))return;
+            runOnUiThread(()->{if(trustedPage())FocusSound.play(kind);});
+        }
         @JavascriptInterface public void motion(boolean enabled){runOnUiThread(()->{if(!trustedPage())return;motionRequested=enabled;updateMotion();});}
         @JavascriptInterface public void googleSignIn(String clientId){
             runOnUiThread(()->{

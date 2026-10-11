@@ -20,9 +20,11 @@ public class FocusService extends Service {
     private String phase="Odak",room="";
     private long end;
     private long remaining;
+    private boolean completionPlayed;
     private final Runnable pulse=new Runnable() {
         @Override public void run() {
             if(heartbeat==null){stopSelf();return;}
+            if(running&&"Odak".equals(phase)&&!completionPlayed&&SystemClock.elapsedRealtime()>=end){completionPlayed=true;FocusSound.play("alarm");}
             if(wake!=null){if((running||!room.isEmpty())&&!wake.isHeld())wake.acquire(10*60*1000L);else if(!running&&room.isEmpty()&&wake.isHeld())wake.release();}
             heartbeat.run();
             handler.postDelayed(this,1000);
@@ -64,6 +66,7 @@ public class FocusService extends Service {
         phase=intent.getBooleanExtra("break",false)?"Mola":"Odak";
         long deadline=intent.getLongExtra("deadline",System.currentTimeMillis());
         end=SystemClock.elapsedRealtime()+Math.max(0,deadline-System.currentTimeMillis());
+        if(!running||!"Odak".equals(phase)||end>SystemClock.elapsedRealtime()+1500)completionPlayed=false;
         if(!intent.getBooleanExtra("active",false)){stopSelf();return START_NOT_STICKY;}
         ServiceCompat.startForeground(this,ID,notification(),Build.VERSION.SDK_INT>=34?ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE:0);
         if(!active){active=true;handler.post(pulse);}

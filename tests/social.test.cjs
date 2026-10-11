@@ -8,6 +8,7 @@ function fixture(){
  const records=new Map(),nodes=new Map(),subscriptions=[],intervals=[],events=[],sessions=new Map(),chat={received:[],retained:[],resets:0};let seconds=0,clock=Date.now(),offline=false,failDelete=false;
  class Element{
   constructor(){this.children=[];this.value='';this.hidden=false;this.checked=false;this.disabled=false;this._text='';this.replacements=0;this.paintVisible=true;this.classList={add(){},toggle(){}}}
+  get options(){return this.children}
   getClientRects(){return this.paintVisible?[{}]:[]}
   set textContent(v){this._text=String(v);this.children=[]}get textContent(){return this._text+this.children.map(n=>n.textContent).join('')}
   append(...nodes){this.children.push(...nodes)}prepend(...nodes){this.children.unshift(...nodes)}replaceChildren(...nodes){this.replacements++;this._text='';this.children=[...nodes]}click(){return this.onclick?.()}
@@ -53,7 +54,7 @@ function fixture(){
   FocusAccount:{profile:()=>({uid:ctx.auth.currentUser?.uid,name:ctx.auth.currentUser?.uid||'Alice',photo:''})},FocusTemporaryRoom:{leaveNow:()=>events.push('temporary-left')},FocusNative:{room:id=>events.push('native:'+id)},
   RoomChat:{receive:(...args)=>chat.received.push(args),retain:ids=>chat.retained.push([...ids]),reset:()=>{chat.resets++},configure:fn=>{chat.transport=fn},state(){},rejected:()=>events.push('chat-rejected')},auth:{currentUser:null},
  };
- ctx.window=ctx;vm.createContext(ctx);vm.runInContext(fs.readFileSync('social-model.js','utf8'),ctx);
+ ctx.window=ctx;vm.createContext(ctx);vm.runInContext(fs.readFileSync('cosmetics.js','utf8'),ctx);vm.runInContext(fs.readFileSync('social-model.js','utf8'),ctx);
  vm.runInContext(fs.readFileSync('social.js','utf8').replace(/^\uFEFF/,'').replace(/^import .*;\r?\n/gm,'').replace('export function','function'),ctx);ctx.initSocial({db:{},auth:ctx.auth});
  const settle=async()=>{for(let i=0;i<40;i++)await Promise.resolve()};
  return {ctx,records,node,events,sessions,chat,subscriptions,emit,settle,
@@ -369,4 +370,16 @@ test('hidden documents and hidden tab views skip roster painting and resume with
  f.ctx.document.hidden=true;f.work(3);await f.tick();assert.equal(f.node('roomTotal').textContent,original);
  f.ctx.document.hidden=false;for(const list of lists)list.paintVisible=false;f.work(3);await f.tick();assert.equal(f.node('roomTotal').textContent,original);
  const rows=lists.map(list=>list.children[0]);for(const list of lists)list.paintVisible=true;await f.tick();assert.equal(f.node('roomTotal').textContent,LobbyModel.hours(6));for(let i=0;i<lists.length;i++)assert.equal(lists[i].children[0],rows[i]);
+});
+test('friend name opens profile and separate friendship controls keep their action',async()=>{
+ const f=fixture();f.put('friendships/alice_bob',{from:'alice',to:'bob',uids:['alice','bob'],state:'accepted'});f.put('publicProfiles/bob',profile('bob'));await f.login();const row=f.node('friendList').children[0];let target='';f.ctx.openMemberProfile=uid=>target=uid;row.children[0].click();assert.equal(target,'bob');await row.children.at(-1).click();await f.settle();assert.equal(f.records.has('friendships/alice_bob'),false);
+});
+test('poke requires another fresh member in the active room and throttles writes',async()=>{
+ const f=fixture();f.put('rooms/'+OPEN,{name:'Focus',ownerUid:'alice',locked:false});await f.login();await f.join(OPEN);f.put(`rooms/${OPEN}/members/bob`,{uid:'bob',online:true,presenceAt:{toMillis:()=>f.ctx.Date.now()},timer:timer()});f.emit();await f.settle();assert.equal(await f.ctx.FocusSocial.poke('alice'),false);assert.equal(await f.ctx.FocusSocial.poke('outsider'),false);assert.equal(await f.ctx.FocusSocial.poke('bob'),true);const n=f.records.get(`rooms/${OPEN}/nudges/bob`);assert.equal(n.from,'alice');assert.equal(n.to,'bob');assert.equal(await f.ctx.FocusSocial.poke('bob'),false);f.work(11);assert.equal(await f.ctx.FocusSocial.poke('bob'),true);f.records.get(`rooms/${OPEN}/members/bob`).online=false;f.emit();await f.settle();f.work(11);assert.equal(await f.ctx.FocusSocial.poke('bob'),false);
+});
+test('nudge receiver ignores initial cache and duplicate events, sound is limited to once per 10s',async()=>{
+ const f=fixture();let sounds=0;f.ctx.FocusSound={play:type=>{assert.equal(type,'nudge');sounds++}};f.put('rooms/'+OPEN,{name:'Focus',ownerUid:'alice',locked:false});f.put(`rooms/${OPEN}/nudges/alice`,{from:'bob',to:'alice',at:{toMillis:()=>f.ctx.Date.now()}});await f.login();await f.join(OPEN);assert.equal(sounds,0);f.work(1);const at=f.ctx.Date.now();f.put(`rooms/${OPEN}/nudges/alice`,{from:'bob',to:'alice',at:{toMillis:()=>at}});f.emit();await f.settle();assert.equal(sounds,1);f.emit();assert.equal(sounds,1);f.work(1);const next=f.ctx.Date.now();f.put(`rooms/${OPEN}/nudges/alice`,{from:'charlie',to:'alice',at:{toMillis:()=>next}});f.emit();assert.equal(sounds,1);f.work(11);const last=f.ctx.Date.now();f.put(`rooms/${OPEN}/nudges/alice`,{from:'bob',to:'alice',at:{toMillis:()=>last}});f.emit();assert.equal(sounds,2);assert.match(f.node('nudgeNotice').textContent,/dürttü/);const sub=f.subscriptions.find(s=>s.q.path===`rooms/${OPEN}/nudges/alice`);await f.ctx.FocusSocial.pauseRoom();f.work(11);sub.fn({exists:()=>true,data:()=>({from:'bob',to:'alice',at:{toMillis:()=>f.ctx.Date.now()}})});assert.equal(sounds,2);
+});
+test('owned cosmetic select options unlock while unowned options remain disabled and custom tag saves',async()=>{
+ const f=fixture();for(const id of ['nameStyle','avatarFrame','namePlate']){for(const value of ['plain','none','gold','ruby','ice']){const option=f.ctx.document.createElement('option');option.value=value;f.node(id).append(option)}}f.put('entitlements/alice',{nameStyles:['gold'],frames:['ruby'],plates:['ice'],tags:['custom:UZMAN']});await f.login();assert.equal(f.node('nameStyle').options.find(o=>o.value==='gold').disabled,false);assert.equal(f.node('nameStyle').options.find(o=>o.value==='ruby').disabled,true);assert.equal(f.node('avatarFrame').options.find(o=>o.value==='ruby').disabled,false);assert.equal(f.node('namePlate').options.find(o=>o.value==='ice').disabled,false);assert.equal(f.node('profileTag').options.some(o=>o.value==='custom:UZMAN'&&o.textContent==='[UZMAN]'),true);assert.equal(f.node('profileTag').options.some(o=>o.value==='doctor'),false);f.node('profileTag').value='custom:UZMAN';f.node('nameStyle').value='gold';f.node('avatarFrame').value='ruby';f.node('namePlate').value='ice';await f.ctx.FocusSocial.saveIdentity();assert.equal(f.records.get('publicProfiles/alice').cosmetics.tag,'custom:UZMAN');assert.equal(f.records.get('publicProfiles/alice').cosmetics.frame,'ruby');
 });

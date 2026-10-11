@@ -9,13 +9,13 @@ function fixture(storage=new Map(),options={}){
  const ctx={initSocial:()=>{ctx.FocusSocial={bind:async()=>{},stop(){},pauseRoom:async()=>{},needsIdentity:()=>!!ctx.needsIdentity,saveIdentity:async()=>{await ctx.saveIdentity?.();ctx.needsIdentity=false},exportData:async()=>({})}},sessionStorage:{removeItem(){}},CloudModel:Model,console,URL,Event:class{},crypto:{randomUUID:()=>storage.get('focus_device_id')||'device-a'},firebaseConfig:{},googleClientId:'client',appCheckSiteKey:'',initializeApp:()=>({}),getAuth:()=>ctx.auth,getFirestore:()=>({}),auth:{currentUser:null},browserLocalPersistence:{kind:'local'},setPersistence:async(_,value)=>{ctx.persistence=value;await options.persistencePending},location:{hash:'ilerleme'},
  localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},document:{hidden:false,activeElement:null,getElementById:node,addEventListener:(k,f)=>listeners.set(k,f)},setInterval:(f,ms)=>intervals.push({f,ms}),addEventListener:(k,f)=>events[k]=f,
  doc:(_, ...p)=>p.join('/'),collection:(_, ...p)=>p.join('/'),serverTimestamp:()=>({toMillis:()=>++clock}),
- getDocFromServer:async path=>{if(offline)throw Error('offline');return snap(path)},
+ getDoc:async path=>snap(path),getDocFromServer:async path=>{if(offline)throw Error('offline');return snap(path)},
  runTransaction:async(_,fn)=>{if(offline)throw Error('offline');return fn({get:async path=>snap(path),set:(path,value)=>rows.set(path,value),update:(path,value)=>rows.set(path,{...rows.get(path),...value})})},
  onSnapshot:(path,fn,error)=>{const s={path,fn,error,active:true};subscriptions.push(s);return ()=>s.active=false},onAuthStateChanged:(_,fn)=>authChange=fn,
  signOut:async()=>{ctx.auth.currentUser=null;authChange(null)},GoogleAuthProvider:class{},EmailAuthProvider:{credential:()=>({})},reauthenticateWithPopup:async()=>{},reauthenticateWithCredential:async()=>{},signInWithPopup:async()=>{},signInWithCredential:async()=>{},signInWithEmailAndPassword:async()=>{},createUserWithEmailAndPassword:async()=>{},sendEmailVerification:async()=>{},sendPasswordResetEmail:async()=>{},reload:async()=>{},getIdToken:async()=>{},
  Study:{snapshot:()=>({days:copy(daily)}),applyDays:d=>daily=copy(d),liveSession:()=>({running:false})},FocusData:{fields:()=>({...fields}),apply:f=>Object.assign(fields,f)},dispatchEvent:()=>{}};
  ctx.FocusAccountUI={mode:'',resolved(){},beginLogin(){this.mode='login'},onboarding(){this.mode='onboarding';node('accountSheet').showModal()},closeLogin(){if(this.mode==='login'||this.mode==='onboarding'){node('accountSheet').close();this.mode=''}}};
- ctx.window=ctx;vm.createContext(ctx);vm.runInContext(fs.readFileSync('account.js','utf8').replace(/^import .*;\r?\n/gm,''),ctx);
+ ctx.window=ctx;vm.createContext(ctx);vm.runInContext(fs.readFileSync('cosmetics.js','utf8'),ctx);vm.runInContext(fs.readFileSync('cosmetic-store.js','utf8').replace(/^import .*;\r?\n/gm,'').replace('export function','function'),ctx);vm.runInContext(fs.readFileSync('account.js','utf8').replace(/^import .*;\r?\n/gm,''),ctx);
  const settle=async()=>{for(let i=0;i<12;i++)await Promise.resolve()};
  return {ctx,rows,node,storage,settle,subscriptions,get daily(){return daily},get fields(){return fields},set offline(v){offline=v},
  async login(uid='alice',verified=true){ctx.auth.currentUser={uid,emailVerified:verified,displayName:uid,email:uid+'@example.com'};authChange(ctx.auth.currentUser);await settle()},
@@ -143,4 +143,13 @@ test('public identity hydration begins without waiting for private bootstrap tra
 });
 test('cached display name is reused only for the same Firebase identity',async()=>{
  const f=fixture(new Map([['focus_profile_label','Saved Alice'],['focus_profile_uid','alice']]));await f.login();assert.equal(f.node('profileName').value,'Saved Alice');await f.login('bob');assert.equal(f.node('profileName').value,'bob');assert.equal(f.storage.get('focus_profile_uid'),'bob');await f.logout();assert.equal(f.storage.has('focus_profile_uid'),false);
+});
+test('account store purchases persist wallet and inventory and reset across Firebase identities',async()=>{
+ const f=fixture();f.rows.set('wallets/alice',{earnedSeconds:7200000,spentSeconds:0});await f.login();f.emit();assert.equal(f.ctx.FocusCosmeticStore.balance(),7200000);await f.ctx.FocusCosmeticStore.purchase('name:gold');f.emit();assert.equal(f.ctx.FocusCosmeticStore.balance(),3600000);assert.equal(f.ctx.FocusCosmeticStore.owned('name:gold'),true);await assert.rejects(f.ctx.FocusCosmeticStore.purchase('name:gold'),/already-owned/);await f.login('bob');f.emit();assert.equal(f.ctx.FocusCosmeticStore.balance(),0);assert.equal(f.ctx.FocusCosmeticStore.owned('name:gold'),false);
+});
+test('account data export includes own wallet and inventory without another account records',async()=>{
+ const f=fixture();let exported='';f.ctx.FocusAndroid={saveBackup:v=>exported=v};f.ctx.TextEncoder=TextEncoder;f.rows.set('wallets/alice',{earnedSeconds:7200000,spentSeconds:3600000});f.rows.set('entitlements/alice',{nameStyles:['gold'],tags:['custom:UZMAN']});f.rows.set('wallets/bob',{earnedSeconds:999,spentSeconds:0});await f.login();f.emit();await f.node('exportAccount').onclick();const data=JSON.parse(exported);assert.equal(data.cosmetics.wallet.earnedSeconds,7200000);assert.deepEqual(data.cosmetics.inventory.tags,['custom:UZMAN']);assert.equal(exported.includes('999'),false);
+});
+test('admin custom tag grant updates recipient inventory and rejects invalid tags',async()=>{
+ const f=fixture();await f.login();f.ctx.auth.currentUser.email='efeozbilgin550@gmail.com';await f.ctx.FocusCosmeticStore.bind(f.ctx.auth.currentUser);f.rows.set('usernames/bob',{uid:'bob'});await f.ctx.FocusCosmeticStore.grantTag('@bob','UZMAN');assert.deepEqual(JSON.parse(JSON.stringify(f.rows.get('entitlements/bob').tags)),['custom:UZMAN']);await assert.rejects(f.ctx.FocusCosmeticStore.grantTag('@bob','x'.repeat(25)),/invalid-tag/);
 });

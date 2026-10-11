@@ -25,9 +25,7 @@
   const name=p.name||fallbackName||'Kullanıcı';
   by('memberProfileTitle').textContent=name;
   window.SocialModel?.decorate(by('memberProfileTitle'),{...p,username:null});
-  const goldFrame=window.SocialModel?.cosmetics(p.cosmetics).frame==='gold';
-  by('memberProfileAvatar').classList.toggle('frame-gold',goldFrame);
-  by('memberProfileFallback').classList.toggle('frame-gold',goldFrame);
+  const frame=window.SocialModel?.cosmetics(p.cosmetics).frame;for(const value of ['gold','ruby','ice','violet','emerald'])for(const id of ['memberProfileAvatar','memberProfileFallback'])by(id).classList.toggle('frame-'+value,frame===value);
   by('memberProfileHandle').textContent='@'+(p.username||'kullanici');
   if(p.exam){by('memberProfileExam').textContent=p.exam==='OTHER'?'Diğer':p.exam;by('memberProfileExam').hidden=false}else by('memberProfileExam').hidden=true;
   if(p.photo){
@@ -43,6 +41,7 @@
   }else{
    by('memberProfileTotalHours').textContent='—';by('memberProfileRoomHours').textContent='—';by('memberProfileStatusText').textContent='Çevrimdışı';
   }
+  window.FocusSocial?.setupPokeButton?.(targetUid);
   const friendBtn=by('memberProfileFriendBtn');
   const selfUid=window.FocusSocial?.uid?.()||window.FocusAccount?.profile?.()?.uid;
   if(!selfUid||!targetUid||targetUid===selfUid||!/^[A-Za-z0-9_-]{10,40}$/.test(targetUid)){

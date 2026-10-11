@@ -28,3 +28,6 @@ test('Friends popup respects reduced motion and returns keyboard focus when clos
  app.ids.friendsMember.hidden=true;app.ids.friendsToggle.onclick();
  assert.equal(app.document.activeElement,app.ids.closeFriends);
 });
+test('member profile renders gifted custom tag with cloud-selected colors',()=>{
+ const app=setup();app.profile.cosmetics={tag:'custom:UZMAN',nameStyle:'ruby',frame:'ice',plate:'emerald'};app.context.openMemberProfile('test-user');assert.equal(app.ids.memberProfileTitle.tag,'[UZMAN]');assert.equal(app.ids.memberProfileTitle['name-ruby'],true);assert.equal(app.ids.memberProfileTitle['plate-emerald'],true);assert.equal(app.ids.memberProfileAvatar['frame-ice'],true);
+});

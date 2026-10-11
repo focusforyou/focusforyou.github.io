@@ -43,14 +43,58 @@ service cloud.firestore {
     && t.rest is number && t.rest >= 60 && t.rest <= 3600
     && t.rounds is int && t.rounds >= 0 && t.rounds <= 100000;
   }
+  function ownedStyle(uid,key,value,baseline) {
+   return value == baseline || (exists(/databases/$(database)/documents/entitlements/$(uid))
+    && get(/databases/$(database)/documents/entitlements/$(uid)).data.get(key,[]) is list
+    && value in get(/databases/$(database)/documents/entitlements/$(uid)).data.get(key,[]));
+  }
   function validCosmetics(c,uid) {
    return c is map && c.keys().hasOnly(['tag','nameStyle','frame','plate'])
-    && c.tag in ['none','doctor'] && c.nameStyle in ['plain','gold'] && c.frame in ['none','gold'] && c.plate in ['none','gold']
-    && ((c.tag == 'none' && c.nameStyle == 'plain' && c.frame == 'none' && c.plate == 'none') || admin()
-     || (c.tag == 'none' && exists(/databases/$(database)/documents/entitlements/$(uid))
-      && (c.nameStyle == 'plain' || (get(/databases/$(database)/documents/entitlements/$(uid)).data.get('nameStyles',[]) is list && c.nameStyle in get(/databases/$(database)/documents/entitlements/$(uid)).data.get('nameStyles',[])))
-      && (c.frame == 'none' || (get(/databases/$(database)/documents/entitlements/$(uid)).data.get('frames',[]) is list && c.frame in get(/databases/$(database)/documents/entitlements/$(uid)).data.get('frames',[])))
-      && (c.plate == 'none' || (get(/databases/$(database)/documents/entitlements/$(uid)).data.get('plates',[]) is list && c.plate in get(/databases/$(database)/documents/entitlements/$(uid)).data.get('plates',[])))));
+    && c.tag is string && (c.tag in ['none','doctor'] || c.tag.matches('custom:.{1,24}'))
+    && c.nameStyle in ['plain','gold','ruby','ice','violet','emerald'] && c.frame in ['none','gold','ruby','ice','violet','emerald'] && c.plate in ['none','gold','ruby','ice','violet','emerald']
+    && (admin() || ((c.tag == 'none' || (c.tag != 'doctor' && ownedStyle(uid,'tags',c.tag,'none')))
+     && ownedStyle(uid,'nameStyles',c.nameStyle,'plain') && ownedStyle(uid,'frames',c.frame,'none') && ownedStyle(uid,'plates',c.plate,'none')));
+  }
+  function itemInfo(id) {
+   return {'name:gold':['nameStyles','gold'],'name:ruby':['nameStyles','ruby'],'name:ice':['nameStyles','ice'],'name:violet':['nameStyles','violet'],'name:emerald':['nameStyles','emerald'],
+    'frame:gold':['frames','gold'],'frame:ruby':['frames','ruby'],'frame:ice':['frames','ice'],'frame:violet':['frames','violet'],'frame:emerald':['frames','emerald'],
+    'plate:gold':['plates','gold'],'plate:ruby':['plates','ruby'],'plate:ice':['plates','ice'],'plate:violet':['plates','violet'],'plate:emerald':['plates','emerald']}.get(id,['','']);
+  }
+  function validOwned(e) {
+   return e is map && e.keys().hasOnly(['nameStyles','frames','plates','tags'])
+    && e.get('nameStyles',[]) is list && e.get('nameStyles',[]).size() <= 6 && e.get('nameStyles',[]).hasOnly(['plain','gold','ruby','ice','violet','emerald'])
+    && e.get('frames',[]) is list && e.get('frames',[]).size() <= 6 && e.get('frames',[]).hasOnly(['none','gold','ruby','ice','violet','emerald'])
+    && e.get('plates',[]) is list && e.get('plates',[]).size() <= 6 && e.get('plates',[]).hasOnly(['none','gold','ruby','ice','violet','emerald'])
+    && e.get('tags',[]) is list && e.get('tags',[]).size() <= 30;
+  }
+  function itemGrant(before,after,key,info) {
+   let old = before.get(key,[]);
+   let next = after.get(key,[]);
+   return old is list && next is list && (key != info[0] ? next == old
+    : (!(info[1] in old) && next.size() == old.size() + 1 && next.toSet().size() == next.size()
+     && next.toSet().difference(old.toSet()).hasOnly([info[1]]) && old.toSet().difference(next.toSet()).size() == 0));
+  }
+  function purchaseGrant(before,after,id) {
+   let info = itemInfo(id);
+   return info[0] != '' && validOwned(after) && before.get('tags',[]) == after.get('tags',[])
+    && itemGrant(before,after,'nameStyles',info) && itemGrant(before,after,'frames',info) && itemGrant(before,after,'plates',info);
+  }
+  function previousOwned(uid) {
+   return exists(/databases/$(database)/documents/entitlements/$(uid)) ? get(/databases/$(database)/documents/entitlements/$(uid)).data : {};
+  }
+  function validWallet(w) {
+   return w.keys().hasOnly(['earnedSeconds','spentSeconds','running','checkpoint','lastPurchase'])
+    && w.earnedSeconds is int && w.earnedSeconds >= 0 && w.earnedSeconds <= 3153600000
+    && w.spentSeconds is int && w.spentSeconds >= 0 && w.spentSeconds <= w.earnedSeconds
+    && w.running is bool && w.checkpoint is timestamp && w.checkpoint <= request.time
+    && w.lastPurchase is string && (w.lastPurchase == '' || itemInfo(w.lastPurchase)[0] != '');
+  }
+  function paidGrant(uid,before,after) {
+   let oldWallet = get(/databases/$(database)/documents/wallets/$(uid)).data;
+   let nextWallet = getAfter(/databases/$(database)/documents/wallets/$(uid)).data;
+   return nextWallet.spentSeconds == oldWallet.spentSeconds + 3600000
+    && nextWallet.earnedSeconds == oldWallet.earnedSeconds && nextWallet.running == oldWallet.running && nextWallet.checkpoint == oldWallet.checkpoint
+    && purchaseGrant(before,after,nextWallet.lastPurchase);
   }
   function validPublic(p,uid) {
    return p.keys().hasOnly(['uid','username','name','photo','exam','cosmetics'])
@@ -78,8 +122,24 @@ service cloud.firestore {
    allow delete: if request.auth != null && resource.data.uid == request.auth.uid && locked(request.auth.uid);
   }
   match /entitlements/{uid} {
+   allow get: if self(uid) || admin();
+   allow create, update: if validOwned(request.resource.data) && ((admin() && unlocked(uid) && exists(/databases/$(database)/documents/publicProfiles/$(uid)))
+    || (self(uid) && active() && paidGrant(uid,previousOwned(uid),request.resource.data)));
+   allow delete: if self(uid) && locked(uid);
+  }
+  match /wallets/{uid} {
    allow get: if self(uid);
-   // Only a trusted future store backend can grant ownership.
+   allow create: if self(uid) && active() && validWallet(request.resource.data)
+    && request.resource.data.earnedSeconds == 0 && request.resource.data.spentSeconds == 0
+    && request.resource.data.lastPurchase == '' && request.resource.data.checkpoint == request.time;
+   allow update: if self(uid) && active() && validWallet(request.resource.data)
+    && ((request.resource.data.diff(resource.data).affectedKeys().hasOnly(['earnedSeconds','running','checkpoint'])
+     && request.resource.data.checkpoint == request.time && request.resource.data.earnedSeconds >= resource.data.earnedSeconds
+     && request.resource.data.earnedSeconds - resource.data.earnedSeconds <= (resource.data.running ? (request.time.toMillis() - resource.data.checkpoint.toMillis()) / 1000 : 0)
+     && request.resource.data.earnedSeconds - resource.data.earnedSeconds <= 60)
+    || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['spentSeconds','lastPurchase'])
+     && request.resource.data.spentSeconds == resource.data.spentSeconds + 3600000
+     && purchaseGrant(previousOwned(uid),getAfter(/databases/$(database)/documents/entitlements/$(uid)).data,request.resource.data.lastPurchase)));
    allow delete: if self(uid) && locked(uid);
   }
   match /friendships/{id} {
@@ -201,6 +261,17 @@ service cloud.firestore {
      && exists(/databases/$(database)/documents/rooms/$(rid)/members/$(uid)) && validModeration(request.resource.data);
     allow delete: if moderator(rid) || (self(uid) && locked(uid)) || (leader(rid) && locked(request.auth.uid));
    }
+   match /nudges/{uid} {
+    allow get: if self(uid) || member(rid);
+    allow list: if moderator(rid) || (leader(rid) && locked(request.auth.uid));
+    allow create, update: if active() && member(rid) && roomOpen(rid) && uid != request.auth.uid
+     && request.resource.data.keys().hasOnly(['from','to','at']) && request.resource.data.from == request.auth.uid
+     && request.resource.data.to == uid && request.resource.data.at == request.time
+     && unlocked(uid) && !exists(/databases/$(database)/documents/appBans/$(uid))
+     && exists(/databases/$(database)/documents/rooms/$(rid)/members/$(uid))
+     && (!exists(/databases/$(database)/documents/rooms/$(rid)/nudges/$(uid)) || resource.data.at < request.time - duration.value(10,'s'));
+    allow delete: if moderator(rid) || (leader(rid) && locked(request.auth.uid));
+   }
   }
   match /appBans/{uid} {
    allow get: if self(uid) || (admin() && unlocked(request.auth.uid));
@@ -212,6 +283,9 @@ service cloud.firestore {
   // A deleting user can remove own messages even if an old room root/bookmark is missing.
   match /{parent=**}/messages/{message} {
    allow read, delete: if request.auth != null && locked(request.auth.uid) && resource.data.uid == request.auth.uid;
+  }
+  match /{parent=**}/nudges/{nudge} {
+   allow read, delete: if request.auth != null && locked(request.auth.uid) && (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
   }
   // Fields are timestamped JSON strings in the existing sync format.
   function field(data, key, maximum) {
