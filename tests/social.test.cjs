@@ -243,6 +243,8 @@ test('exam rooms render Focus For You as creator with permanent unlimited status
  assert.equal(cards.length,1);
  const yksCard=cards[0];
  assert.match(yksCard.textContent,/Focus For You/);
+ assert.match(yksCard.textContent,/\[SİSTEM\]/);
+ assert.doesNotMatch(yksCard.textContent,/\[DOKTOR\]/);
  assert.match(yksCard.textContent,/Sürekli açık · Limitsiz/);
  assert.match(yksCard.textContent,/Lobiden ayrıl/);
  assert.doesNotMatch(yksCard.textContent,/Lobiyi sil/);
