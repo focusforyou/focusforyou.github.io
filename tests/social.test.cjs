@@ -215,3 +215,19 @@ test('saved lobby creator cards track cloud profile changes and the directory ex
  const f=fixture();f.put('rooms/12345678',{name:'Night',ownerUid:'bob',locked:false,salt:'',exam:''});f.put('rooms/TUS',{name:'TUS',ownerUid:'bob',locked:false,salt:'',exam:'TUS'});f.put('users/alice/rooms/12345678',{name:'Night'});f.put('publicProfiles/bob',profile('bob'));await f.login();assert.match(f.node('savedRooms').textContent,/bob/);assert.doesNotMatch(f.node('roomResults').textContent,/TUS/);
  f.put('publicProfiles/bob',{...profile('bob'),name:'New name',photo:'https://example.com/avatar.png'});f.emit();await f.settle();assert.match(f.node('savedRooms').textContent,/New name/);const owner=f.node('savedRooms').children[0].children[2];assert.equal(owner.children[0].src,'https://example.com/avatar.png');
 });
+test('saved lobby cards render Lobiyi sil for owner and Lobiden ayrıl for non-owner',async()=>{
+ const f=fixture();
+ f.put('rooms/11111111',{name:'Alice Room',ownerUid:'alice',locked:false,salt:'',exam:''});
+ f.put('rooms/22222222',{name:'Bob Room',ownerUid:'bob',locked:false,salt:'',exam:''});
+ f.put('users/alice/rooms/11111111',{name:'Alice Room'});
+ f.put('users/alice/rooms/22222222',{name:'Bob Room'});
+ f.put('publicProfiles/alice',profile('alice'));
+ f.put('publicProfiles/bob',profile('bob'));
+ await f.login('alice');
+ const cards=f.node('savedRooms').children;
+ assert.equal(cards.length,2);
+ const aliceCard=cards[0];
+ const bobCard=cards[1];
+ assert.match(aliceCard.textContent,/Lobiyi sil/);
+ assert.match(bobCard.textContent,/Lobiden ayrıl/);
+});

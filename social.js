@@ -5,7 +5,9 @@ export function initSocial({db,auth}){
  const by=id=>document.getElementById(id),model=window.SocialModel||SocialModel;
  let directory=[],searchResults=null,roomCache=new Map(),roomWatches=new Map(),entitlements={};
  let banned=false,banStop=null,moderationStops=[],roomBans=[],roomKicks=[],appBans=[];
- let user=null,me=null,active='',room=null,stops=[],roomStops=[],epoch=0,members=[],messages=[],profiles=new Map(),profileStops=new Map(),saved=[],friends=[],invitations=[],roomSeconds=0,pendingSeconds=0,lastLocal=0,lastWrite=0,lastState='',writing=null,loaded=false,switching=false,restored=false,historyPage=false,historyCursor=null,latest=[];
+ let user=null,me=null,active='',room=null,stops=[],roomStops=[],epoch=0,members=[],messages=[],profiles=new Map(),profileStops=new Map(),saved=[],friends=[],invitations=[],roomSeconds=0,pendingSeconds=0,lastLocal=0,lastWrite=0,lastState='',writing=null,loaded=false,switching=false,restored=false,historyPage=false,historyCursor=null,latest=[],leftRooms=new Set();
+ const markRoomLeft=id=>{leftRooms.add(id);try{sessionStorage.setItem('focus_left_rooms_'+(user?.uid||''),JSON.stringify([...leftRooms]))}catch(e){}};
+ const unmarkRoomLeft=id=>{leftRooms.delete(id);try{sessionStorage.setItem('focus_left_rooms_'+(user?.uid||''),JSON.stringify([...leftRooms]))}catch(e){}};
  const status=s=>{by('socialStatus').textContent=s;by('friendsStatus').textContent=s;by('createRoomStatus').textContent=s};
  const ref=(...path)=>doc(db,...path),own=()=>!!user?.emailVerified&&!!me&&!banned;
  const admin=()=>!!user?.emailVerified&&user.email==='efeozbilgin550@gmail.com';
@@ -29,10 +31,67 @@ export function initSocial({db,auth}){
   if(!friends.length)list.textContent='Henüz arkadaşın yok. @kullanıcıadı ile istek gönder.';const pending=friends.filter(f=>f.to===user?.uid&&f.state==='pending').length;by('friendBadge').hidden=!pending;by('friendBadge').textContent=String(pending);
  }
  function watchRoom(id){if(roomWatches.has(id))return;const rev=epoch;roomWatches.set(id,onSnapshot(ref('rooms',id),s=>{if(rev!==epoch)return;if(s.exists()){const r={id,...s.data()};roomCache.set(id,r);watchProfile(r.ownerUid)}else roomCache.delete(id);renderSaved();renderDirectory()},()=>{}))}
+ async function deleteLobbyCard(id,name){
+  if(!own())return;const op=operation(),displayName=name||roomCache.get(id)?.name||id;
+  if(typeof window.confirm==='function'&&!window.confirm(`"${displayName}" lobisini kalıcı olarak silmek istediğinden emin misin? Lobi ve tüm sohbet geçmişi silinecektir.`))return;
+  status('Lobi siliniyor…');
+  try{
+   try{await deleteDoc(ref('rooms',id,'secrets','password'))}catch(e){}
+   for(const col of ['bans','kicks']){
+    try{const snap=await getDocsFromServer(collection(db,'rooms',id,col));if(!snap.empty){const b=writeBatch(db);for(const doc of snap.docs)b.delete(doc.ref);await b.commit()}}catch(e){}
+   }
+   for(let i=0;i<20;i++){
+    try{const ms=await getDocsFromServer(query(collection(db,'rooms',id,'messages'),limit(100)));if(ms.empty)break;const b=writeBatch(db);for(const doc of ms.docs)b.delete(doc.ref);await b.commit()}catch(e){break}
+   }
+   try{const mems=await getDocsFromServer(collection(db,'rooms',id,'members'));if(!mems.empty){const b=writeBatch(db);for(const doc of mems.docs)b.delete(doc.ref);await b.commit()}}catch(e){}
+   try{await deleteDoc(ref('users',user.uid,'rooms',id))}catch(e){}
+   await deleteDoc(ref('rooms',id));
+   op.check();
+   if(active===id)stopRoom();
+   markRoomLeft(id);
+   saved=saved.filter(s=>s.id!==id);
+   roomCache.delete(id);
+   directory=directory.filter(d=>d.id!==id);
+   renderSaved();
+   renderDirectory();
+   status(`"${displayName}" lobisi kalıcı olarak silindi.`);
+  }catch(e){if(op.rev===epoch)report(e)}
+ }
+
+ async function leaveLobbyCard(id,name){
+  if(!own())return;const op=operation(),displayName=name||roomCache.get(id)?.name||id;
+  if(typeof window.confirm==='function'&&!window.confirm(`"${displayName}" lobisinden ayrılmak istediğinden emin misin?`))return;
+  status('Lobiden ayrılınıyor…');
+  try{
+   if(active===id){await pauseRoom();op.check()}
+   try{await deleteDoc(ref('rooms',id,'members',user.uid))}catch(e){try{await updateDoc(ref('rooms',id,'members',user.uid),{online:false})}catch(err){}}
+   try{await deleteDoc(ref('users',user.uid,'rooms',id))}catch(e){}
+   markRoomLeft(id);
+   saved=saved.filter(s=>s.id!==id);
+   renderSaved();
+   status(`"${displayName}" lobisinden ayrıldın.`);
+  }catch(e){if(op.rev===epoch)report(e)}
+ }
+
  function roomCard(r){
   const card=document.createElement('article');card.className='lobby-tile';const heading=document.createElement('div');heading.className='lobby-tile-heading';const title=document.createElement('h4');title.textContent=r.name;const code=document.createElement('span');code.className='room-id';code.textContent='#'+r.id;heading.append(title);card.append(heading,code);
   const owner=document.createElement('div');owner.className='lobby-owner';const p=identity(r.ownerUid);if(r.ownerUid)watchProfile(r.ownerUid);if(p.photo){const img=document.createElement('img');img.src=p.photo;img.alt='';img.referrerPolicy='no-referrer';img.className=p.cosmetics?.frame==='gold'?'frame-gold':'';owner.append(img)}else{const fallback=document.createElement('span');fallback.className='owner-fallback';fallback.textContent=(p.name||'?').slice(0,1);owner.append(fallback)}const label=document.createElement('strong');label.textContent=r.ownerUid?p.name:'Oda bilgisi yükleniyor…';if(r.ownerUid)model.decorate(label,p);owner.append(label);
-  const footer=document.createElement('div');footer.className='lobby-tile-footer';const lock=document.createElement('small');lock.className='room-lock';lock.textContent=r.locked?'Şifreli oda':'Açık oda';footer.append(lock,button(active===r.id?'Bu odadasın':'Odaya katıl',()=>join(r.id,by('joinPassword').value)));card.append(owner,footer);return card;
+  const footer=document.createElement('div');footer.className='lobby-tile-footer';const lock=document.createElement('small');lock.className='room-lock';lock.textContent=r.locked?'Şifreli oda':'Açık oda';
+  const actions=document.createElement('div');actions.className='lobby-tile-actions';
+  if(user?.uid){
+   const isOwner=r.ownerUid===user.uid;
+   if(isOwner){
+    const delBtn=document.createElement('button');delBtn.type='button';delBtn.className='pill lobby-danger-btn';delBtn.textContent='Lobiyi sil';
+    delBtn.onclick=action(()=>deleteLobbyCard(r.id,r.name));
+    actions.append(delBtn);
+   }else if(saved.some(s=>s.id===r.id)||model.exams.includes(r.id)){
+    const leaveBtn=document.createElement('button');leaveBtn.type='button';leaveBtn.className='pill lobby-leave-btn';leaveBtn.textContent='Lobiden ayrıl';
+    leaveBtn.onclick=action(()=>leaveLobbyCard(r.id,r.name));
+    actions.append(leaveBtn);
+   }
+  }
+  actions.append(button(active===r.id?'Bu odadasın':'Odaya katıl',()=>join(r.id,by('joinPassword').value)));
+  footer.append(lock,actions);card.append(owner,footer);return card;
  }
  function empty(list,text){const p=document.createElement('p');p.className='lobby-empty';p.textContent=text;list.append(p)}
  function renderSaved(){const list=by('savedRooms');list.replaceChildren();for(const r of saved)list.append(roomCard(roomCache.get(r.id)||r));if(!saved.length)empty(list,'Henüz bir odan yok. Oda oluşturabilir veya aşağıdaki lobilerden birine katılabilirsin.');by('activeRoomSummary').textContent=active&&room?room.name+' odasındasın. Oda üyelerin ve sohbetin bağlı; kişisel sayacını burada yönet.':'Sana ait bir oda oluştur veya bir çalışma lobisine katıl. Sayacın burada senin ritminde devam eder.'}
@@ -129,7 +188,7 @@ export function initSocial({db,auth}){
   if(ban.exists()&&!admin()){status('Bu odadan yasaklandın. Lider yasağı kaldırmadan katılamazsın.');return}const kicked=member.exists()&&kick.exists()&&stamp(member.data().joinedAt)<=stamp(kick.data().at);
   if((!member.exists()||kicked)&&next.locked&&!invitation.exists()&&!admin()){const hash=await passwordProof(password,next.salt);op.check();await setDoc(ref('users',op.uid,'roomProofs',id),{hash,at:serverTimestamp()});op.check()}
   if(!member.exists()){const batch=writeBatch(db);batch.set(ref('users',op.uid,'rooms',id),{name:next.name});batch.set(ref('rooms',id,'members',op.uid),{uid:op.uid,joinedAt:serverTimestamp(),presenceAt:serverTimestamp(),online:true,timer:{...LobbyModel.cleanTimer(Study.liveSession()),roomWorked:0}});op.check();await batch.commit();op.check()}else if(kicked){await updateDoc(ref('rooms',id,'members',op.uid),{joinedAt:serverTimestamp(),presenceAt:serverTimestamp(),online:true,timer:{...LobbyModel.cleanTimer(Study.liveSession()),roomWorked:member.data().timer.roomWorked}});op.check();member=await getDocFromServer(ref('rooms',id,'members',op.uid));op.check()}
-  await pauseRoom();op.check();window.FocusTemporaryRoom?.leaveNow();active=id;room=next;roomSeconds=member.data()?.timer?.roomWorked||0;pendingSeconds=0;lastLocal=Study.localSeconds();lastWrite=0;lastState='';loaded=false;sessionStorage.setItem('focus_active_room_'+op.uid,id);const currentUrl=new URL(location.href);currentUrl.searchParams.set('club',id);history.replaceState(history.state,'',currentUrl.href);by('roomPanel').hidden=false;by('roomCode').textContent=next.name+' · #'+id;by('leaveRoom').textContent='Aktif odadan çık';by('leaveRoom').onclick=action(pauseRoom);by('copyInvite').onclick=action(async()=>{const copy=operation(),url=new URL(location.origin+location.pathname);url.searchParams.set('club',id);url.hash='lobi';await navigator.clipboard.writeText(url.href);copy.check();status('Oda daveti kopyalandı.')});RoomChat.configure(transport,{persistent:true,onReaction:toggleReaction});RoomChat.state(true);by('chatHistory').hidden=false;window.FocusNative?.room?.(id);
+  await pauseRoom();op.check();window.FocusTemporaryRoom?.leaveNow();active=id;unmarkRoomLeft(id);room=next;roomSeconds=member.data()?.timer?.roomWorked||0;pendingSeconds=0;lastLocal=Study.localSeconds();lastWrite=0;lastState='';loaded=false;sessionStorage.setItem('focus_active_room_'+op.uid,id);const currentUrl=new URL(location.href);currentUrl.searchParams.set('club',id);history.replaceState(history.state,'',currentUrl.href);by('roomPanel').hidden=false;by('roomCode').textContent=next.name+' · #'+id;by('leaveRoom').textContent='Aktif odadan çık';by('leaveRoom').onclick=action(pauseRoom);by('copyInvite').onclick=action(async()=>{const copy=operation(),url=new URL(location.origin+location.pathname);url.searchParams.set('club',id);url.hash='lobi';await navigator.clipboard.writeText(url.href);copy.check();status('Oda daveti kopyalandı.')});RoomChat.configure(transport,{persistent:true,onReaction:toggleReaction});RoomChat.state(true);by('chatHistory').hidden=false;window.FocusNative?.room?.(id);
   document.querySelector('.chat-note').textContent='Bu kalıcı odanın mesajları ve fotoğrafları bulutta saklanır. Fotoğraf paylaşırken kişisel bilgileri ve başkalarının iznini gözet.';
   const roomError=e=>{if(op.rev===epoch&&active===id){if(e?.code==='permission-denied'){stopRoom();status('Oda erişimin kaldırıldı. Kişisel sayacını kullanmaya devam edebilirsin.')}else report(e)}};
   const expelled=text=>{if(op.rev!==epoch||active!==id||admin())return;sessionStorage.removeItem('focus_active_room_'+op.uid);stopRoom();status(text)};
@@ -165,13 +224,13 @@ export function initSocial({db,auth}){
  async function seed(){if(user.email!=='efeozbilgin550@gmail.com')return;const op=operation();for(const exam of model.exams){op.check();const target=ref('rooms',exam);await runTransaction(db,async tx=>{op.check();const s=await tx.get(target);op.check();if(!s.exists())tx.set(target,{name:exam+' çalışma odası',ownerUid:op.uid,locked:false,salt:'',exam,createdAt:serverTimestamp()})});op.check()}}
  async function flush(force=false){if(!active||!own()||!loaded)return;const op=operation();if(writing){if(force){await writing;op.check();return flush(true)}return}const live=LobbyModel.cleanTimer(Study.liveSession()),now=Study.localSeconds(),state=live.phase+live.running+live.rounds;pendingSeconds+=Math.max(0,now-lastLocal);lastLocal=now;const delta=Date.now()-lastWrite;if(!force&&delta<(live.running?15000:60000)&&state===lastState)return;const id=active,uid=op.uid,amount=pendingSeconds,target=ref('rooms',id,'members',uid),task=runTransaction(db,async tx=>{op.check();const s=await tx.get(target);op.check();if(active!==id)throw Error('room-changed');if(!s.exists())throw Error('membership-missing');const total=Math.min(315360000,(s.data().timer?.roomWorked||0)+amount);tx.update(target,{timer:{...live,roomWorked:total},presenceAt:serverTimestamp(),online:true});return total});writing=task;try{const total=await task;op.check();if(id===active){roomSeconds=total;pendingSeconds=Math.max(0,pendingSeconds-amount);lastWrite=Date.now();lastState=state}}catch(e){if(op.rev===epoch)report(e);if(force)throw e}finally{if(writing===task)writing=null}}
  async function bind(next){
-  const rev=++epoch;for(const stop of roomWatches.values())stop();roomWatches.clear();roomCache.clear();directory=[];searchResults=null;entitlements={};if(banStop)banStop();banStop=null;for(const s of moderationStops)s();moderationStops=[];banned=false;switching=false;stopRoom();for(const s of stops)s();stops=[];for(const s of profileStops.values())s();profileStops.clear();profiles.clear();user=next;me=null;saved=[];friends=[];invitations=[];restored=false;by('socialMember').hidden=!next?.emailVerified;by('socialGuest').hidden=!!next?.emailVerified;by('friendsMember').hidden=!next?.emailVerified;by('friendsGuest').hidden=!!next?.emailVerified;renderSaved();renderDirectory();
+  const rev=++epoch;for(const stop of roomWatches.values())stop();roomWatches.clear();roomCache.clear();directory=[];searchResults=null;entitlements={};if(banStop)banStop();banStop=null;for(const s of moderationStops)s();moderationStops=[];banned=false;switching=false;stopRoom();for(const s of stops)s();stops=[];for(const s of profileStops.values())s();profileStops.clear();profiles.clear();user=next;me=null;saved=[];friends=[];invitations=[];restored=false;try{const raw=sessionStorage.getItem('focus_left_rooms_'+next?.uid);leftRooms.clear();if(raw)for(const rid of JSON.parse(raw))leftRooms.add(rid)}catch(e){}by('socialMember').hidden=!next?.emailVerified;by('socialGuest').hidden=!!next?.emailVerified;by('friendsMember').hidden=!next?.emailVerified;by('friendsGuest').hidden=!!next?.emailVerified;renderSaved();renderDirectory();
   if(!next?.emailVerified){renderDirectory();return;}const boundError=e=>{if(rev===epoch)report(e)};let lock;try{lock=await getDocFromServer(ref('deletions',next.uid))}catch(e){if(rev!==epoch)return;throw e}if(rev!==epoch||lock.exists())return;
   const ban=await getDocFromServer(ref('appBans',next.uid));if(rev!==epoch)return;banned=ban.exists()&&!admin();setBanState(banned);
   banStop=onSnapshot(ref('appBans',next.uid),s=>{if(rev!==epoch)return;const nextBan=s.exists()&&!admin();if(nextBan===banned)return;banned=nextBan;setBanState(banned);if(!banned)void bind(next)},boundError);
   by('adminModeration').hidden=!admin();if(admin())moderationStops.push(onSnapshot(collection(db,'appBans'),s=>{if(rev!==epoch)return;appBans=s.docs.map(d=>({id:d.id,...d.data()}));for(const b of appBans)watchProfile(b.id);renderModeration()},boundError));if(banned)return;
   stops.push(onSnapshot(ref('publicProfiles',next.uid),s=>{if(rev!==epoch)return;me=s.exists()?s.data():null;if(me){profiles.set(next.uid,me);by('socialUsername').value=me.username;by('socialUsername').readOnly=true;by('examCategory').value=me.exam||'';by('nameStyle').value=me.cosmetics.nameStyle;by('avatarFrame').value=me.cosmetics.frame;by('namePlate').value=me.cosmetics.plate;const restore=new URLSearchParams(location.search).get('club')||sessionStorage.getItem('focus_active_room_'+next.uid);if(!restored){restored=true;if(restore)join(restore,'').catch(boundError)}}else{by('socialUsername').readOnly=false;by('socialUsername').value=next.email==='efeozbilgin550@gmail.com'?'efe':'';status('Arkadaşlıklar ve kalıcı odalar için @kullanıcıadını kaydet.')}cosmeticOptions();renderMembers();renderSaved();renderDirectory();if(typeof CustomEvent==='function')window.dispatchEvent(new CustomEvent('focus-social-ready',{detail:{uid:next.uid}}))},boundError));
-  stops.push(onSnapshot(collection(db,'users',next.uid,'rooms'),s=>{if(rev!==epoch)return;saved=s.docs.map(d=>({id:d.id,...d.data()}));for(const r of saved)watchRoom(r.id);renderSaved()},boundError));
+  stops.push(onSnapshot(collection(db,'users',next.uid,'rooms'),s=>{if(rev!==epoch)return;saved=s.docs.map(d=>({id:d.id,...d.data()})).filter(r=>!leftRooms.has(r.id));for(const r of saved)watchRoom(r.id);renderSaved()},boundError));
   stops.push(onSnapshot(ref('entitlements',next.uid),s=>{if(rev!==epoch)return;entitlements=s.exists()?s.data():{};cosmeticOptions()},boundError));
   stops.push(onSnapshot(query(collection(db,'rooms'),orderBy('createdAt','desc'),limit(24)),s=>{if(rev!==epoch)return;directory=s.docs.map(d=>({id:d.id,...d.data()}));for(const r of directory){roomCache.set(r.id,r);watchProfile(r.ownerUid)}renderDirectory()},boundError));
   stops.push(onSnapshot(query(collection(db,'friendships'),where('uids','array-contains',next.uid)),s=>{if(rev!==epoch)return;friends=s.docs.map(d=>({id:d.id,...d.data()}));renderFriends()},boundError));
@@ -204,7 +263,7 @@ export function initSocial({db,auth}){
  const closeProfBtn=by('closeMemberProfile');if(closeProfBtn)closeProfBtn.onclick=()=>by('memberProfileModal')?.close?.();
  by('olderMessages').onclick=action(async()=>{if(!active||!historyCursor)return;const op=operation(),id=active,rows=await getDocs(query(collection(db,'rooms',id,'messages'),orderBy('time','desc'),startAfter(historyCursor),limit(20)));op.check();if(id!==active)return;if(rows.empty){status('Sohbetin başlangıcına ulaştın.');return}historyPage=true;historyCursor=rows.docs.at(-1);messages=rows.docs.map(d=>({id:d.id,...d.data()})).reverse();RoomChat.retain(messages.map(m=>m.id));renderChat()});
  by('latestMessages').onclick=()=>{historyPage=false;historyCursor=latest.at(-1)||null;messages=latest.map(d=>({id:d.id,...d.data()})).reverse();RoomChat.retain(messages.map(m=>m.id));renderChat()};
- window.FocusSocial={bind,saveIdentity,needsIdentity:()=>!!user?.emailVerified&&!banned&&!me?.username,pauseRoom,active:()=>active,banned:()=>banned,openMemberProfile,getProfile:uid=>identity(uid),getMemberTimer:uid=>members.find(m=>m.uid===uid)?.timer,setupFriendButton,uid:()=>user?.uid||'',stop:()=>{++epoch;for(const stop of roomWatches.values())stop();roomWatches.clear();roomCache.clear();directory=[];searchResults=null;entitlements={};if(banStop)banStop();banStop=null;for(const s of moderationStops)s();moderationStops=[];banned=false;setBanState(false);switching=false;stopRoom();for(const s of stops)s();stops=[];for(const s of profileStops.values())s();profileStops.clear();user=null;me=null;saved=[];friends=[];invitations=[];profiles.clear();by('socialMember').hidden=true;by('socialGuest').hidden=false;by('friendsMember').hidden=true;by('friendsGuest').hidden=false;by('friendBadge').hidden=true;for(const id of ['savedRooms','friendList','roomInvitations','roomResults'])by(id).replaceChildren()},exportData:async()=>{
+ window.FocusSocial={bind,saveIdentity,needsIdentity:()=>!!user?.emailVerified&&!banned&&!me?.username,pauseRoom,active:()=>active,banned:()=>banned,openMemberProfile,getProfile:uid=>identity(uid),getMemberTimer:uid=>members.find(m=>m.uid===uid)?.timer,setupFriendButton,uid:()=>user?.uid||'',stop:()=>{++epoch;for(const stop of roomWatches.values())stop();roomWatches.clear();roomCache.clear();directory=[];searchResults=null;entitlements={};if(banStop)banStop();banStop=null;for(const s of moderationStops)s();moderationStops=[];banned=false;setBanState(false);switching=false;stopRoom();for(const s of stops)s();stops=[];for(const s of profileStops.values())s();profileStops.clear();user=null;me=null;saved=[];leftRooms.clear();friends=[];invitations=[];profiles.clear();by('socialMember').hidden=true;by('socialGuest').hidden=false;by('friendsMember').hidden=true;by('friendsGuest').hidden=false;by('friendBadge').hidden=true;for(const id of ['savedRooms','friendList','roomInvitations','roomResults'])by(id).replaceChildren()},exportData:async()=>{
   if(!user)return {};const op=operation(),ownProfile=me,roomList=[...saved],ownFriends=[...friends],receivedInvitations=[...invitations],rooms=[];
   if(banned){const [rows,fs,is]=await Promise.all([getDocsFromServer(collection(db,'users',op.uid,'rooms')),getDocsFromServer(query(collection(db,'friendships'),where('uids','array-contains',op.uid))),getDocsFromServer(query(collection(db,'roomInvites'),where('to','==',op.uid)))]);op.check();roomList.splice(0,roomList.length,...rows.docs.map(d=>({id:d.id,...d.data()})));ownFriends.splice(0,ownFriends.length,...fs.docs.map(d=>({id:d.id,...d.data()})));receivedInvitations.splice(0,receivedInvitations.length,...is.docs.map(d=>({id:d.id,...d.data()})))}
   for(const r of roomList){const membership=await getDocFromServer(ref('rooms',r.id,'members',op.uid));op.check();const s=await getDocsFromServer(query(collection(db,'rooms',r.id,'messages'),where('uid','==',op.uid)));op.check();rooms.push({...r,membership:membership.exists()?membership.data():null,messages:s.docs.map(d=>({id:d.id,...d.data()}))})}
