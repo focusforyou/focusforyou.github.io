@@ -45,3 +45,18 @@ test('explicit target rejoin clears kick cutoff; protected admin still cannot by
  const admin=await setup('immune',true);for(const path of [['appBans',admin.bUid],['rooms',admin.rid,'bans',admin.bUid],['rooms',admin.rid,'kicks',admin.bUid]])await admin.seed(path,{by:'moderator',at:Timestamp.fromMillis(Date.now()-1000)});await assertSucceeds(admin.poke());await assertSucceeds(getDoc(admin.receipt(admin.a)));await admin.seed(['deletions',admin.bUid],{startedAt:Timestamp.now()});await assertFails(getDoc(admin.receipt(admin.a)));await assertSucceeds(getDoc(admin.receipt(admin.b)));
  const missing=await setup('missingMember');await assertSucceeds(missing.poke());await env.withSecurityRulesDisabled(ctx=>deleteDoc(doc(ctx.firestore(),'rooms',missing.rid,'members',missing.bUid)));await assertFails(getDoc(missing.receipt(missing.a)));
 });
+
+// Each immunity branch is checked independently: a kick alone evaluates farther
+// than an app ban and must still fit the ten-call budget without cached reads.
+test('protected target immunity fits budget for each sanction and old renewed kicks',async()=>{
+ for(const state of ['appBan','roomBan','kick','renewedKick']){
+  const f=await setup('adminOnly'+state,true),data={by:'moderator',at:Timestamp.fromMillis(Date.now()-(state==='renewedKick'?180000:1000))};
+  const path=state==='appBan'?['appBans',f.bUid]:['rooms',f.rid,state==='roomBan'?'bans':'kicks',f.bUid];
+  await f.seed(path,data);await assertSucceeds(f.poke());await assertSucceeds(getDoc(f.receipt(f.a)));
+ }
+});
+test('ordinary target needs no public profile, but absence never grants sanction immunity',async()=>{
+ const f=await setup('missingProfile');await env.withSecurityRulesDisabled(ctx=>deleteDoc(doc(ctx.firestore(),'publicProfiles',f.bUid)));
+ await assertSucceeds(f.poke());await assertSucceeds(getDoc(f.receipt(f.a)));
+ await f.seed(['rooms',f.rid,'kicks',f.bUid],{by:'moderator',at:Timestamp.fromMillis(Date.now()-1000)});await assertFails(getDoc(f.receipt(f.a)));
+});

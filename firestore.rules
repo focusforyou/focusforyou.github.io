@@ -6,7 +6,7 @@ service cloud.firestore {
   function unlocked(uid) { return !exists(/databases/$(database)/documents/deletions/$(uid)); }
   function locked(uid) { return exists(/databases/$(database)/documents/deletions/$(uid)); }
   function verified() { return request.auth != null && request.auth.uid != 'focusforyou' && request.auth.token.email_verified == true; }
-  function active() { return verified() && unlocked(request.auth.uid) && (admin() || !exists(/databases/$(database)/documents/appBans/$(request.auth.uid))); }
+  function active() { return verified() && unlocked(request.auth.uid) && (request.auth.token.email == 'efeozbilgin550@gmail.com' || !exists(/databases/$(database)/documents/appBans/$(request.auth.uid))); }
   function admin() { return verified() && unlocked(request.auth.uid) && request.auth.token.email == 'efeozbilgin550@gmail.com'; }
   function availableHandle(handle) { return handle != 'focusforyou' && (handle != 'efe' || admin()); }
   function immune(uid) { return exists(/databases/$(database)/documents/publicProfiles/$(uid)) && get(/databases/$(database)/documents/publicProfiles/$(uid)).data.username == 'efe'; }
@@ -16,12 +16,18 @@ service cloud.firestore {
   function kicked(rid,uid) { return exists(/databases/$(database)/documents/rooms/$(rid)/kicks/$(uid)) && get(/databases/$(database)/documents/rooms/$(rid)/members/$(uid)).data.joinedAt <= get(/databases/$(database)/documents/rooms/$(rid)/kicks/$(uid)).data.at; }
   function roomAllowed(rid) { return admin() || (!exists(/databases/$(database)/documents/rooms/$(rid)/bans/$(request.auth.uid)) && !kicked(rid,request.auth.uid)); }
   function member(rid) { return active() && exists(/databases/$(database)/documents/rooms/$(rid)/members/$(request.auth.uid)) && roomAllowed(rid); }
-  // A protected administrator ignores sanctions, but never a deletion lock or
-  // a missing membership. The repeated target paths are cached by rule reads.
+  // Read membership once: exists(member) followed by kicked()'s get(member)
+  // can consume separate access calls. Ordinary allowed targets need no profile
+  // lookup; protected admins use one profile get only when a sanction applies.
+  // Deletion locks and membership remain mandatory for every recipient.
   function nudgeTarget(rid,uid) {
-   return unlocked(uid) && exists(/databases/$(database)/documents/rooms/$(rid)/members/$(uid))
-    && (immune(uid) || (!exists(/databases/$(database)/documents/appBans/$(uid))
-     && !exists(/databases/$(database)/documents/rooms/$(rid)/bans/$(uid)) && !kicked(rid,uid)));
+   let targetMember = get(/databases/$(database)/documents/rooms/$(rid)/members/$(uid)).data;
+   return targetMember is map && unlocked(uid)
+    && ((!exists(/databases/$(database)/documents/appBans/$(uid))
+     && !exists(/databases/$(database)/documents/rooms/$(rid)/bans/$(uid))
+     && (!exists(/databases/$(database)/documents/rooms/$(rid)/kicks/$(uid))
+      || targetMember.joinedAt > get(/databases/$(database)/documents/rooms/$(rid)/kicks/$(uid)).data.at))
+     || get(/databases/$(database)/documents/publicProfiles/$(uid)).data.username == 'efe');
   }
   function nudgeHeartbeat(rid) {
    let after = getAfter(/databases/$(database)/documents/rooms/$(rid)/members/$(request.auth.uid)).data;
@@ -276,12 +282,14 @@ service cloud.firestore {
     allow delete: if moderator(rid) || (self(uid) && locked(uid)) || (leader(rid) && locked(request.auth.uid));
    }
    match /nudges/{uid} {
-    // Sender get uses at most nine unique documents. Worker checks
+    // Sender get uses at most ten document access calls (nine paths). Worker checks
     // the sender's own membership and sanctions separately before FCM.
     allow get: if self(uid) || (active() && resource.data.from == request.auth.uid
      && roomOpen(rid) && nudgeTarget(rid,uid));
     allow list: if moderator(rid) || (leader(rid) && locked(request.auth.uid));
-    allow create, update: if active() && nudgeHeartbeat(rid) && roomOpen(rid) && uid != request.auth.uid
+    // The heartbeat member write independently enforces active() and roomAllowed().
+    // Repeating active() here would waste two access calls in this batch operation.
+    allow create, update: if verified() && nudgeHeartbeat(rid) && roomOpen(rid) && uid != request.auth.uid
      && request.resource.data.keys().hasOnly(['from','to','at']) && request.resource.data.from == request.auth.uid
      && request.resource.data.to == uid && request.resource.data.at == request.time
      && nudgeTarget(rid,uid)
@@ -354,4 +362,3 @@ service cloud.firestore {
   }
  }
 }
-
