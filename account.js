@@ -4,7 +4,7 @@ import {getFirestore,doc,getDocFromServer,getDocsFromServer,collection,onSnapsho
 import {initializeAppCheck,ReCaptchaEnterpriseProvider} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-app-check.js';
 import {firebaseConfig,googleClientId,appCheckSiteKey} from './firebase-config.js';
 import {eraseAccount} from './account-delete.js?v=3';
-import {initSocial} from './social.js';
+import {initSocial} from './social.js?v=roster4';
 
 const app=initializeApp(firebaseConfig);
 // Enable only after the matching web provider is registered in Firebase.

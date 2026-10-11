@@ -7,4 +7,53 @@
  addEventListener('keydown',e=>{if(e.key==='Escape')friends(false)});
  by('openCreateRoom').onclick=()=>{if(!window.FocusAccount?.profile?.().uid){by('openAccount').click();return}if(window.FocusSocial?.banned?.())return;by('createRoomStatus').textContent='';create.showModal();by('permanentName').focus()};
  by('closeCreateRoom').onclick=()=>create.close();create.addEventListener('click',e=>{if(e.target!==create)return;const r=create.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)create.close()});
+
+ const memberModal=by('memberProfileModal');
+ if(memberModal){
+  by('closeMemberProfile')?.addEventListener('click',()=>memberModal.close());
+  memberModal.addEventListener('click',e=>{
+   if(e.target!==memberModal)return;
+   const r=memberModal.getBoundingClientRect();
+   if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)memberModal.close();
+  });
+ }
+
+ window.openMemberProfile=function(targetUid,fallbackName,explicitTimer,extraData){
+  const modal=by('memberProfileModal');
+  if(!modal)return;
+  const p=(window.FocusSocial?.getProfile?window.FocusSocial.getProfile(targetUid):null)||extraData||{};
+  const name=p.name||fallbackName||'Kullanıcı';
+  by('memberProfileTitle').textContent=name;
+  by('memberProfileHandle').textContent='@'+(p.username||'kullanici');
+  if(p.exam){by('memberProfileExam').textContent=p.exam;by('memberProfileExam').hidden=false}else by('memberProfileExam').hidden=true;
+  if(p.photo){
+   by('memberProfileAvatar').src=p.photo;by('memberProfileAvatar').hidden=false;by('memberProfileFallback').hidden=true;
+  }else{
+   by('memberProfileAvatar').hidden=true;by('memberProfileFallback').textContent=name.slice(0,1).toUpperCase();by('memberProfileFallback').hidden=false;
+  }
+  const t=explicitTimer||(window.FocusSocial?.getMemberTimer?window.FocusSocial.getMemberTimer(targetUid):null);
+  if(t&&window.LobbyModel){
+   by('memberProfileTotalHours').textContent=LobbyModel.hours(t.worked||0);
+   by('memberProfileRoomHours').textContent=LobbyModel.hours(t.roomWorked||0);
+   by('memberProfileStatusText').textContent=LobbyModel.describe(t);
+  }else{
+   by('memberProfileTotalHours').textContent='—';by('memberProfileRoomHours').textContent='—';by('memberProfileStatusText').textContent='Çevrimdışı';
+  }
+  const friendBtn=by('memberProfileFriendBtn');
+  const selfUid=window.FocusSocial?.uid?.()||window.FocusAccount?.profile?.()?.uid;
+  if(!selfUid||!targetUid||targetUid===selfUid||!/^[A-Za-z0-9_-]{10,40}$/.test(targetUid)){
+   friendBtn.hidden=true;
+  }else if(window.FocusSocial?.setupFriendButton){
+   friendBtn.hidden=false;
+   window.FocusSocial.setupFriendButton(friendBtn,targetUid);
+  }else{
+   friendBtn.hidden=true;
+  }
+  try{
+   if(modal.open)modal.close();
+   if(typeof modal.showModal==='function')modal.showModal();
+  }catch(e){
+   console.warn('Profile modal error',e);
+  }
+ };
 })();

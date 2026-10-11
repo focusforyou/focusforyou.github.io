@@ -139,7 +139,7 @@ function header(row,message,identity){
     if(row.avatar.style)row.avatar.style.cursor='pointer';
     row.avatar.onclick=e=>{
       e.stopPropagation();
-      window.FocusSocial?.openMemberProfile?.(message.uid||'',message.sender);
+      (window.openMemberProfile||window.FocusSocial?.openMemberProfile)?.(message.uid||'',message.sender);
     };
   }else if(row.avatar){
     row.avatar.remove();
@@ -194,7 +194,7 @@ function receive(input,identity,onDelete){
   if(label.style)label.style.cursor='pointer';
   label.onclick=e=>{
     e.stopPropagation();
-    window.FocusSocial?.openMemberProfile?.(message.uid||'',message.sender);
+    (window.openMemberProfile||window.FocusSocial?.openMemberProfile)?.(message.uid||'',message.sender);
   };
 
   const date=document.createElement('small');

@@ -76,4 +76,19 @@
 .stat-pill{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 8px;background:rgba(0,0,0,0.25);border-radius:14px;text-align:center}
 .stat-pill small{font-size:11px;color:var(--mu);margin-bottom:4px}
 .stat-pill strong{font-size:14px;font-variant-numeric:tabular-nums}
+#roomMembers li{cursor:pointer;transition:background .15s,transform .15s}
+#roomMembers li:hover{background:rgba(255,255,255,0.08);transform:translateX(2px)}
+.room-chat-layout{display:flex;flex-direction:row;gap:16px;width:100%}
+.chat-main-pane{flex:1;min-width:0;display:flex;flex-direction:column}
+.chat-roster-pane{width:190px;flex-shrink:0;display:flex;flex-direction:column;gap:10px;border-right:1px solid rgba(255,255,255,0.1);padding-right:12px}
+.chat-roster-title{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:13px;color:#9eb5db;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.08)}
+.chat-roster-list{list-style:none;margin:0;padding:0;overflow-y:auto;max-height:calc(100dvh - 380px);min-height:180px;display:flex;flex-direction:column;gap:6px}
+.chat-roster-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:12px;background:rgba(255,255,255,0.05);cursor:pointer;transition:background .15s,transform .15s}
+.chat-roster-item:hover{background:rgba(255,255,255,0.12);transform:translateX(2px)}
+.chat-roster-avatar{width:24px;height:24px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.chat-roster-avatar-fallback{width:24px;height:24px;border-radius:50%;background:#253a66;display:grid;place-items:center;font-size:11px;font-weight:700;color:#c0d4ff;flex-shrink:0}
+.chat-roster-info{display:flex;flex-direction:column;min-width:0;line-height:1.25}
+.chat-roster-name{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-roster-status{font-size:11px;color:#8da3ca}
+@media (max-width:899px){.chat-roster-pane{display:none!important}}
 

@@ -52,7 +52,7 @@ function clear(){
  const old=peer;peer=null;upstream=null;connecting=false;joined=false;host=false;code='';attempts=0;
  members.clear();pending.clear();departed.clear();history.length=0;ownRoom=ownBase=roomPast=0;roomMembers=[];views=[];RoomChat.reset();old?.destroy();by('roomPanel').hidden=true;busy();
  profiles.clear();sentProfiles='';sentOwnProfile='';
- if(by('homeLobbyCoWorkers'))by('homeLobbyCoWorkers').hidden=true;
+ if(by('homeLobbyCoWorkers'))by('homeLobbyCoWorkers').hidden=true;if(by('chatRosterPane'))by('chatRosterPane').hidden=true;
  window.FocusNative?.room('');
 }
 function render(){
@@ -64,7 +64,7 @@ function render(){
  by('roomMembers').replaceChildren(...roomMembers.map(member=>{
   const li=document.createElement('li'),own=member.id===peer?.id;
   if(li.style)li.style.cursor='pointer';
-  li.onclick=()=>{window.FocusSocial?.openMemberProfile?.(member.id,member.name,own?live():member.timer)};
+  li.onclick=()=>{(window.openMemberProfile||window.FocusSocial?.openMemberProfile)?.(member.id,member.name,own?live():member.timer,profiles.get(member.id))};
   const label=document.createElement('strong');label.textContent=member.name+(member.host?' · oda sahibi':'')+(own?' · sen':'');
   const photo=profiles.get(member.id)?.photo;if(photo){const image=document.createElement('img');image.className='member-avatar';image.width=image.height=32;image.src=photo;image.alt='';image.referrerPolicy='no-referrer';label.prepend(image)}
   const text=document.createElement('span');text.textContent=' — '+LobbyModel.describe(own?live():member.timer);
@@ -76,7 +76,7 @@ function renderClocks(){
  if(!joined)return;const own=live(),age=(Date.now()-rosterAt)/1000;let total=roomPast;
  for(const view of views){const t=view.member.id===peer.id?own:LobbyModel.project(view.member.timer,age);total+=t.roomWorked;view.clock.textContent=LobbyModel.describe(t)+(age>15?' · son alınan durum':'');view.totals.textContent='Toplam '+LobbyModel.hours(t.worked)+' · bu odada '+LobbyModel.hours(t.roomWorked)}
  by('roomTotal').textContent=LobbyModel.hours(total);
- updateHomeTemporaryCoWorkers();
+ updateHomeTemporaryCoWorkers();renderTemporaryRosterSidebar();
 }
 function updateHomeTemporaryCoWorkers(){
  const container=by('homeLobbyCoWorkers'),list=by('homeLobbyList');
@@ -91,8 +91,29 @@ function updateHomeTemporaryCoWorkers(){
   const text=document.createElement('span');
   text.textContent=m.name+(t?.phase==='break'?' (Mola)':' (Odak)');
   pill.append(text);
-  pill.onclick=()=>{window.FocusSocial?.openMemberProfile?.(m.id,m.name,t)};
+  pill.onclick=()=>{(window.openMemberProfile||window.FocusSocial?.openMemberProfile)?.(m.id,m.name,t,profiles.get(m.id))};
   list.append(pill);
+ }
+}
+function renderTemporaryRosterSidebar(){
+ const pane=by('chatRosterPane'),list=by('chatRosterList'),cnt=by('chatRosterCount');
+ if(!pane||!list)return;
+ if(!joined||!roomMembers.length){pane.hidden=true;return}
+ pane.hidden=false;if(cnt)cnt.textContent=String(roomMembers.length);
+ list.replaceChildren();
+ for(const m of roomMembers){
+  const isSelf=m.id===peer?.id,t=isSelf?live():m.timer;
+  const item=document.createElement('li');item.className='chat-roster-item';
+  const photo=profiles.get(m.id)?.photo;
+  if(photo){const img=document.createElement('img');img.className='chat-roster-avatar';img.src=photo;img.alt='';img.width=img.height=24;item.append(img)}
+  else{const fb=document.createElement('span');fb.className='chat-roster-avatar-fallback';fb.textContent=(m.name||'?').slice(0,1).toUpperCase();item.append(fb)}
+  const info=document.createElement('div');info.className='chat-roster-info';
+  const nm=document.createElement('span');nm.className='chat-roster-name';nm.textContent=m.name+(m.host?' · oda sahibi':'')+(isSelf?' · sen':'');
+  const st=document.createElement('small');st.className='chat-roster-status';st.textContent=t?.phase==='break'?'Mola · '+(LobbyModel.clock?LobbyModel.clock(t.left):''):'Odak · '+(LobbyModel.clock?LobbyModel.clock(t.left):'');
+  info.append(nm,st);item.append(info);
+  if(item.style)item.style.cursor='pointer';
+  item.onclick=()=>{(window.openMemberProfile||window.FocusSocial?.openMemberProfile)?.(m.id,m.name,t,profiles.get(m.id))};
+  list.append(item);
  }
 }
 function broadcast(){
