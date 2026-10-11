@@ -9,8 +9,8 @@
 <script>(()=>{try{if(localStorage.getItem('focus_theme')==='light'){document.documentElement.classList.add('theme-light');const m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content','#EDF2FC');}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg">
-<script src="cloud-model.js?v=audit1"></script>
-<script src="study.js?v=audit1"></script>
+<script src="cloud-model.js?v=perf1"></script>
+<script src="study.js?v=perf1"></script>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
 :root{--tx:#E3E8F5;--mu:#B5BDD6;--pr:#AFC6FF;--on:#0A1A44}
@@ -256,22 +256,29 @@ const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* Gökyüzü: yıldızlar, yağan noktalar, kayan yıldız, kometler */
 const cv=$('sky'),cx=cv.getContext('2d');
-let W,H,D,stars,flakes,shoot=null,comets=[],ns=R(2,5),nc=R(1,3),mx=0,my=0,sx=0,sy=0,t=0,last=performance.now(),animRunning=true;
+let W,H,D,stars,flakes,shoot=null,comets=[],ns=R(2,5),nc=R(1,3),mx=0,my=0,sx=0,sy=0,t=0,last=performance.now(),animRunning=false,skyFrame=0;
+let isLight=document.documentElement.classList.contains('theme-light');
 addEventListener('pointermove',e=>{if(window.FocusMotion?.active||window.FocusSkyAnim===false)return;mx=e.clientX/innerWidth-.5;my=e.clientY/innerHeight-.5});
-window.FocusSky={set:(x,y)=>{mx=x;my=y},resume:()=>{if(!animRunning&&window.FocusSkyAnim!==false){animRunning=true;last=performance.now();requestAnimationFrame(frame)}}};
+function pauseSky(){cancelAnimationFrame(skyFrame);skyFrame=0;animRunning=false}
+function resumeSky(){if(animRunning||document.hidden||window.FocusSkyAnim===false)return;animRunning=true;last=performance.now()-34;skyFrame=requestAnimationFrame(frame)}
+window.FocusSky={set:(x,y)=>{mx=x;my=y},resume:resumeSky};
 function fit(){
-D=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;cv.width=W*D;cv.height=H*D;
+D=Math.min(devicePixelRatio||1,1.5,Math.sqrt(2200000/Math.max(1,innerWidth*innerHeight)));W=innerWidth;H=innerHeight;cv.width=W*D;cv.height=H*D;
 stars=Array.from({length:Math.min(520,W*H/4000|0)},()=>({x:R(0,W),y:R(0,H),r:R(.3,1.1),a:R(.25,.85),s:R(.6,2),p:R(0,6.28),z:R(.2,1)}));
 flakes=reduce?[]:Array.from({length:Math.min(380,W*H/5500|0)},()=>({x:R(0,W),y:R(0,H),r:R(.4,1.4),v:R(10,32),w:R(.4,1.4),p:R(0,6.28),z:R(.3,1),a:R(.35,.85)}));
 }
-addEventListener('resize',fit);fit();
+let resizeFrame=0;addEventListener('resize',()=>{cancelAnimationFrame(resizeFrame);resizeFrame=requestAnimationFrame(()=>{resizeFrame=0;fit();if(reduce){pauseSky();resumeSky()}})});fit();
+document.addEventListener('visibilitychange',()=>{if(document.hidden)pauseSky();else resumeSky()});
+addEventListener('pagehide',pauseSky);addEventListener('pageshow',resumeSky);
+addEventListener('focus-theme-change',e=>{isLight=e.detail.theme==='light';if(reduce){pauseSky();resumeSky()}});
+addEventListener('focus-anim-change',e=>{if(e.detail.enabled)resumeSky();else{pauseSky();cx.setTransform(D,0,0,D,0,0);cx.clearRect(0,0,W,H)}});
 function frame(now){
-if(window.FocusSkyAnim===false){animRunning=false;cx.setTransform(D,0,0,D,0,0);cx.clearRect(0,0,W,H);return}
-requestAnimationFrame(frame);
-const dt=Math.min(.05,(now-last)/1000);last=now;t+=dt;
+skyFrame=0;if(document.hidden||window.FocusSkyAnim===false){pauseSky();return}
+if(!reduce)skyFrame=requestAnimationFrame(frame);else animRunning=false;
+if(!reduce&&now-last<1000/30)return;
+const dt=Math.min(.1,(now-last)/1000);last=now;t+=dt;
 cx.setTransform(D,0,0,D,0,0);cx.clearRect(0,0,W,H);
 const k=Math.min(1,dt*3);sx+=(mx-sx)*k;sy+=(my-sy)*k;
-const isLight=document.documentElement.classList.contains('theme-light')||document.body?.classList.contains('theme-light');
 cx.fillStyle=isLight?'#7B94CB':'#DCE6FF';
 for(const s of stars){cx.globalAlpha=s.a*(reduce?.8:.6+.4*Math.sin(s.p+t*s.s));cx.beginPath();cx.arc(s.x-sx*30*s.z,s.y-sy*18*s.z,s.r,0,6.2832);cx.fill()}
 cx.fillStyle=isLight?'#9AB2E5':'#fff';
@@ -297,7 +304,7 @@ cx.fillStyle=gl;cx.beginPath();cx.arc(hx,hy,c.r*5,0,6.2832);cx.fill()}
 }
 cx.globalAlpha=1;
 }
-if(window.FocusSkyAnim!==false){requestAnimationFrame(frame)}else{animRunning=false}
+resumeSky();
 
 /* Sınav geri sayımı */
 function cd(){
@@ -320,6 +327,7 @@ try{const j=JSON.parse(localStorage.getItem('mikro_tasks')||'null');if(j&&Array.
 function svF(){try{localStorage.setItem('mikro_forest',JSON.stringify(F))}catch(e){}}
 function svT(){try{localStorage.setItem('mikro_tasks',JSON.stringify({t:tasks,a:act}))}catch(e){}}
 function tf(s){s=Math.ceil(s);return String(s/60|0).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+let forestCells=-1;
 function ft(){
 let s='idle';if(dead)s='dead';else if(mode=='b'&&grown)s='done';else if(mode=='f'&&left<focusDuration)s='growing';
 const p=s=='growing'?1-left/focusDuration:s=='done'?1:0,sc=s=='dead'?.7:s=='idle'?.2:.2+.8*p;
@@ -329,7 +337,7 @@ $('lf').setAttribute('fill',s=='dead'?'#8A7A66':s=='done'?'#6BD38B':'#4FB06A');
 $('lf').setAttribute('fill-opacity',s=='dead'?.35:s=='idle'?.9:.55+.45*p);
 $('fm').textContent={idle:'Odak başlat, ağacın filizlensin.',growing:'Ağacın büyüyor: %'+Math.round(p*100),done:'Ağacın büyüdü ve ormanına eklendi. Mola zamanı.',dead:'Ağacın kurudu. Odağı yarıda bırakınca bu olur, yeniden dene.'}[s];
 $('ft').textContent=F.f||F.l?F.f+' ağaç dikildi, '+F.l+' ağaç kurudu.':'Ormanın henüz boş.';
-$('fo').innerHTML=Array.from({length:Math.min(F.f,30)},()=>'<svg width="28" height="34" viewBox="0 0 28 34" fill="none" aria-hidden="true"><rect x="12" y="20" width="4" height="12" rx="1.5" fill="#8B6B4A"/><circle cx="14" cy="13" r="10" fill="#6BD38B"/></svg>').join('');
+if(forestCells!==F.f){forestCells=F.f;$('fo').innerHTML=Array.from({length:Math.min(F.f,30)},()=>'<svg width="28" height="34" viewBox="0 0 28 34" fill="none" aria-hidden="true"><rect x="12" y="20" width="4" height="12" rx="1.5" fill="#8B6B4A"/><circle cx="14" cy="13" r="10" fill="#6BD38B"/></svg>').join('')}
 }
 function nxt(){const n=tasks.find(k=>!k.done);act=n?n.id:null}
 function rk(){
@@ -375,8 +383,11 @@ dead=false;
 }
 if(now-lastS>=5000){persistTimer();lastS=now}
 }
+let timerVisual='';
 function pm(){
 const total=mode==='f'?focusDuration:breakDuration,seconds=Math.ceil(left);
+const signature=[seconds,mode,run,sess,focusDuration,breakDuration,F.f,F.l,grown,dead].join(':');
+if(signature===timerVisual)return;timerVisual=signature;
 $('tt').textContent=String(seconds/60|0).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
 $('tl').textContent=mode==='f'?'Odak':'Mola';
 $('rg').style.strokeDashoffset=527.79*(1-left/total);
@@ -427,31 +438,31 @@ window.FocusData={
 
 /* Kartlarda 3D eğilme ve basma efekti */
 if(matchMedia('(hover:hover) and (prefers-reduced-motion:no-preference)').matches){
-let pr=false;
+let pr=false,cardFrame=0,cardEvent=null;
 const fc=e=>{const el=e.target.closest&&e.target.closest('.card');return el&&!el.closest('dialog')?el:null};
 const mv=e=>{const el=fc(e);if(!el)return;const r=el.getBoundingClientRect(),nx=(e.clientX-r.left)/r.width-.5,ny=(e.clientY-r.top)/r.height-.5,s=(pr?-1:1)*(el.matches('[data-calm],.wide,.verdict')||r.width>650||r.height>450?.15:1);
 el.style.setProperty('--ry',(-nx*8*s).toFixed(2)+'deg');el.style.setProperty('--rx',(ny*8*s).toFixed(2)+'deg');
 el.style.setProperty('--mx',((nx+.5)*100).toFixed(1)+'%');el.style.setProperty('--my',((ny+.5)*100).toFixed(1)+'%')};
-document.addEventListener('pointermove',mv);
-document.addEventListener('pointerout',e=>{const el=fc(e);if(!el||(e.relatedTarget&&el.contains(e.relatedTarget)))return;el.style.removeProperty('--rx');el.style.removeProperty('--ry')});
+document.addEventListener('pointermove',e=>{cardEvent=e;if(!cardFrame)cardFrame=requestAnimationFrame(()=>{cardFrame=0;const latest=cardEvent;cardEvent=null;if(latest&&!document.hidden)mv(latest)})},{passive:true});
+document.addEventListener('pointerout',e=>{const el=fc(e);if(!el||(e.relatedTarget&&el.contains(e.relatedTarget)))return;if(cardEvent&&fc(cardEvent)===el){cancelAnimationFrame(cardFrame);cardFrame=0;cardEvent=null}el.style.removeProperty('--rx');el.style.removeProperty('--ry')});
 document.addEventListener('pointerdown',e=>{const el=fc(e);if(!el)return;pr=true;mv(e);el.removeAttribute('data-click');void el.offsetWidth;el.setAttribute('data-click','1')});
 const up=e=>{if(pr){pr=false;mv(e)}};
 document.addEventListener('pointerup',up);document.addEventListener('pointercancel',up);
 }
 </script>
 <script src="vendor/peerjs-1.5.5.min.js"></script>
-<script src="lobby-model.js?v=audit1"></script>
-<script src="social-model.js?v=audit1"></script><script src="chat.js?v=audit1"></script>
-<script src="native-session.js?v=audit1"></script>
-<script src="lobby-peer.js?v=audit1"></script>
-<script src="install.js?v=audit1"></script>
-<script src="mobile-ui.js?v=audit1"></script>
-<script src="motion.js?v=audit1"></script>
+<script src="lobby-model.js?v=perf1"></script>
+<script src="social-model.js?v=perf1"></script><script src="chat.js?v=perf1"></script>
+<script src="native-session.js?v=perf1"></script>
+<script src="lobby-peer.js?v=perf1"></script>
+<script src="install.js?v=perf1"></script>
+<script src="mobile-ui.js?v=perf1"></script>
+<script src="motion.js?v=perf1"></script>
 <dialog id="legalSheet" aria-label="Yasal bilgiler"><form method="dialog"><button class="pill" type="submit">Kapat ×</button></form><iframe id="legalFrame" title="Gizlilik ve kullanım bilgileri" sandbox="allow-same-origin"></iframe></dialog>
-<script src="legal-sheet.js"></script><script src="community-ui.js?v=audit1"></script>
-<script src="account-ui.js"></script>
-<script src="settings.js?v=audit1"></script>
-<script type="module">import('./account.js?v=audit1').catch(()=>{document.getElementById('accountStatus').textContent='Hesap hizmetine bağlanılamadı. İnternet bağlantın gelince sayfayı yeniden aç; cihaz kayıtların korunuyor.'})</script>
+<script src="legal-sheet.js"></script><script src="community-ui.js?v=perf1"></script>
+<script src="account-ui.js?v=perf1"></script>
+<script src="settings.js?v=perf1"></script>
+<script type="module">import('./account.js?v=perf1').catch(()=>{document.getElementById('accountStatus').textContent='Hesap hizmetine bağlanılamadı. İnternet bağlantın gelince sayfayı yeniden aç; cihaz kayıtların korunuyor.'})</script>
 </body>
 </html>
 

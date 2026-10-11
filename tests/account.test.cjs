@@ -135,3 +135,12 @@ test('selected photo remains a draft through cloud hydration and is saved',async
 test('old bootstrap read cannot initialize an account after switching identity',async()=>{
  const f=fixture();const original=f.ctx.runTransaction;let release;f.ctx.runTransaction=(db,fn)=>original(db,tx=>fn({...tx,get:async path=>path==='users/alice/meta/main'?new Promise(resolve=>release=()=>resolve(tx.get(path))):tx.get(path)}));await f.login();await f.login('bob');release();await f.settle();assert.equal(f.rows.has('users/alice/meta/main'),false);assert.equal(f.rows.has('users/bob/meta/main'),true);
 });
+test('lock and moderation reads run concurrently before any account bootstrap',async()=>{
+ const f=fixture(),original=f.ctx.getDocFromServer;const reads=[];let unlock,unban;f.ctx.getDocFromServer=path=>{reads.push(path);return new Promise(resolve=>{if(path==='deletions/alice')unlock=()=>resolve(original(path));else if(path==='appBans/alice')unban=()=>resolve(original(path));else resolve(original(path))})};await f.login();assert.deepEqual(reads,['deletions/alice','appBans/alice']);assert.equal(f.rows.has('users/alice/meta/main'),false);unlock();await f.settle();assert.equal(f.rows.has('users/alice/meta/main'),false);unban();await f.settle();assert.equal(f.rows.has('users/alice/meta/main'),true);
+});
+test('public identity hydration begins without waiting for private bootstrap transaction',async()=>{
+ const f=fixture();let socialBinds=0,release;f.ctx.FocusSocial.bind=async()=>socialBinds++;const original=f.ctx.runTransaction;f.ctx.runTransaction=(db,fn)=>original(db,tx=>fn({...tx,get:async path=>new Promise(resolve=>release=()=>resolve(tx.get(path)))}));await f.login();assert.equal(socialBinds,1);assert.equal(f.rows.has('users/alice/meta/main'),false);release();await f.settle();assert.equal(f.rows.has('users/alice/meta/main'),true);assert.equal(socialBinds,1);
+});
+test('cached display name is reused only for the same Firebase identity',async()=>{
+ const f=fixture(new Map([['focus_profile_label','Saved Alice'],['focus_profile_uid','alice']]));await f.login();assert.equal(f.node('profileName').value,'Saved Alice');await f.login('bob');assert.equal(f.node('profileName').value,'bob');assert.equal(f.storage.get('focus_profile_uid'),'bob');await f.logout();assert.equal(f.storage.has('focus_profile_uid'),false);
+});

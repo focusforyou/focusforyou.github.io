@@ -3,8 +3,8 @@ import {getAuth,setPersistence,browserLocalPersistence,GoogleAuthProvider,EmailA
 import {getFirestore,doc,getDocFromServer,getDocsFromServer,collection,onSnapshot,runTransaction,serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js';
 import {initializeAppCheck,ReCaptchaEnterpriseProvider} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-app-check.js';
 import {firebaseConfig,googleClientId,appCheckSiteKey} from './firebase-config.js';
-import {eraseAccount} from './account-delete.js?v=audit1';
-import {initSocial} from './social.js?v=audit1';
+import {eraseAccount} from './account-delete.js?v=perf1';
+import {initSocial} from './social.js?v=perf1';
 
 const app=initializeApp(firebaseConfig);
 // Enable only after the matching web provider is registered in Firebase.
@@ -31,7 +31,7 @@ function renderProfile(){
  by('profileControls').hidden=!auth.currentUser?.emailVerified;
  by('accountEmail').textContent=auth.currentUser?.email||'';
  window.FocusAccountUI?.resolved(auth.currentUser);
- try{if(auth.currentUser)localStorage.setItem('focus_profile_label',profile.name.slice(0,30)||'Profilim');else localStorage.removeItem('focus_profile_label')}catch(e){}
+ try{if(auth.currentUser){localStorage.setItem('focus_profile_label',profile.name.slice(0,30)||'Profilim');localStorage.setItem('focus_profile_uid',auth.currentUser.uid)}else{localStorage.removeItem('focus_profile_label');localStorage.removeItem('focus_profile_uid')}}catch(e){}
  if(by('deletePasswordRow'))by('deletePasswordRow').hidden=!auth.currentUser?.providerData?.some(p=>p.providerId==='password');
  if(!nameDraft&&document.activeElement!==by('profileName'))by('profileName').value=profile.name;
  const shownPhoto=photoDraft?avatar:profile.photo;by('profileAvatar').hidden=!shownPhoto;
@@ -82,11 +82,20 @@ async function bind(user){
  if(next)localStorage.setItem('focus_current_uid',next);else localStorage.removeItem('focus_current_uid');
  generation++;const revision=generation;for(const stop of unsub)stop();unsub=[];ready=false;base=null;devices=new Map();devicesLoaded=false;uid='';cache={days:{},dirty:{}};observed={};syncing=false;photoDraft=false;nameDraft=false;
  socialReadyUid='';if(user&&(loginIntent||window.FocusAccountUI?.mode==='login'))loginPendingUid=user.uid;if(!user){loginPendingUid='';loginIntent=false}
- profile=CloudModel.profile({uid:user?.uid,name:user?.displayName||'Odak arkadaşı',photo:''});avatar=profile.photo;renderProfile();
+ let cachedName='';try{if(user&&(localStorage.getItem('focus_profile_uid')||previous)===user.uid)cachedName=localStorage.getItem('focus_profile_label')||''}catch(e){}
+ profile=CloudModel.profile({uid:user?.uid,name:cachedName&&cachedName.length<=30?cachedName:user?.displayName||'Odak arkadaşı',photo:''});avatar=profile.photo;renderProfile();
  onlineBanned=false;
  if(!user){message('Giriş yapınca ilerlemen cihazların arasında otomatik eşitlenir.');return}
- try{const lockRef=doc(db,'deletions',user.uid),lock=await getDocFromServer(lockRef);if(revision!==generation)return;if(lock.exists()){deletionLocked=true;ready=false;clearAccountDevice(user.uid);message('Yarım kalan hesap silme işlemi sürdürülüyor…');await finishDeletion(user);return}unsub.push(onSnapshot(lockRef,snap=>{if(revision!==generation||deleting||!snap.exists())return;receiveDeletion(user.uid);},()=>{}));}catch(e){if(revision!==generation)return;if(e.code!=='permission-denied'){message('Hesap durumu sunucudan doğrulanamadı. İnternet bağlantını kontrol et.');return}}
- const ban=await getDocFromServer(doc(db,'appBans',user.uid));if(revision!==generation)return;onlineBanned=ban.exists()&&!(user.emailVerified&&user.email==='efeozbilgin550@gmail.com');
+ // Both independent server checks run together; no cloud writes or social
+ // subscriptions start until deletion and moderation status are confirmed.
+ const lockRef=doc(db,'deletions',user.uid),banRef=doc(db,'appBans',user.uid);
+ const [lockResult,banResult]=await Promise.allSettled([getDocFromServer(lockRef),getDocFromServer(banRef)]);
+ if(revision!==generation||auth.currentUser?.uid!==user.uid)return;
+ if(lockResult.status==='rejected'&&lockResult.reason?.code!=='permission-denied'){message('Hesap durumu sunucudan doğrulanamadı. İnternet bağlantını kontrol et.');return}
+ if(lockResult.status==='fulfilled'&&lockResult.value.exists()){deletionLocked=true;ready=false;clearAccountDevice(user.uid);message('Yarım kalan hesap silme işlemi sürdürülüyor…');await finishDeletion(user);return}
+ unsub.push(onSnapshot(lockRef,snap=>{if(revision!==generation||deleting||!snap.exists())return;receiveDeletion(user.uid);},()=>{}));
+ if(banResult.status==='rejected'){message('Hesap durumu sunucudan doğrulanamadı. İnternet bağlantını kontrol et.');return}
+ onlineBanned=banResult.value.exists()&&!(user.emailVerified&&user.email==='efeozbilgin550@gmail.com');
  if(!user.emailVerified){message('Bulut kayıtlarını kullanmak için e-postanı doğrula, ardından Doğruladım’a bas.');return}
  uid=user.uid;try{cache=JSON.parse(localStorage.getItem('focus_account_'+uid)||'null')||{days:{},dirty:{}}}catch(e){cache={days:{},dirty:{}}}
  if(!cache||typeof cache!=='object'||Array.isArray(cache))cache={days:{},dirty:{}};
@@ -99,10 +108,10 @@ async function bind(user){
  const seed={...cache.seed,profile};
  if(!localStorage.getItem('focus_guest_backup'))localStorage.setItem('focus_guest_backup',JSON.stringify(seed));
  message('Hesabın ve kayıtların yükleniyor…');
+ window.FocusSocial.bind(user).catch(()=>{if(revision===generation)message('Sosyal odalara erişilemiyor. Firebase oda kurallarının yayımlandığını kontrol et.')});
  try{
   await runTransaction(db,async tx=>{if(revision!==generation||auth.currentUser?.uid!==user.uid)throw Error('account-changed');const snap=await tx.get(ref);if(revision!==generation||auth.currentUser?.uid!==user.uid)throw Error('account-changed');if(!snap.exists())tx.set(ref,seed)});
   if(revision!==generation)return;ready=true;observed=fields();
-  window.FocusSocial.bind(user).catch(()=>{if(revision===generation)message('Sosyal odalara erişilemiyor. Firebase oda kurallarının yayımlandığını kontrol et.')}); 
   unsub.push(onSnapshot(ref,snap=>{if(revision!==generation||!snap.exists())return;base=snap.data();applyCloud();message('Bulut kayıtların açık; değişiklikler otomatik kaydedilir.')},()=>{if(revision!==generation)return;ready=false;renderProfile();message('Bulut kayıtlarına erişilemiyor. Kayıtların cihazda duruyor.')}));
   unsub.push(onSnapshot(collection(db,'users',uid,'devices'),snap=>{if(revision!==generation)return;watchChanges();devices=new Map(snap.docs.map(d=>[d.id,d.data()]));devicesLoaded=true;acknowledgeFields();applyCloud()},()=>{if(revision===generation)message('Bulut kayıtlarına bağlantı kesildi; cihaz kayıtları korunuyor.')}));
  }catch(e){if(revision!==generation)return;message('Hesap açık, fakat bulut kayıtları henüz bağlanamadı. Cihaz kayıtların korunuyor.');renderProfile()}
@@ -157,8 +166,8 @@ function clearAccountDevice(owner){
  window.FocusSocial?.stop();sessionStorage.removeItem('focus_active_room_'+owner);by('leaveRoom')?.click();Study.stopForAccountDeletion?.();
  by('lobbyName').value='';window.FocusNative?.pulse();
  profile={uid:'',name:'',photo:''};avatar='';photoDraft=false;nameDraft=false;renderProfile();
- localStorage.removeItem('focus_current_uid');localStorage.removeItem('focus_account_'+owner);localStorage.removeItem('focus_guest_backup');
- localStorage.removeItem('focus_profile_label');
+ localStorage.removeItem('focus_current_uid');localStorage.removeItem('focus_account_'+owner);localStorage.removeItem('focus_guest_backup');localStorage.removeItem('focus_room_cards_'+owner);
+ localStorage.removeItem('focus_profile_label');localStorage.removeItem('focus_profile_uid');
  Study.resetForDeletion?.();Study.applyDays({});window.FocusData?.apply({preferences:JSON.stringify({focus:25,break:5,goal:120}),tasks:'{"t":[],"a":null}',forest:'{"f":0,"l":0}',exam:''});
  for(const key of ['focus_study','mikro_tasks','mikro_forest','mikro_timer','ex'])localStorage.removeItem(key);
 }

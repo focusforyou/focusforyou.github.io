@@ -3,9 +3,9 @@
 const sheet=document.getElementById('accountSheet');
 document.getElementById('accountContent').append(document.querySelector('.account-card'));
 const by=id=>document.getElementById(id);
-let cached='';try{cached=localStorage.getItem('focus_profile_label')||''}catch(e){}
+let cached='',cachedUid='';try{cached=localStorage.getItem('focus_profile_label')||'';cachedUid=localStorage.getItem('focus_profile_uid')||localStorage.getItem('focus_current_uid')||''}catch(e){}
 // This name is presentation only. Firebase alone authorizes account actions.
-if(cached&&cached.length<=30){by('openAccount').textContent='Profilim';by('accountGuest').hidden=true;by('accountMember').hidden=true;by('accountStatus').textContent='Hesabın yükleniyor…'}
+if(cached&&cached.length<=30&&/^[A-Za-z0-9_-]{1,128}$/.test(cachedUid)){by('openAccount').textContent='Profilim';by('accountGuest').hidden=true;by('accountMember').hidden=true;by('accountStatus').textContent='Hesabın yükleniyor…'}
 let mode='';
 const setMode=value=>{mode=value;const onboarding=value==='onboarding';if(by('profileSetupTitle'))by('profileSetupTitle').textContent=onboarding?'Profilini tamamla':'Profilin';if(by('profileSetupHelp')){by('profileSetupHelp').hidden=!onboarding;by('profileSetupHelp').textContent='Görünen adını ve benzersiz @kullanıcıadını seç. Arkadaşların seni bu kullanıcı adıyla bulabilir.'}};
 window.FocusAccountUI={

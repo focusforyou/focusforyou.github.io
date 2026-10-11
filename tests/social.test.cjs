@@ -7,9 +7,10 @@ const timer=(extra={})=>({phase:'focus',running:true,left:1500,total:1500,worked
 function fixture(){
  const records=new Map(),nodes=new Map(),subscriptions=[],intervals=[],events=[],sessions=new Map(),chat={received:[],retained:[],resets:0};let seconds=0,clock=Date.now(),offline=false,failDelete=false;
  class Element{
-  constructor(){this.children=[];this.value='';this.hidden=false;this.checked=false;this.disabled=false;this._text='';this.classList={add(){},toggle(){}}}
+  constructor(){this.children=[];this.value='';this.hidden=false;this.checked=false;this.disabled=false;this._text='';this.replacements=0;this.paintVisible=true;this.classList={add(){},toggle(){}}}
+  getClientRects(){return this.paintVisible?[{}]:[]}
   set textContent(v){this._text=String(v);this.children=[]}get textContent(){return this._text+this.children.map(n=>n.textContent).join('')}
-  append(...nodes){this.children.push(...nodes)}prepend(...nodes){this.children.unshift(...nodes)}replaceChildren(...nodes){this._text='';this.children=[...nodes]}click(){return this.onclick?.()}
+  append(...nodes){this.children.push(...nodes)}prepend(...nodes){this.children.unshift(...nodes)}replaceChildren(...nodes){this.replacements++;this._text='';this.children=[...nodes]}click(){return this.onclick?.()}
  }
  const node=id=>{if(!nodes.has(id))nodes.set(id,new Element());return nodes.get(id)};
  const ref=(path,kind='doc')=>({path,kind,clauses:[],id:path.split('/').at(-1)});
@@ -339,3 +340,33 @@ test('room randomness covers the full eight-digit range rather than 256 possible
 test('failed room cleanup keeps the parent and bookmark and never reports success',async()=>{const f=fixture();f.put('rooms/'+OPEN,{name:'Safe',ownerUid:'alice',locked:false});f.put('users/alice/rooms/'+OPEN,{name:'Safe'});f.put('rooms/'+OPEN+'/messages/msg',{uid:'alice',text:'keep'});await f.login();f.node('adminDeleteRoomId').value=OPEN;f.node('deleteRoomConsent').checked=true;await f.join(OPEN);f.node('deleteRoomConsent').checked=true;f.failNextDelete();await f.node('deleteRoomAction').onclick();assert.equal(f.records.has('rooms/'+OPEN),true);assert.equal(f.records.has('users/alice/rooms/'+OPEN),true);assert.equal(f.records.get('rooms/'+OPEN).deleting,true);assert.doesNotMatch(f.node('socialStatus').textContent,/kalıcı olarak silindi/)});
 test('opening a fresh account does not restore another account global room cache',async()=>{const f=fixture();f.put('rooms/'+OPEN,{name:'Old private context',ownerUid:'bob',locked:false});f.sessions.set('focus_last_room',OPEN);await f.login('alice');assert.equal(f.ctx.FocusSocial.active(),'');assert.equal(f.records.has('rooms/'+OPEN+'/members/alice'),false)});
 test('leaving a saved room removes own messages before membership and bookmark while preserving other authors',async()=>{const f=fixture();f.put('rooms/12345678',{name:'Shared',ownerUid:'bob',locked:false});f.put('users/alice/rooms/12345678',{name:'Shared'});f.put('rooms/12345678/members/alice',{uid:'alice',timer:timer()});f.put('rooms/12345678/messages/mine',{uid:'alice',text:'mine'});f.put('rooms/12345678/messages/theirs',{uid:'bob',text:'keep'});await f.login();const card=f.node('savedRooms').children[0],leave=card.children[3].children[1].children[0];await leave.onclick();await leave.onclick();await f.settle();assert.equal(f.records.has('rooms/12345678/messages/mine'),false);assert.equal(f.records.has('rooms/12345678/messages/theirs'),true);assert.equal(f.records.has('users/alice/rooms/12345678'),false);assert.ok(f.events.indexOf('delete:rooms/12345678/messages/mine')<f.events.indexOf('delete:users/alice/rooms/12345678'))});
+
+test('legacy general-room membership repairs its saved card and remains directly leaveable',async()=>{const f=fixture();f.put('rooms/TUS',{name:'TUS çalışma odası',ownerUid:'focusforyou',locked:false,exam:'TUS',unlimited:true});f.put('rooms/TUS/members/alice',{uid:'alice',joinedAt:{toMillis:()=>1},presenceAt:{toMillis:()=>1},online:false,timer:timer()});await f.login();await f.join('TUS');assert.equal(f.records.get('users/alice/rooms/TUS').name,'TUS çalışma odası');assert.match(f.node('savedRooms').textContent,/TUS/);const card=f.node('savedRooms').children.find(c=>c.textContent.includes('#TUS')),leave=card.children[3].children[1].children.find(b=>b.textContent==='Lobiden ayrıl');assert.ok(leave);await leave.onclick();await leave.onclick();await f.settle();assert.equal(f.ctx.FocusSocial.active(),'');assert.equal(f.records.has('rooms/TUS/members/alice'),false);assert.equal(f.records.has('users/alice/rooms/TUS'),false);assert.equal(f.sessions.has('focus_last_room_alice'),false);});
+
+test('cached lobby cards appear during security hydration only for the actual account',async()=>{const f=fixture();f.sessions.set('focus_room_cards_alice',JSON.stringify([{id:'TUS',name:'Cached TUS'}]));f.sessions.set('focus_room_cards_bob',JSON.stringify([{id:'LGS',name:'Other account LGS'}]));const original=f.ctx.getDocFromServer;let resolveLock;f.ctx.getDocFromServer=r=>r.path==='deletions/alice'?new Promise(resolve=>{resolveLock=()=>original(r).then(resolve)}):original(r);const pending=f.login();await f.settle();assert.match(f.node('savedRooms').textContent,/Cached TUS/);assert.doesNotMatch(f.node('savedRooms').textContent,/Other account LGS/);assert.equal(f.ctx.FocusSocial.active(),'');resolveLock();await pending;assert.match(f.node('savedRooms').textContent,/Henüz bir odan yok/);});
+
+test('live timer ticks preserve keyed member DOM across all three views and keep aggregate totals current',async()=>{
+ const f=fixture();f.put('rooms/'+OPEN,{name:'Live',ownerUid:'alice',locked:false});await f.login();await f.join(OPEN);
+ const lists=['roomMembers','homeLobbyList','chatRosterList'].map(id=>f.node(id)),rows=lists.map(list=>list.children[0]),replacements=lists.map(list=>list.replacements);
+ for(let i=0;i<5;i++){f.work(1);await f.tick()}
+ for(let i=0;i<lists.length;i++){assert.equal(lists[i].children[0],rows[i]);assert.equal(lists[i].replacements,replacements[i])}
+ assert.equal(f.node('roomTotal').textContent,LobbyModel.hours(5));assert.match(rows[0].textContent,/bu odada 0 sa 00 dk 05 sn/);
+});
+
+test('profile changes refresh only affected identity rows and unused member profile listeners are released',async()=>{
+ const f=fixture();f.put('rooms/'+OPEN,{name:'Profiles',ownerUid:'alice',locked:false});await f.login();await f.join(OPEN);
+ f.put('publicProfiles/bob',profile('bob'));f.put(`rooms/${OPEN}/members/bob`,{uid:'bob',online:true,presenceAt:{toMillis:()=>f.ctx.Date.now()},timer:timer()});f.emit();await f.settle();
+ const aliceRow=f.node('roomMembers').children[0],bobRow=f.node('roomMembers').children[1],profileSub=f.subscriptions.find(s=>s.active&&s.q.path==='publicProfiles/bob');assert.ok(profileSub);
+ const before=f.node('roomMembers').replacements;profileSub.fn({exists:()=>true,data:()=>profile('bob')});await f.settle();assert.equal(f.node('roomMembers').replacements,before);
+ profileSub.fn({exists:()=>true,data:()=>({...profile('bob'),name:'Renamed Bob',cosmetics:{tag:'doctor',nameStyle:'gold',frame:'gold',plate:'gold'}})});await f.settle();
+ assert.equal(f.node('roomMembers').children[0],aliceRow);assert.notEqual(f.node('roomMembers').children[1],bobRow);assert.match(f.node('roomMembers').textContent,/Renamed Bob/);assert.match(f.node('chatRosterList').textContent,/Renamed Bob/);
+ f.records.delete(`rooms/${OPEN}/members/bob`);f.emit();await f.settle();assert.equal(f.node('roomMembers').children.length,1);assert.equal(profileSub.active,false);
+});
+
+test('hidden documents and hidden tab views skip roster painting and resume with the latest timer when shown',async()=>{
+ const f=fixture();f.put('rooms/'+OPEN,{name:'Visibility',ownerUid:'alice',locked:false});await f.login();await f.join(OPEN);
+ const lists=['roomMembers','homeLobbyList','chatRosterList'].map(id=>f.node(id)),original=f.node('roomTotal').textContent;
+ f.ctx.document.hidden=true;f.work(3);await f.tick();assert.equal(f.node('roomTotal').textContent,original);
+ f.ctx.document.hidden=false;for(const list of lists)list.paintVisible=false;f.work(3);await f.tick();assert.equal(f.node('roomTotal').textContent,original);
+ const rows=lists.map(list=>list.children[0]);for(const list of lists)list.paintVisible=true;await f.tick();assert.equal(f.node('roomTotal').textContent,LobbyModel.hours(6));for(let i=0;i<lists.length;i++)assert.equal(lists[i].children[0],rows[i]);
+});

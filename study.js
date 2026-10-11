@@ -11,7 +11,7 @@ if(/^\d{4}-\d{2}-\d{2}$/.test(date)&&Number.isFinite(seconds)&&seconds>=0&&secon
 }
 let stored={};try{stored=JSON.parse(localStorage.getItem('focus_study')||'{}')||{}}catch(e){}
 const preferences={focus:clamp(stored.preferences?.focus||25,1,180),break:clamp(stored.preferences?.break||5,1,60),goal:clamp(stored.preferences?.goal||120,5,1440)};
-let days=cleanDays(stored.days),lastRender=0,localWorked=0;
+let days=cleanDays(stored.days),lastRender=0,localWorked=0,lastHistory='';
 function save(){try{localStorage.setItem('focus_study',JSON.stringify({version:1,preferences,days}))}catch(e){}}
 function record(seconds,from){
 while(seconds>0){
@@ -28,6 +28,9 @@ by('dailyMinutes').textContent=minutes;by('dailyProgress').max=preferences.goal;
 by('dailySummary').textContent=minutes>=preferences.goal?'Bugünün hedefine ulaştın!':(preferences.goal-minutes)+' dakika sonra günlük hedef tamam.';
 const list=[];for(let ago=6;ago>=0;ago--){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-ago);list.push({label:d.toLocaleDateString('tr-TR',{weekday:'short'}),date:dateKey(d),minutes:Math.floor((days[dateKey(d)]||0)/60)})}
 const max=Math.max(preferences.goal,...list.map(d=>d.minutes));
+const historySignature=JSON.stringify([preferences.goal,list]);
+if(lastHistory===historySignature)return;
+lastHistory=historySignature;
 by('studyHistory').replaceChildren(...list.map(d=>{
 const box=document.createElement('div');box.className='history-day';box.title=d.date+': '+d.minutes+' dakika';
 const value=document.createElement('strong');value.textContent=d.minutes+' dk';
