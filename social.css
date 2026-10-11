@@ -94,9 +94,13 @@
 .chat-roster-status{font-size:11px;color:#8da3ca}
 @media (max-width:899px){.chat-roster-pane{display:none!important}}
 
-@media (hover: none) {
-  .chat-actions{opacity:.85;pointer-events:auto;visibility:visible}
+@media (max-width:899px), (hover:none), (pointer:coarse) {
+  .chat-actions{display:none}
+  .reaction-picker{left:4px;right:4px;max-width:calc(100% - 8px);box-sizing:border-box;flex-wrap:wrap;border-radius:16px}
+  .reaction-emoji,.chat-menu-reply{min-width:44px;min-height:44px}
 }
+.chat-menu-reply{border:0;border-radius:10px;padding:6px 10px;background:transparent;color:var(--tx);font:inherit;cursor:pointer}
+.chat-menu-reply:hover,.chat-menu-reply:focus-visible{background:rgba(175,198,255,.2)}
 
 /* Light Theme Overrides */
 body.theme-light .chat-actions{background:#ffffffea;border:1px solid rgba(0,0,0,0.15);box-shadow:0 2px 10px rgba(0,0,0,0.12)}

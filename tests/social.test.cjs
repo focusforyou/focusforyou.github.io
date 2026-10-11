@@ -3,6 +3,13 @@ const LobbyModel=require('../lobby-model.js');
 const OPEN='open_room_123456789',LOCKED='locked_room_1234567';
 const profile=(uid,username=uid)=>({uid,username,name:uid,photo:'',exam:'',cosmetics:{tag:'none',nameStyle:'plain',frame:'none',plate:'none'}});
 const timer=(extra={})=>({phase:'focus',running:true,left:1500,total:1500,worked:0,roomWorked:0,focus:1500,rest:300,rounds:0,...extra});
+test('sending from old history returns to live messages so delivery is acknowledged',async()=>{
+ const f=fixture();f.put('rooms/'+OPEN,{name:'Room',ownerUid:'alice',locked:false});
+ for(let i=0;i<25;i++)f.put(`rooms/${OPEN}/messages/${String.fromCharCode(65+i).repeat(20)}`,{uid:'alice',text:'Message '+i,image:'',time:{toMillis:()=>1000+i}});
+ await f.login();await f.join(OPEN);await f.node('olderMessages').onclick();await f.settle();
+ const id='2'.repeat(20);assert.equal(f.chat.transport({id,text:'Sent from history',image:''}),true);await f.settle();
+ assert.ok(f.chat.received.some(([m])=>m.id===id));
+});
 
 function fixture(){
  const records=new Map(),nodes=new Map(),subscriptions=[],intervals=[],events=[],sessions=new Map(),chat={received:[],retained:[],resets:0};let seconds=0,clock=Date.now(),offline=false,failDelete=false;

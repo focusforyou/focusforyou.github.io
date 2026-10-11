@@ -2,7 +2,7 @@
 const RoomChat=(()=>{
 const by=id=>document.getElementById(id);
 let transport=null,onReaction=null,photo='',processing=false,joined=false,persistent=false;
-let activeReply=null,openPicker=null;
+let activeReply=null,openPicker=null,photoRevision=0,pickerTimer=null;
 const seen=new Set(),pending=new Map(),rows=[];
 const EMOJIS=['👍','❤️','🔥','👏','🎯','💡','🎉'];
 
@@ -14,11 +14,14 @@ function state(value){
 }
 
 function remove(){
+  photoRevision++;
+  processing=false;
   photo='';
   by('photoDraft').hidden=true;
   by('chatPreview').removeAttribute('src');
   by('chatPhoto').value='';
   by('chatCamera').value='';
+  state(joined);
 }
 
 function clearReply(){
@@ -54,21 +57,35 @@ function scrollToBottom(smooth=false){
 }
 
 function closePicker(){
+  clearTimeout(pickerTimer);
+  document.removeEventListener?.('click',closePicker);
   if(openPicker){
     openPicker.remove();
     openPicker=null;
   }
 }
 
-function showPicker(parent,message){
+function showPicker(parent,message,withReply=false){
   closePicker();
   const picker=document.createElement('div');
   picker.className='reaction-picker';
+  picker.setAttribute('role','group');
+  picker.setAttribute('aria-label','Mesaj işlemleri');
+  picker.onclick=e=>e.stopPropagation();
+  if(withReply){
+    const reply=document.createElement('button');
+    reply.type='button';
+    reply.className='chat-menu-reply';
+    reply.textContent='↩ Yanıtla';
+    reply.onclick=e=>{e.stopPropagation();closePicker();setReply(message)};
+    picker.append(reply);
+  }
   for(const emoji of EMOJIS){
     const btn=document.createElement('button');
     btn.type='button';
     btn.className='reaction-emoji';
     btn.textContent=emoji;
+    btn.setAttribute('aria-label',emoji+' tepkisi');
     btn.onclick=e=>{
       e.stopPropagation();
       closePicker();
@@ -78,7 +95,7 @@ function showPicker(parent,message){
   }
   parent.append(picker);
   openPicker=picker;
-  setTimeout(()=>{
+  pickerTimer=setTimeout(()=>{
     if(typeof document.addEventListener==='function'){
       document.addEventListener('click',closePicker,{once:true});
     }
@@ -114,6 +131,7 @@ function renderReactions(row,reactions){
 }
 
 function reset(){
+  for(const row of rows)row.cancelTouch?.();
   closePicker();
   clearReply();
   seen.clear();
@@ -241,14 +259,27 @@ function receive(input,identity,onDelete){
   item.append(actions);
 
   if(typeof item.addEventListener==='function'){
-    let startX=0,startY=0,swiping=false,pressTimer=null;
+    let startX=0,startY=0,swiping=false,pressTimer=null,suppressClick=false;
+    row.cancelTouch=()=>{clearTimeout(pressTimer);swiping=false;if(item.style)item.style.transform=''};
+    item.addEventListener('click',e=>{
+      if(!suppressClick)return;
+      suppressClick=false;
+      e.preventDefault();
+      e.stopPropagation();
+    },true);
+    item.addEventListener('contextmenu',e=>{if(suppressClick)e.preventDefault()});
     item.addEventListener('touchstart',e=>{
-      if(!e.touches?.[0])return;
+      row.cancelTouch();
+      suppressClick=false;
+      if(e.touches?.length!==1||e.target?.closest?.('button:not(.chat-image-button),a,input,textarea'))return;
       startX=e.touches[0].clientX;
       startY=e.touches[0].clientY;
       swiping=true;
       pressTimer=setTimeout(()=>{
-        showPicker(item,message);
+        swiping=false;
+        suppressClick=true;
+        if(item.style)item.style.transform='';
+        showPicker(item,message,true);
         if(typeof navigator!=='undefined'&&navigator.vibrate)navigator.vibrate(25);
       },450);
     },{passive:true});
@@ -272,13 +303,14 @@ function receive(input,identity,onDelete){
       const dy=touch?touch.clientY-startY:0;
       if(item.style)item.style.transform='';
       if(dx>50&&Math.abs(dx)>Math.abs(dy)){
+        suppressClick=true;
         setReply(message);
         item.classList.add('reply-triggered');
         setTimeout(()=>item.classList.remove('reply-triggered'),600);
       }
     };
     item.addEventListener('touchend',endTouch,{passive:true});
-    item.addEventListener('touchcancel',()=>{clearTimeout(pressTimer);swiping=false;if(item.style)item.style.transform=''},{passive:true});
+    item.addEventListener('touchcancel',row.cancelTouch,{passive:true});
   }
 
   if(message.text){
@@ -309,6 +341,7 @@ function receive(input,identity,onDelete){
   rows.push(row);
   while(rows.length>60||rows.filter(r=>r.size>0).length>(persistent?20:8)||rows.reduce((n,r)=>n+r.size,0)>(persistent?9000000:4500000)){
     const old=rows.shift();
+    old.cancelTouch?.();
     old.item.remove();
     seen.delete(old.id);
   }
@@ -323,6 +356,7 @@ function updateReactions(messageId,reactions){
 function retain(ids){
   const keep=new Set(ids);
   for(let i=rows.length-1;i>=0;i--)if(!keep.has(rows[i].id)){
+    rows[i].cancelTouch?.();
     rows[i].item.remove();
     seen.delete(rows[i].id);
     rows.splice(i,1);
@@ -334,7 +368,10 @@ function rejected(id,message){
   if(!p)return;
   clearTimeout(p.task);
   pending.delete(id);
-  if(!by('chatText').value)by('chatText').value=p.message.text;
+  if(!by('chatText').value){
+    by('chatText').value=p.message.text;
+    if(!activeReply&&p.message.replyTo)setReply(p.message.replyTo);
+  }
   if(!photo&&p.message.image){
     photo=p.message.image;
     by('chatPreview').src=photo;
@@ -350,11 +387,13 @@ async function prepare(file){
     return;
   }
   processing=true;
+  const revision=++photoRevision;
   state(joined);
   by('chatStatus').textContent='Fotoğraf hazırlanıyor…';
   let bitmap;
   try{
     bitmap=await createImageBitmap(file);
+    if(!joined||revision!==photoRevision)return;
     const ratio=Math.min(1,1600/Math.max(bitmap.width,bitmap.height));
     const canvas=document.createElement('canvas');
     canvas.width=Math.max(1,Math.round(bitmap.width*ratio));
@@ -366,17 +405,16 @@ async function prepare(file){
     let image=canvas.toDataURL('image/jpeg',.82);
     if(image.length>1500000)image=canvas.toDataURL('image/jpeg',.6);
     if(image.length>1500000)throw Error('Fotoğraf çok büyük. Daha küçük bir görüntü seç.');
-    if(!joined)return;
+    if(!joined||revision!==photoRevision)return;
     photo=image;
     by('chatPreview').src=photo;
     by('photoDraft').hidden=false;
     by('chatStatus').textContent='Fotoğraf hazır. İstersen mesaj ekle, sonra Gönder’e bas.';
   }catch(error){
-    by('chatStatus').textContent=error.message||'Fotoğraf açılamadı. JPEG veya PNG ile tekrar dene.';
+    if(revision===photoRevision)by('chatStatus').textContent=error.message||'Fotoğraf açılamadı. JPEG veya PNG ile tekrar dene.';
   }finally{
     bitmap?.close();
-    processing=false;
-    state(joined);
+    if(revision===photoRevision){processing=false;state(joined)}
   }
 }
 
@@ -396,7 +434,7 @@ by('chatForm').onsubmit=e=>{
     image:photo,
     replyTo:activeReply||undefined
   };
-  if(!LobbyModel.content(message)){
+  if((!message.text&&!message.image)||!LobbyModel.content(message)){
     by('chatStatus').textContent='Bir mesaj yaz veya fotoğraf ekle.';
     return;
   }
@@ -416,7 +454,7 @@ by('chatForm').onsubmit=e=>{
 };
 
 by('chatText').onkeydown=e=>{
-  if(e.key==='Enter'&&!e.shiftKey){
+  if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing&&e.keyCode!==229){
     e.preventDefault();
     by('chatForm').requestSubmit();
   }
@@ -426,6 +464,7 @@ by('chatText').onfocus=()=>{
 };
 
 by('imageViewer').onclose=()=>by('fullPhoto').removeAttribute('src');
+document.addEventListener?.('keydown',e=>{if(e.key==='Escape')closePicker()});
 state(false);
 
 return {

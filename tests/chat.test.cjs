@@ -1,5 +1,52 @@
 const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
-function setup(){
+const message=()=>({id:'Z'.repeat(20),text:'A message',image:'',sender:'Alice',avatar:'',time:10000});
+const touch=(x=0,y=0)=>({touches:[{clientX:x,clientY:y}],changedTouches:[{clientX:x,clientY:y}]});
+test('a selected quote alone cannot send an empty message rejected by the database',()=>{
+ const f=setup();f.chat.state(true);f.chat.receive(message());let sends=0;f.chat.configure(()=>{sends++;return true});
+ f.list.children[0].children.find(c=>c.className==='chat-actions').children[0].onclick({stopPropagation(){}});
+ f.node('chatForm').onsubmit({preventDefault(){}});assert.equal(sends,0);assert.equal(f.node('replyDraft').hidden,false);
+});
+test('long press offers reply, suppresses release click and still allows choosing an action',()=>{
+ const f=setup();f.chat.receive(message());const item=f.list.children[0];
+ item.dispatch('touchstart',touch());f.runTimers(450);
+ const picker=item.children.find(c=>c.className==='reaction-picker');assert.ok(picker);
+ assert.equal(picker.children[0].textContent,'↩ Yanıtla');
+ item.dispatch('touchend',touch());let prevented=0;
+ item.dispatch('click',{preventDefault(){prevented++},stopPropagation(){}});assert.equal(prevented,1);
+ picker.children[0].onclick({stopPropagation(){}});
+ assert.equal(f.node('replyDraft').hidden,false);assert.equal(f.node('replyDraftSender').textContent,'Alice');
+});
+test('scrolling, cancelled touches and removed rows cannot open a delayed menu',()=>{
+ for(const action of ['move','cancel','retain','reset']){
+  const f=setup();f.chat.receive(message());const item=f.list.children[0];item.dispatch('touchstart',touch());
+  if(action==='move')item.dispatch('touchmove',touch(0,30));
+  if(action==='cancel')item.dispatch('touchcancel',touch());
+  if(action==='retain')f.chat.retain([]);
+  if(action==='reset')f.chat.reset();
+  f.runTimers(450);assert.equal(item.children.some(c=>c.className==='reaction-picker'),false,action);
+ }
+});
+test('failed sends restore the quoted message and IME confirmation never submits',()=>{
+ const f=setup();f.chat.state(true);f.chat.receive(message());
+ f.list.children[0].children.find(c=>c.className==='chat-actions').children[0].onclick({stopPropagation(){}});
+ f.node('chatText').value='My reply';let sent;f.chat.configure(m=>{sent=m;return true});
+ f.node('chatForm').onsubmit({preventDefault(){}});assert.equal(f.node('replyDraft').hidden,true);
+ f.chat.rejected(sent.id,'Failed');assert.equal(f.node('chatText').value,'My reply');assert.equal(f.node('replyDraftSender').textContent,'Alice');assert.equal(f.node('replyDraft').hidden,false);
+ let submits=0;f.node('chatForm').requestSubmit=()=>submits++;
+ f.node('chatText').onkeydown({key:'Enter',isComposing:true,preventDefault(){}});assert.equal(submits,0);
+ f.node('chatText').onkeydown({key:'Enter',preventDefault(){}});assert.equal(submits,1);
+});
+test('late photo processing cannot restore a removed photo or cross room boundaries',async()=>{
+ for(const reset of [false,true]){
+  let finish,closed=false;const f=setup({createImageBitmap:()=>new Promise(resolve=>finish=resolve)});f.chat.state(true);
+  const preparing=f.node('chatPhoto').onchange({target:{files:[{type:'image/jpeg',size:100}]}});
+  if(reset){f.chat.reset();f.chat.state(true)}else f.node('removePhoto').onclick();
+  finish({width:100,height:100,close(){closed=true}});await preparing;
+  assert.equal(f.node('photoDraft').hidden,true);assert.equal(f.node('chatPreview').src,undefined);assert.equal(f.node('sendChat').disabled,false);assert.equal(closed,true);
+ }
+});
+function setup(options={}){
+ const timers=new Map();let timerId=0;
  class Element{
   constructor(tag){this.tagName=tag;this.children=[];this.parentNode=null;this.className='';this._text='';this.scrollHeight=100;this.scrollTop=100;this.clientHeight=100;this.open=false;this.value='';this.classList={add:n=>this.toggleClass(n,true),toggle:(n,on)=>this.toggleClass(n,on)}}
   toggleClass(name,on){const classes=new Set(this.className.split(/\s+/).filter(Boolean));if(on)classes.add(name);else classes.delete(name);this.className=[...classes].join(' ')}
@@ -12,11 +59,18 @@ function setup(){
   setAttribute(key,value){this[key]=value}
   removeAttribute(key){delete this[key]}
   close(){this.open=false}
+  focus(){this.focused=true}
+  getContext(){return {fillRect(){},drawImage(){}}}
+  toDataURL(){return 'data:image/jpeg;base64,YQ=='}
+  addEventListener(type,fn){(this.listeners??={})[type]??=[];this.listeners[type].push(fn)}
+  removeEventListener(type,fn){if(this.listeners?.[type])this.listeners[type]=this.listeners[type].filter(f=>f!==fn)}
+  dispatch(type,event={}){for(const fn of this.listeners?.[type]||[])fn(event)}
  }
  const elements=new Map(),document={getElementById(id){if(!elements.has(id))elements.set(id,new Element('div'));return elements.get(id)},createElement:tag=>new Element(tag)};
- const context=vm.createContext({document,window:{},URL,Date,clearTimeout,setTimeout});
+ document.addEventListener=()=>{};document.removeEventListener=()=>{};
+ const context=vm.createContext({document,window:{},URL,Date,crypto:require('node:crypto').webcrypto,Uint8Array,clearTimeout:id=>timers.delete(id),setTimeout:(fn,ms)=>{timers.set(++timerId,{fn,ms});return timerId},...options});
  for(const file of ['lobby-model.js','social-model.js','chat.js'])vm.runInContext(fs.readFileSync(''+file,'utf8'),context);
- return {chat:vm.runInContext('RoomChat',context),list:document.getElementById('chatMessages')};
+ return {chat:vm.runInContext('RoomChat',context),list:document.getElementById('chatMessages'),node:id=>document.getElementById(id),runTimers(ms){for(const [id,t] of [...timers])if(t.ms===ms){timers.delete(id);t.fn()}}};
 }
 test('existing messages update cloud identity and cosmetics in place without duplicating body or losing delete actions',()=>{
  const {chat,list}=setup();let deleted=0;
