@@ -161,3 +161,7 @@ body.theme-light .segment-btn.active{color:#ffffff}
 body.theme-light .app-info-item{background:#f5f8fd;border-color:#dbe4f4}
 body.theme-light footer{background:transparent;color:var(--mu)}
 
+
+
+/* Fixed controls are already almost opaque; avoid resampling the moving sky behind them. */
+@media(max-width:899px){.mobile-nav,.mini-timer,.sheet-close-pill{backdrop-filter:none;-webkit-backdrop-filter:none}}

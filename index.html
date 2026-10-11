@@ -101,7 +101,7 @@ main{padding:32px 16px}.card{padding:24px}
 @media(min-width:900px) and (max-width:1199px){#calisma>.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.room-chat{grid-column:1/-1}}
 @media(max-width:899px){#calisma>.grid{grid-template-columns:minmax(0,1fr)}}
 </style>
-<link rel="stylesheet" href="mobile-ui.css?v=bugfix2"><link rel="stylesheet" href="social.css?v=chatfix1"><link rel="stylesheet" href="desktop-timer.css?v=features1"><link rel="stylesheet" href="cosmetics.css?v=features2">
+<link rel="stylesheet" href="mobile-ui.css?v=perf2"><link rel="stylesheet" href="social.css?v=perf2"><link rel="stylesheet" href="desktop-timer.css?v=features1"><link rel="stylesheet" href="cosmetics.css?v=features2">
 </head>
 <body>
 <canvas id="sky" aria-hidden="true"></canvas>
@@ -265,10 +265,11 @@ function pauseSky(){cancelAnimationFrame(skyFrame);skyFrame=0;animRunning=false}
 function resumeSky(){if(animRunning||document.hidden||window.FocusSkyAnim===false)return;animRunning=true;last=performance.now()-34;skyFrame=requestAnimationFrame(frame)}
 window.FocusSky={set:(x,y)=>{mx=x;my=y},resume:resumeSky};
 function fit(){
-D=Math.min(devicePixelRatio||1,1.5,Math.sqrt(2200000/Math.max(1,innerWidth*innerHeight)));W=innerWidth;H=innerHeight;cv.width=W*D;cv.height=H*D;
-stars=Array.from({length:Math.min(520,W*H/4000|0)},()=>({x:R(0,W),y:R(0,H),r:R(.3,1.1),a:R(.25,.85),s:R(.6,2),p:R(0,6.28),z:R(.2,1)}));
-flakes=reduce?[]:Array.from({length:Math.min(380,W*H/5500|0)},()=>({x:R(0,W),y:R(0,H),r:R(.4,1.4),v:R(10,32),w:R(.4,1.4),p:R(0,6.28),z:R(.3,1),a:R(.35,.85)}));
+D=Math.min(devicePixelRatio||1,1.5,Math.sqrt((innerWidth<900?650000:1100000)/Math.max(1,innerWidth*innerHeight)));W=innerWidth;H=innerHeight;cv.width=W*D;cv.height=H*D;
+stars=Array.from({length:Math.min(W<900?140:280,W*H/6500|0)},()=>({x:R(0,W),y:R(0,H),r:R(.3,1.1),a:R(.25,.85),s:R(.6,2),p:R(0,6.28),z:R(.2,1)}));
+flakes=reduce?[]:Array.from({length:Math.min(W<900?90:160,W*H/10000|0)},()=>({x:R(0,W),y:R(0,H),r:R(.4,1.4),v:R(10,32),w:R(.4,1.4),p:R(0,6.28),z:R(.3,1),a:R(.35,.85)}));
 }
+const starBuckets=Array.from({length:12},()=>[]),flakeBuckets=Array.from({length:8},()=>[]);
 let resizeFrame=0;addEventListener('resize',()=>{cancelAnimationFrame(resizeFrame);resizeFrame=requestAnimationFrame(()=>{resizeFrame=0;fit();if(reduce){pauseSky();resumeSky()}})});fit();
 document.addEventListener('visibilitychange',()=>{if(document.hidden)pauseSky();else resumeSky()});
 addEventListener('pagehide',pauseSky);addEventListener('pageshow',resumeSky);
@@ -282,9 +283,13 @@ const dt=Math.min(.1,(now-last)/1000);last=now;t+=dt;
 cx.setTransform(D,0,0,D,0,0);cx.clearRect(0,0,W,H);
 const k=Math.min(1,dt*3);sx+=(mx-sx)*k;sy+=(my-sy)*k;
 cx.fillStyle=isLight?'#7B94CB':'#DCE6FF';
-for(const s of stars){cx.globalAlpha=s.a*(reduce?.8:.6+.4*Math.sin(s.p+t*s.s));cx.beginPath();cx.arc(s.x-sx*30*s.z,s.y-sy*18*s.z,s.r,0,6.2832);cx.fill()}
+for(const bucket of starBuckets)bucket.length=0;
+for(const s of stars){const a=s.a*(reduce?.8:.6+.4*Math.sin(s.p+t*s.s));starBuckets[Math.min(11,a*12|0)].push(s)}
+for(let i=0;i<starBuckets.length;i++){if(!starBuckets[i].length)continue;cx.globalAlpha=(i+.5)/12;cx.beginPath();for(const s of starBuckets[i]){const x=s.x-sx*30*s.z,y=s.y-sy*18*s.z;cx.moveTo(x+s.r,y);cx.arc(x,y,s.r,0,6.2832)}cx.fill()}
 cx.fillStyle=isLight?'#9AB2E5':'#fff';
-for(const f of flakes){f.y+=f.v*dt;if(f.y>H+6){f.y=-6;f.x=R(0,W)}cx.globalAlpha=f.a;cx.beginPath();cx.arc(f.x+Math.sin(t*f.w+f.p)*10-sx*70*f.z,f.y-sy*30*f.z,f.r,0,6.2832);cx.fill()}
+for(const bucket of flakeBuckets)bucket.length=0;
+for(const f of flakes){f.y+=f.v*dt;if(f.y>H+6){f.y=-6;f.x=R(0,W)}flakeBuckets[Math.min(7,f.a*8|0)].push(f)}
+for(let i=0;i<flakeBuckets.length;i++){if(!flakeBuckets[i].length)continue;cx.globalAlpha=(i+.5)/8;cx.beginPath();for(const f of flakeBuckets[i]){const x=f.x+Math.sin(t*f.w+f.p)*10-sx*70*f.z,y=f.y-sy*30*f.z;cx.moveTo(x+f.r,y);cx.arc(x,y,f.r,0,6.2832)}cx.fill()}
 if(!reduce){
 ns-=dt;
 if(!shoot&&ns<=0){const dr=Math.random()<.5?1:-1,an=R(.35,.6);shoot={x:R(.15,.85)*W,y:R(.02,.3)*H,dx:dr*Math.cos(an),dy:Math.sin(an),v:R(650,950),life:R(.8,1.2),t:0};ns=R(4,9)}
@@ -460,13 +465,13 @@ document.addEventListener('pointerup',up);document.addEventListener('pointercanc
 <script src="native-session.js?v=features1"></script>
 <script src="lobby-peer.js?v=features1"></script>
 <script src="install.js?v=features1"></script>
-<script src="mobile-ui.js?v=features1"></script>
+<script src="mobile-ui.js?v=perf2"></script>
 <script src="motion.js?v=features1"></script>
 <dialog id="legalSheet" aria-label="Yasal bilgiler"><form method="dialog"><button class="pill" type="submit">Kapat ×</button></form><iframe id="legalFrame" title="Gizlilik ve kullanım bilgileri" sandbox="allow-same-origin"></iframe></dialog>
 <script src="legal-sheet.js"></script><script src="shop-ui.js?v=features2"></script><script src="community-ui.js?v=features1"></script>
 <script src="account-ui.js?v=features1"></script>
 <script src="settings.js?v=features1"></script>
-<script type="module">import('./account.js?v=chatfix1').catch(()=>{document.getElementById('accountStatus').textContent='Hesap hizmetine bağlanılamadı. İnternet bağlantın gelince sayfayı yeniden aç; cihaz kayıtların korunuyor.'})</script>
+<script type="module">import('./account.js?v=perf2').catch(()=>{document.getElementById('accountStatus').textContent='Hesap hizmetine bağlanılamadı. İnternet bağlantın gelince sayfayı yeniden aç; cihaz kayıtların korunuyor.'})</script>
 </body>
 </html>
 

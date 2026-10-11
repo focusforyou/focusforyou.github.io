@@ -11,6 +11,16 @@ test('sending from old history returns to live messages so delivery is acknowled
  assert.ok(f.chat.received.some(([m])=>m.id===id));
 });
 
+test('repeated live snapshots preserve lobby cards and pending confirmation while changed room data refreshes',async()=>{
+ const f=fixture();f.put('rooms/'+OPEN,{name:'Stable',ownerUid:'alice',locked:false});await f.login();await f.join(OPEN);
+ f.emit();await f.settle();
+ const list=f.node('savedRooms'),directory=f.node('roomResults'),card=list.children[0],before=list.replacements,dirBefore=directory.replacements;
+ for(let i=0;i<4;i++){f.work(1);f.emit();await f.settle()}
+ assert.equal(list.children[0],card);assert.equal(list.replacements,before);assert.equal(directory.replacements,dirBefore);
+ f.put('rooms/'+OPEN,{name:'Renamed',ownerUid:'alice',locked:true});f.emit();await f.settle();assert.match(list.textContent,/Renamed/);assert.match(list.textContent,/Şifreli/);
+ await f.login('bob');assert.notEqual(list.children[0],card);
+});
+
 function fixture(){
  const records=new Map(),nodes=new Map(),subscriptions=[],intervals=[],events=[],sessions=new Map(),chat={received:[],retained:[],resets:0};let seconds=0,clock=Date.now(),offline=false,failDelete=false;
  class Element{

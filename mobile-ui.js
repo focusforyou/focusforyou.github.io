@@ -4,12 +4,13 @@ const by=id=>document.getElementById(id),mobile=matchMedia('(max-width:899px)'),
 const hashView=()=>location.hash==='#lobi'?'room':location.hash==='#chat'?'chat':location.hash==='#ilerleme'||location.hash==='#kurulum'?'progress':location.hash==='#ayarlar'?'settings':'work';
 let view=hashView();
 const titles={work:'Çalışma alanın',room:'Birlikte çalış',chat:'Oda sohbeti',progress:'İlerlemen',settings:'Ayarlar'};
-const order=["work","room","chat","progress","settings"];let transition,ghostAnimation,ghost;
+const order=["work","room","chat","progress","settings"];let transition;
 function expand(open){by("miniTimer").classList.toggle("expanded",open);by("openTimer").setAttribute("aria-expanded",String(open));sheet.inert=!open;if(!open&&sheet.contains(document.activeElement))by("openTimer").focus()}
 function select(value,animate=false){
 if(!Object.hasOwn(titles,value))return;expand(false);const changed=view!==value,direction=order.indexOf(value)>order.indexOf(view)?1:-1,main=document.querySelector('main'),moving=animate&&changed&&!matchMedia('(prefers-reduced-motion:reduce)').matches;
-transition?.cancel();ghostAnimation?.cancel();ghost?.remove();ghost=null;
-if(moving&&mobile.matches&&main?.cloneNode&&(!main.getElementsByTagName||main.getElementsByTagName('*').length<=350)){const rect=main.getBoundingClientRect();ghost=main.cloneNode(true);const source=main.querySelectorAll('section,.study-tools,.room-card,.room-chat');ghost.querySelectorAll('section,.study-tools,.room-card,.room-chat').forEach((el,i)=>{el.style.display=getComputedStyle(source[i]).display});ghost.removeAttribute('id');ghost.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));ghost.inert=true;ghost.setAttribute('aria-hidden','true');ghost.classList.add('route-ghost');Object.assign(ghost.style,{top:rect.top+'px',left:rect.left+'px',width:rect.width+'px',height:Math.max(0,innerHeight-rect.top)+'px'});document.body.append(ghost);const leaving=ghost;ghostAnimation=ghost.animate([{opacity:1,transform:'translateX(0)'},{opacity:0,transform:'translateX('+(-direction*40)+'px)'}],{duration:320,easing:'cubic-bezier(.22,.8,.25,1)'});ghostAnimation.finished.catch(()=>{}).then(()=>leaving.remove())}
+transition?.cancel();
+// Animate the existing page; cloning all cards/chat duplicates layout, images and paint.
+
 view=value;if(mobile.matches||view!=='work')by('timerSlot').append(timer);else home.insertBefore(timer,next);document.body.dataset.view=view;by('workspaceTitle').textContent=mobile.matches?titles[view]:titles.work;document.querySelector('.mobile-nav')?.style.setProperty('--active-tab',order.indexOf(view));document.querySelectorAll('.mobile-nav button').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.view===view)));window.scrollTo({top:0,behavior:'instant'});
 if(moving)transition=main?.animate?.([{opacity:.15,transform:mobile.matches?'translateX('+(direction*40)+'px)':'translateY(10px)'},{opacity:1,transform:'translate(0,0)'}],{duration:mobile.matches?320:240,easing:'cubic-bezier(.22,.8,.25,1)'});
 }
@@ -25,3 +26,4 @@ addEventListener('hashchange',()=>select(hashView(),true));
 addEventListener('popstate',()=>select(hashView(),true));
 addEventListener('load',()=>window.scrollTo({top:0,behavior:'instant'}));
 })();
+
