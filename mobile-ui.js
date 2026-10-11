@@ -1,10 +1,10 @@
 'use strict';
 (()=>{
 const by=id=>document.getElementById(id),mobile=matchMedia('(max-width:899px)'),timer=document.querySelector('.timer'),home=timer.parentNode,next=timer.nextSibling,sheet=by('timerSheet');
-const hashView=()=>location.hash==='#lobi'?'room':location.hash==='#ilerleme'||location.hash==='#kurulum'?'progress':'work';
+const hashView=()=>location.hash==='#lobi'?'room':location.hash==='#ilerleme'||location.hash==='#kurulum'?'progress':location.hash==='#ayarlar'?'settings':'work';
 let view=hashView();
-const titles={work:'Çalışma alanın',room:'Birlikte çalış',chat:'Oda sohbeti',progress:'İlerlemen'};
-const order=["work","room","chat","progress"];let transition,ghostAnimation,ghost;
+const titles={work:'Çalışma alanın',room:'Birlikte çalış',chat:'Oda sohbeti',progress:'İlerlemen',settings:'Ayarlar'};
+const order=["work","room","chat","progress","settings"];let transition,ghostAnimation,ghost;
 function expand(open){by("miniTimer").classList.toggle("expanded",open);by("openTimer").setAttribute("aria-expanded",String(open));sheet.inert=!open;if(!open&&sheet.contains(document.activeElement))by("openTimer").focus()}
 function select(value,animate=false){
 if(!Object.hasOwn(titles,value))return;expand(false);const changed=view!==value,direction=order.indexOf(value)>order.indexOf(view)?1:-1,main=document.querySelector('main'),moving=animate&&changed&&!matchMedia('(prefers-reduced-motion:reduce)').matches;
@@ -18,7 +18,7 @@ function layout(){expand(false);if(mobile.matches)by('timerSlot').append(timer);
 by('openTimer').onclick=()=>{sync();expand(sheet.inert)};by('closeTimer').onclick=()=>expand(false);by('miniToggle').onclick=()=>by('tg').click();
 addEventListener('keydown',e=>{if(e.key==='Escape')expand(false)});
 document.querySelectorAll('.mobile-nav button').forEach(button=>button.onclick=()=>select(button.dataset.view,true));
-document.querySelectorAll('header nav a').forEach(link=>link.addEventListener('click',event=>{const target=link.getAttribute('href');if(!['#calisma','#lobi','#ilerleme','#kurulum'].includes(target)||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;event.preventDefault();if(location.hash!==target)history.pushState(null,'',target);select(hashView(),true)}));
+document.querySelectorAll('header nav a').forEach(link=>link.addEventListener('click',event=>{const target=link.getAttribute('href');if(!['#calisma','#lobi','#ilerleme','#kurulum','#ayarlar'].includes(target)||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;event.preventDefault();if(location.hash!==target)history.pushState(null,'',target);select(hashView(),true)}));
 const observer=new MutationObserver(sync);for(const id of ['tt','tl','tg'])observer.observe(by(id),{childList:true,subtree:true,characterData:true});mobile.addEventListener('change',layout);layout();
 addEventListener('hashchange',()=>select(hashView(),true));
 addEventListener('popstate',()=>select(hashView(),true));
