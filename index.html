@@ -95,7 +95,7 @@ main{padding:32px 16px}.card{padding:24px}
 @media(min-width:900px) and (max-width:1199px){#calisma>.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.room-chat{grid-column:1/-1}}
 @media(max-width:899px){#calisma>.grid{grid-template-columns:minmax(0,1fr)}}
 </style>
-<link rel="stylesheet" href="mobile-ui.css?v=roomActions6"><link rel="stylesheet" href="social.css?v=roomActions6">
+<link rel="stylesheet" href="mobile-ui.css?v=examAdminRestore1"><link rel="stylesheet" href="social.css?v=examAdminRestore1">
 </head>
 <body>
 <canvas id="sky" aria-hidden="true"></canvas>
@@ -190,7 +190,7 @@ Focus For You
 
 <section id="kurulum"><h2>Cebinde de yanında</h2><article class="card c5" data-calm="1"><h3>Focus For You'yu kur</h3><p>Telefonda uygulama gibi aç; site güncellendiğinde yenilikler de gelir.</p><button class="pill p" id="installApp" hidden>Ana ekrana kur</button><p id="installHelp">Android Chrome menüsünden “Ana ekrana ekle / Uygulamayı yükle”yi seç. iPhone'da Safari → Paylaş → Ana Ekrana Ekle.</p><a class="pill p" href="https://github.com/focusforyou/focusforyou.github.io/releases/latest/download/FocusForYou.apk">Android APK indir</a><a class="pill" href="https://github.com/focusforyou/focusforyou.github.io/releases">Sürümleri gör</a><p>APK güncellemeleri için Obtainium → Uygulama ekle bölümüne https://github.com/focusforyou/focusforyou.github.io adresini ekle. Uygulamayı silmeden güncelleyebilirsin. Site yenilikleri uygulamayı yeniden açtığında gelir.</p></article></section>
 </main><button type="button" id="friendsToggle" class="friends-toggle" aria-label="Arkadaşlar" aria-expanded="false" aria-controls="friendsPanel"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6M18 14a5 5 0 0 1 3 4v2"/></svg> <span>Arkadaşlar</span><span id="friendBadge" hidden></span></button><aside id="friendsPanel" class="friends-popover" aria-label="Arkadaşların" hidden><div class="friends-heading"><div><span class="eyebrow">ÇEVREN</span><h3>Arkadaşların</h3></div><button class="pill" id="closeFriends" aria-label="Arkadaş listesini kapat" type="button">×</button></div><p id="friendsGuest">Arkadaşlarını görmek için <button class="pill" type="button" onclick="document.getElementById('openAccount').click()">Giriş yap</button>.</p><div id="friendsMember" hidden><div class="row"><input id="friendUsername" maxlength="25" placeholder="@kullanıcıadı" aria-label="Arkadaşının kullanıcı adı"><button class="pill" id="addFriend" type="button">İstek gönder</button></div><div class="social-list" id="friendList"></div><small>Oda lideri, kabul edilmiş arkadaşlarına oda daveti gönderebilir.</small></div><p id="friendsStatus" role="status"></p></aside>
-<div id="miniTimer" class="mini-timer" aria-label="Hızlı sayaç"><button type="button" id="openTimer" aria-expanded="false" aria-controls="timerSheet"><span class="mini-ring"><b id="miniTime">25:00</b></span><span class="mini-description"><strong id="miniPhase">Odak</strong><small>Sayaç detayları</small></span><span class="timer-chevron" aria-hidden="true">⌃</span></button><button type="button" id="miniToggle" aria-label="Sayacı başlat">▶</button><div id="timerSheet" class="timer-expansion" inert><div class="timer-details"><button type="button" id="closeTimer" class="sheet-close" aria-label="Sayaç detaylarını küçült">Küçült <span aria-hidden="true">⌄</span></button><div id="timerSlot"></div></div></div></div>
+<div id="miniTimer" class="mini-timer" aria-label="Hızlı sayaç"><button type="button" id="openTimer" aria-expanded="false" aria-controls="timerSheet"><span class="mini-ring"><b id="miniTime">25:00</b></span><span class="mini-description"><strong id="miniPhase">Odak</strong><small>Sayaç detayları</small></span><span class="timer-chevron" aria-hidden="true"><svg class="timer-chevron-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg></span></button><button type="button" id="miniToggle" aria-label="Sayacı başlat">▶</button><div id="timerSheet" class="timer-expansion" inert><div class="timer-details"><button type="button" id="closeTimer" class="sheet-close" aria-label="Sayaç detaylarını küçült"><span class="sheet-close-pill">Küçült <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span></button><div id="timerSlot"></div></div></div></div>
 <nav class="mobile-nav" aria-label="Uygulama bölümleri">
 <button type="button" data-view="work" aria-pressed="true"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Çalışma</button>
 <button type="button" data-view="room" aria-pressed="false"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6M18 14a5 5 0 0 1 3 4v2"/></svg>Oda</button>
@@ -398,12 +398,12 @@ document.addEventListener('pointerup',up);document.addEventListener('pointercanc
 <script src="native-session.js?v=1"></script>
 <script src="lobby-peer.js?v=roomActions6"></script>
 <script src="install.js?v=nav2"></script>
-<script src="mobile-ui.js?v=mobile-motion2"></script>
+<script src="mobile-ui.js?v=examAdminRestore1"></script>
 <script src="motion.js?v=native2"></script>
 <dialog id="legalSheet" aria-label="Yasal bilgiler"><form method="dialog"><button class="pill" type="submit">Kapat ×</button></form><iframe id="legalFrame" title="Gizlilik ve kullanım bilgileri" sandbox="allow-same-origin"></iframe></dialog>
-<script src="legal-sheet.js"></script><script src="community-ui.js?v=roomActions6"></script>
+<script src="legal-sheet.js"></script><script src="community-ui.js?v=examAdminRestore1"></script>
 <script src="account-ui.js"></script>
-<script type="module">import('./account.js?v=roomActions6').catch(()=>{document.getElementById('accountStatus').textContent='Hesap hizmetine bağlanılamadı. İnternet bağlantın gelince sayfayı yeniden aç; cihaz kayıtların korunuyor.'})</script>
+<script type="module">import('./account.js?v=examAdminRestore1').catch(()=>{document.getElementById('accountStatus').textContent='Hesap hizmetine bağlanılamadı. İnternet bağlantın gelince sayfayı yeniden aç; cihaz kayıtların korunuyor.'})</script>
 </body>
 </html>
 

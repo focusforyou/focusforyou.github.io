@@ -13,3 +13,14 @@ test('Room invitation starts on the room tab and navigation updates selected sta
 
 test('Desktop navigation prevents anchor clipping, animates and restores history routes',()=>{const app=setup();app.media.matches=false;app.resize();let prevented=false;app.links[1].events.click({preventDefault(){prevented=true}});assert.equal(prevented,true);assert.equal(app.location.hash,'#ilerleme');assert.equal(app.body.dataset.view,'progress');assert.equal(app.scrolls.at(-1).top,0);assert.equal(app.animations.at(-1).duration,240);app.location.hash='#calisma';app.events.popstate();assert.equal(app.body.dataset.view,'work');assert.equal(app.scrolls.at(-1).top,0)});
 
+test('Mobile timer popup automatically collapses when switching tabs',()=>{
+ const app=setup();
+ app.ids.openTimer.click();
+ assert.equal(app.ids.miniTimer.expanded,true);
+ assert.equal(app.ids.timerSheet.inert,false);
+ app.buttons[1].click(); // Switch to room view
+ assert.equal(app.ids.miniTimer.expanded,false);
+ assert.equal(app.ids.timerSheet.inert,true);
+});
+
+

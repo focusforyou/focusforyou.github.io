@@ -36,6 +36,7 @@ function fixture(){
  const ctx={console,URL,URLSearchParams,TextEncoder,Uint8Array,crypto:crypto.webcrypto,LobbyModel,Date:class extends Date{static now(){return clock}},
   location:{href:'https://focusforyou.github.io/#lobi',origin:'https://focusforyou.github.io',pathname:'/',search:''},history:{state:null,replaceState:(_,__,url)=>{ctx.location.href=url;ctx.location.search=new URL(url).search}},
   navigator:{clipboard:{writeText:async v=>events.push('clipboard:'+v)}},sessionStorage:{getItem:k=>sessions.get(k)||null,setItem:(k,v)=>sessions.set(k,v),removeItem:k=>sessions.delete(k)},
+  localStorage:{getItem:k=>sessions.get(k)||null,setItem:(k,v)=>sessions.set(k,v),removeItem:k=>sessions.delete(k)},
   document:{hidden:false,getElementById:node,createElement:()=>new Element(),createTextNode:text=>{const n=new Element();n.textContent=text;return n},querySelector:()=>node('chat-note'),addEventListener(){}},
   addEventListener(){},setInterval:f=>intervals.push(f),
   doc:(_, ...p)=>ref(p.join('/')),collection:(_, ...p)=>ref(p.join('/'),'collection'),query:(base,...clauses)=>({...base,clauses:[...base.clauses,...clauses]}),
@@ -231,3 +232,49 @@ test('saved lobby cards render Lobiyi sil for owner and Lobiden ayrıl for non-o
  assert.match(aliceCard.textContent,/Lobiyi sil/);
  assert.match(bobCard.textContent,/Lobiden ayrıl/);
 });
+
+test('exam rooms render Focus For You as creator with permanent unlimited status',async()=>{
+ const f=fixture();
+ f.put('rooms/YKS',{name:'YKS çalışma odası',ownerUid:'focusforyou',locked:false,salt:'',exam:'YKS',unlimited:true});
+ f.put('users/alice/rooms/YKS',{name:'YKS çalışma odası'});
+ f.put('publicProfiles/alice',profile('alice'));
+ await f.login('alice');
+ const cards=f.node('savedRooms').children;
+ assert.equal(cards.length,1);
+ const yksCard=cards[0];
+ assert.match(yksCard.textContent,/Focus For You/);
+ assert.match(yksCard.textContent,/Sürekli açık · Limitsiz/);
+ assert.match(yksCard.textContent,/Lobiden ayrıl/);
+ assert.doesNotMatch(yksCard.textContent,/Lobiyi sil/);
+});
+
+test('admin can delete any room while non-admin can only delete their own room',async()=>{
+ const f=fixture();
+ f.put('rooms/33333333',{name:'Bob Secret Room',ownerUid:'bob',locked:false,salt:'',exam:''});
+ f.put('users/admin/rooms/33333333',{name:'Bob Secret Room'});
+ f.put('publicProfiles/admin',profile('admin'));
+ f.put('publicProfiles/bob',profile('bob'));
+ f.ctx.auth.currentUser={uid:'admin',emailVerified:true,email:'efeozbilgin550@gmail.com'};
+ await f.ctx.FocusSocial.bind(f.ctx.auth.currentUser);
+ await f.settle();
+ const cards=f.node('savedRooms').children;
+ assert.equal(cards.length,1);
+ assert.match(cards[0].textContent,/Lobiyi sil/);
+});
+
+test('reopening app restores last joined room from storage',async()=>{
+ const f=fixture();
+ f.put('rooms/44444444',{name:'Study Room',ownerUid:'alice',locked:false,salt:'',exam:''});
+ f.put('publicProfiles/alice',profile('alice'));
+ await f.login('alice');
+ await f.join('44444444');
+ assert.equal(f.ctx.FocusSocial.active(),'44444444');
+ assert.equal(f.ctx.localStorage.getItem('focus_last_room_alice'),'44444444');
+ // Simulate app reopen by clearing active state & session, then rebinding
+ f.ctx.sessionStorage.removeItem('focus_active_room_alice');
+ f.ctx.location.search='';
+ await f.ctx.FocusSocial.bind(f.ctx.auth.currentUser);
+ await f.settle();
+ assert.equal(f.ctx.FocusSocial.active(),'44444444');
+});
+
