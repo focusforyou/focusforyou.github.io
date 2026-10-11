@@ -309,4 +309,25 @@ test('admin can permanently delete room by ID using admin moderation tool',async
  assert.equal(f.records.has('rooms/99999999'),false);
 });
 
+test('lobby owner can delete their own lobby with two-step confirmation button',async()=>{
+ const f=fixture();
+ f.put('rooms/55555555',{name:'My Room',ownerUid:'alice',locked:false,salt:'',exam:''});
+ f.put('users/alice/rooms/55555555',{name:'My Room'});
+ f.put('publicProfiles/alice',profile('alice'));
+ await f.login('alice');
+ const card=f.node('savedRooms').children[0];
+ const actions=card.children[3].children[1];
+ const delBtn=actions.children[0];
+ assert.ok(delBtn);
+ assert.equal(delBtn.textContent,'Lobiyi sil');
+ await delBtn.onclick();
+ assert.equal(delBtn.textContent,'Emin misin? Sil');
+ assert.equal(f.records.has('rooms/55555555'),true);
+ await delBtn.onclick();
+ await f.settle();
+ assert.equal(f.records.has('rooms/55555555'),false);
+ assert.match(f.node('savedRooms').textContent,/Henüz bir odan yok/);
+});
+
+
 

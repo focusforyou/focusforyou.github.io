@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.WindowInsets;
 import android.webkit.WebChromeClient;
+import android.webkit.JsResult;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
@@ -176,6 +177,16 @@ public class MainActivity extends Activity {
                 if(fileCallback!=null)fileCallback.onReceiveValue(null);
                 fileCallback=callback;
                 chooseFile(params);
+                return true;
+            }
+            @Override public boolean onJsConfirm(WebView view, String url, String message, JsResult result) {
+                new AlertDialog.Builder(MainActivity.this)
+                    .setTitle("Focus For You")
+                    .setMessage(message)
+                    .setPositiveButton("Evet", (dialog, which) -> result.confirm())
+                    .setNegativeButton("Hayır", (dialog, which) -> result.cancel())
+                    .setOnCancelListener(dialog -> result.cancel())
+                    .show();
                 return true;
             }
         });

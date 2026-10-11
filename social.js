@@ -34,11 +34,12 @@ export function initSocial({db,auth}){
  }
  function watchRoom(id){if(roomWatches.has(id))return;const rev=epoch;roomWatches.set(id,onSnapshot(ref('rooms',id),s=>{if(rev!==epoch)return;if(s.exists()){const r={id,...s.data()};roomCache.set(id,r);watchProfile(r.ownerUid)}else roomCache.delete(id);renderSaved();renderDirectory()},()=>{}))}
  async function deleteLobbyCard(id,name){
-  if(!own())return;const op=operation(),displayName=name||roomCache.get(id)?.name||id;
-  const r=roomCache.get(id);
+  if(!own()){status('Lobi silmek için oturum açmış ve profilini tamamlamış olmalısın.');return}
+  const op=operation(),displayName=name||roomCache.get(id)?.name||id;
+  let r=roomCache.get(id);
+  if(!r){try{const snap=await getDocFromServer(ref('rooms',id));if(snap.exists())r={id:snap.id,...snap.data()}}catch(e){}}
   const isLeader=(r?.ownerUid===user.uid)&&!model.exams.includes(id);
   if(!admin()&&!isLeader){status('Yalnızca oda lideri veya yönetici odayı silebilir.');return}
-  if(typeof window.confirm==='function'&&!window.confirm(`"${displayName}" lobisini kalıcı olarak silmek istediğinden emin misin? Lobi ve tüm sohbet geçmişi silinecektir.`))return;
   status('Lobi siliniyor…');
   try{
    try{await deleteDoc(ref('rooms',id,'secrets','password'))}catch(e){}
@@ -50,7 +51,7 @@ export function initSocial({db,auth}){
    }
    try{const mems=await getDocsFromServer(collection(db,'rooms',id,'members'));if(!mems.empty){const b=writeBatch(db);for(const doc of mems.docs)b.delete(doc.ref);await b.commit()}}catch(e){}
    try{await deleteDoc(ref('users',user.uid,'rooms',id))}catch(e){}
-   await deleteDoc(ref('rooms',id));
+   try{await deleteDoc(ref('rooms',id))}catch(err){console.warn('Lobby cloud room doc delete error',err)}
    op.check();
    if(active===id)stopRoom();
    markRoomLeft(id);
@@ -65,8 +66,8 @@ export function initSocial({db,auth}){
  }
 
  async function leaveLobbyCard(id,name){
-  if(!own())return;const op=operation(),displayName=name||roomCache.get(id)?.name||id;
-  if(typeof window.confirm==='function'&&!window.confirm(`"${displayName}" lobisinden ayrılmak istediğinden emin misin?`))return;
+  if(!own()){status('Lobiden ayrılmak için oturum açmış olmalısın.');return}
+  const op=operation(),displayName=name||roomCache.get(id)?.name||id;
   status('Lobiden ayrılınıyor…');
   try{
    if(active===id){await pauseRoom();op.check()}
@@ -92,12 +93,28 @@ export function initSocial({db,auth}){
    const canDelete=admin()||isOwner;
    if(canDelete){
     const delBtn=document.createElement('button');delBtn.type='button';delBtn.className='pill lobby-danger-btn';delBtn.textContent='Lobiyi sil';
-    delBtn.onclick=action(()=>deleteLobbyCard(r.id,r.name));
+    delBtn.onclick=action(async()=>{
+     if(!delBtn.confirming){
+      delBtn.confirming=true;delBtn.textContent='Emin misin? Sil';if(delBtn.style){delBtn.style.background='#ba1a1a';delBtn.style.color='#fff'}
+      setTimeout(()=>{if(delBtn.confirming){delBtn.confirming=false;delBtn.textContent='Lobiyi sil';if(delBtn.style){delBtn.style.background='';delBtn.style.color=''}}},4000);
+      return;
+     }
+     delBtn.confirming=false;
+     await deleteLobbyCard(r.id,r.name);
+    });
     actions.append(delBtn);
    }
    if(!isOwner&&(saved.some(s=>s.id===r.id)||isExam)){
     const leaveBtn=document.createElement('button');leaveBtn.type='button';leaveBtn.className='pill lobby-leave-btn';leaveBtn.textContent='Lobiden ayrıl';
-    leaveBtn.onclick=action(()=>leaveLobbyCard(r.id,r.name));
+    leaveBtn.onclick=action(async()=>{
+     if(!leaveBtn.confirming){
+      leaveBtn.confirming=true;leaveBtn.textContent='Emin misin? Ayrıl';
+      setTimeout(()=>{if(leaveBtn.confirming){leaveBtn.confirming=false;leaveBtn.textContent='Lobiden ayrıl'}},4000);
+      return;
+     }
+     leaveBtn.confirming=false;
+     await leaveLobbyCard(r.id,r.name);
+    });
     actions.append(leaveBtn);
    }
   }
@@ -188,7 +205,7 @@ export function initSocial({db,auth}){
  function transport(message){if(!active||!own())return false;const op=operation(),id=active,uid=op.uid;void(async()=>{try{const image=await compress(message.image);op.check();if(id!==active)throw Error('room-changed');let text=message.text||'';if(message.replyTo){const meta=JSON.stringify({id:message.replyTo.id||'',sender:message.replyTo.sender||'',text:message.replyTo.text||''});text='\u200B\u200C'+meta+'\u200C\u200B'+text}const docData={uid,text,image,time:serverTimestamp()};await setDoc(ref('rooms',id,'messages',message.id),docData)}catch(e){if(op.rev===epoch&&active===id)RoomChat.rejected(message.id,'Mesaj saklanamadı. Bağlantını kontrol edip tekrar dene.')}})();return true}
  async function toggleReaction(messageId,emoji){if(!active||!own())return;const op=operation(),id=active,uid=op.uid;try{const target=ref('rooms',id,'messages',messageId);await runTransaction(db,async tx=>{op.check();const s=await tx.get(target);op.check();if(!s.exists())return;const reactions=s.data().reactions||{},current=reactions[emoji]||[],set=new Set(current);if(set.has(uid))set.delete(uid);else set.add(uid);const updated={...reactions};if(set.size)updated[emoji]=[...set];else delete updated[emoji];tx.update(target,{reactions:updated})})}catch(e){}}
  function stopRoom(){for(const stop of roomStops)stop();roomStops=[];active='';room=null;members=[];messages=[];loaded=false;historyPage=false;historyCursor=null;latest=[];by('chatHistory').hidden=true;by('permanentRoomSettings').hidden=true;by('clearChatConsent').checked=false;by('clearRoomChat').disabled=false;if(by('deleteRoomConsent'))by('deleteRoomConsent').checked=false;if(by('deleteRoomAction'))by('deleteRoomAction').disabled=false;roomBans=[];by('roomBanList').replaceChildren();RoomChat.reset();by('roomPanel').hidden=true;if(by('homeLobbyCoWorkers'))by('homeLobbyCoWorkers').hidden=true;if(by('chatRosterPane'))by('chatRosterPane').hidden=true;window.FocusNative?.room?.('');renderFriends();renderSaved()}
- async function deleteRoom(){if(!active||!manager()||!by('deleteRoomConsent')?.checked){status('Odayı silmek için onay kutusunu işaretle.');return}const op=operation(),id=active,btn=by('deleteRoomAction');if(!admin()&&model.exams.includes(id)){status('Genel sınav odaları silinemez.');return}if(btn)btn.disabled=true;status('Oda siliniyor…');try{try{await deleteDoc(ref('rooms',id,'secrets','password'))}catch(e){}for(const col of ['bans','kicks']){const snap=await getDocsFromServer(collection(db,'rooms',id,col));if(!snap.empty){const b=writeBatch(db);for(const doc of snap.docs)b.delete(doc.ref);await b.commit()}}for(let i=0;i<20;i++){const ms=await getDocsFromServer(query(collection(db,'rooms',id,'messages'),limit(100)));if(ms.empty)break;const b=writeBatch(db);for(const doc of ms.docs)b.delete(doc.ref);await b.commit()}const mems=await getDocsFromServer(collection(db,'rooms',id,'members'));if(!mems.empty){const b=writeBatch(db);for(const doc of mems.docs)b.delete(doc.ref);await b.commit()}try{await deleteDoc(ref('users',user.uid,'rooms',id))}catch(e){}await deleteDoc(ref('rooms',id));op.check();if(storage.get('focus_last_room_'+user.uid)===id){storage.remove('focus_last_room_'+user.uid);storage.remove('focus_last_room')}stopRoom();status('Oda kalıcı olarak silindi.');renderSaved();renderDirectory()}catch(e){if(op.rev===epoch)report(e)}finally{if(op.rev===epoch&&btn)btn.disabled=false}}
+  async function deleteRoom(){if(!active||!manager()||!by('deleteRoomConsent')?.checked){status('Odayı silmek için onay kutusunu işaretle.');return}const op=operation(),id=active,btn=by('deleteRoomAction');if(!admin()&&model.exams.includes(id)){status('Genel sınav odaları silinemez.');return}if(btn)btn.disabled=true;status('Oda siliniyor…');try{try{await deleteDoc(ref('rooms',id,'secrets','password'))}catch(e){}for(const col of ['bans','kicks']){const snap=await getDocsFromServer(collection(db,'rooms',id,col));if(!snap.empty){const b=writeBatch(db);for(const doc of snap.docs)b.delete(doc.ref);await b.commit()}}for(let i=0;i<20;i++){const ms=await getDocsFromServer(query(collection(db,'rooms',id,'messages'),limit(100)));if(ms.empty)break;const b=writeBatch(db);for(const doc of ms.docs)b.delete(doc.ref);await b.commit()}const mems=await getDocsFromServer(collection(db,'rooms',id,'members'));if(!mems.empty){const b=writeBatch(db);for(const doc of mems.docs)b.delete(doc.ref);await b.commit()}try{await deleteDoc(ref('users',user.uid,'rooms',id))}catch(e){}try{await deleteDoc(ref('rooms',id))}catch(err){console.warn('Delete room doc error',err)}op.check();markRoomLeft(id);if(storage.get('focus_last_room_'+user.uid)===id){storage.remove('focus_last_room_'+user.uid);storage.remove('focus_last_room')}stopRoom();status('Oda kalıcı olarak silindi.');renderSaved();renderDirectory()}catch(e){if(op.rev===epoch)report(e)}finally{if(op.rev===epoch&&btn)btn.disabled=false}}
  async function pauseRoom(){const op=operation(),id=active;if(active&&own()){if(loaded){await flush(true);op.check();if(active!==id)throw Error('room-changed');const target=ref('rooms',id,'members',op.uid);await runTransaction(db,async tx=>{op.check();const current=await tx.get(target);op.check();if(active!==id)throw Error('room-changed');if(current.exists())tx.update(target,{timer:{...LobbyModel.cleanTimer(Study.liveSession()),running:false,roomWorked:current.data().timer.roomWorked},presenceAt:serverTimestamp(),online:false})});op.check()}sessionStorage.removeItem('focus_active_room_'+op.uid);storage.remove('focus_last_room_'+op.uid);storage.remove('focus_last_room');const url=new URL(location.href);url.searchParams.delete('club');history.replaceState(history.state,'',url.href)}op.check();stopRoom()}
  async function passwordProof(password,salt){const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:new TextEncoder().encode(salt),iterations:150000,hash:'SHA-256'},key,256);return [...new Uint8Array(bits)].map(x=>x.toString(16).padStart(2,'0')).join('')}
 
