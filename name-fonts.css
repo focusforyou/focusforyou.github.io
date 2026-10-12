@@ -6,3 +6,12 @@
 .font-cinzel{font-family:FocusCinzel,serif!important}
 .font-space-mono{font-family:FocusSpaceMono,monospace!important}
 .identity .username{font-family:Figtree,system-ui}
+
+@font-face{font-family:FocusBungee;src:url('fonts/bungee.ttf') format('truetype');font-weight:400;font-display:swap}
+.font-bungee{font-family:FocusBungee,system-ui!important;font-weight:400!important}
+
+@font-face{font-family:FocusPacifico;src:url('fonts/pacifico.ttf') format('truetype');font-weight:400;font-display:swap}
+.font-pacifico{font-family:FocusPacifico,system-ui!important;font-weight:400!important}
+
+@font-face{font-family:FocusChelaOne;src:url('fonts/chelaone.ttf') format('truetype');font-weight:400;font-display:swap}
+.font-chelaone{font-family:FocusChelaOne,system-ui!important;font-weight:400!important}

@@ -13,7 +13,7 @@ function fixture(){
  return {api,ctx,records,events,get transactions(){return transactions},async login(uid='buyer',admin=false){auth.currentUser={uid,emailVerified:true,email:admin?'efeozbilgin550@gmail.com':uid+'@example.com'};await api.bind(auth.currentUser)},advance:ms=>clock+=ms,setSession:v=>session=v,async tick(){for(const fn of intervals)fn();for(let i=0;i<20;i++)await Promise.resolve()}};
 }
 test('catalog has eighteen explicit thousand-hour items and normalized inventory never grants free ownership',()=>{
- assert.equal(model.catalog().length,18);for(const item of model.catalog())assert.equal(item.cost,3600000);
+ assert.equal(model.catalog().length,21);for(const item of model.catalog())assert.equal(item.cost,3600000);
  assert.deepEqual(model.normalize(),{fonts:[],nameStyles:[],frames:[],plates:[],tags:[]});assert.equal(model.owned({},'frame:gold'),false);
  assert.equal(model.validTag('custom:Merhaba'),true);assert.equal(model.validTag('custom:\nFake'),false);assert.equal(model.validTag('custom:'+'x'.repeat(25)),false);
  assert.equal(model.balance({earnedSeconds:7200000,spentSeconds:3600000}),3600000);

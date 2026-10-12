@@ -78,3 +78,14 @@ test('nudges require same active room, server cooldown and own identity, and loc
  await assertFails(getDocs(query(collectionGroup(a,'nudges'),where('from','==','nudgeB'))));await assertSucceeds(deleteDoc(receipt));
 });
 
+
+test('playful fonts require ownership and paid purchases remain atomic',async()=>{
+ for(const [i,font]of ['bungee','pacifico','chelaone'].entries()){
+  const uid='playfulBuyer'+i,a=account(uid),plain={tag:'none',nameStyle:'plain',frame:'none',plate:'none'},register=writeBatch(a);
+  register.set(doc(a,'usernames','playful_buyer'+i),{uid});register.set(doc(a,'publicProfiles',uid),{uid,username:'playful_buyer'+i,name:'Buyer',photo:'',exam:'',cosmetics:plain});await assertSucceeds(register.commit());
+  await assertFails(updateDoc(doc(a,'publicProfiles',uid),{cosmetics:{...plain,font}}));
+  await env.withSecurityRulesDisabled(async ctx=>{await setDoc(doc(ctx.firestore(),'wallets',uid),wallet(3600000))});
+  const buy=writeBatch(a);buy.update(doc(a,'wallets',uid),{spentSeconds:3600000,lastPurchase:'font:'+font});buy.set(doc(a,'entitlements',uid),{...owned(),fonts:[font]});await assertSucceeds(buy.commit());
+  await assertSucceeds(updateDoc(doc(a,'publicProfiles',uid),{cosmetics:{...plain,font}}));
+ }
+});

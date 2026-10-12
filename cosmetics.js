@@ -1,7 +1,7 @@
 'use strict';
 const FocusCosmetics=(()=>{
  const cost=3600000,palette=['gold','ruby','ice','violet','emerald'],colors={gold:'#f9d66b',ruby:'#ff7591',ice:'#90d9ff',violet:'#d2a3ff',emerald:'#7de0af'},labels={gold:'Altın',ruby:'Yakut',ice:'Buz',violet:'Ametist',emerald:'Zümrüt'},fields={name:'nameStyles',frame:'frames',plate:'plates'};
- const fonts=['fredoka','cinzel','space-mono'],fontLabels={fredoka:'Fredoka · Yuvarlak',cinzel:'Cinzel · Klasik','space-mono':'Space Mono · Kod'};
+ const fonts=['fredoka','cinzel','space-mono','bungee','pacifico','chelaone'],fontLabels={fredoka:'Yuvarlak',cinzel:'Klasik','space-mono':'Kod',bungee:'Arcade',pacifico:'El yazısı',chelaone:'Çizgi roman'};
  const catalog=Object.entries(fields).flatMap(([kind,field])=>palette.map(value=>Object.freeze({id:kind+':'+value,kind,field,value,cost,color:colors[value],label:labels[value]+' '+({name:'isim stili',frame:'çerçeve',plate:'isim plakası'}[kind])}))).concat(fonts.map(value=>Object.freeze({id:'font:'+value,kind:'font',field:'fonts',value,cost,label:fontLabels[value]})));
  const find=id=>catalog.find(item=>item.id===id)||null;
  const normalize=input=>({fonts:Array.isArray(input?.fonts)?[...new Set(input.fonts.filter(v=>fonts.includes(v)))]:[],nameStyles:Array.isArray(input?.nameStyles)?[...new Set(input.nameStyles.filter(v=>v==='plain'||palette.includes(v)))]:[],frames:Array.isArray(input?.frames)?[...new Set(input.frames.filter(v=>v==='none'||palette.includes(v)))]:[],plates:Array.isArray(input?.plates)?[...new Set(input.plates.filter(v=>v==='none'||palette.includes(v)))]:[],tags:Array.isArray(input?.tags)?[...new Set(input.tags.filter(validTag))]:[]});

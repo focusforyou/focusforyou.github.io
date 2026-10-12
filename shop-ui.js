@@ -12,7 +12,7 @@
    const card=document.createElement('article');card.className='cosmetic-item';
    const preview=document.createElement('div');preview.className='cosmetic-preview';
    if(item.kind==='frame'){const avatar=document.createElement('span');avatar.className='cosmetic-avatar frame-'+item.value;avatar.textContent='F';preview.append(avatar)}
-   else{const name=document.createElement('strong');name.textContent=item.kind==='font'?'Çağrı · Focus':'Focus';name.className=(item.kind==='font'?'font-':item.kind==='name'?'name-':'plate-')+item.value;preview.append(name)}
+   else{const name=document.createElement('strong');name.textContent=item.kind==='font'?(window.FocusAccount?.profile?.()?.name||'Focus'):'Focus';name.className=(item.kind==='font'?'font-':item.kind==='name'?'name-':'plate-')+item.value;preview.append(name)}
    const label=document.createElement('h4');label.textContent=item.label;
    const button=document.createElement('button');button.type='button';button.className='pill';
    const owned=store?.owned?.(item.id);button.textContent=owned?'Envanterinde':'1.000 saat · Satın al';button.disabled=!!owned||!state.uid||state.banned||state.balance<item.cost;
