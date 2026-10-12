@@ -36,3 +36,10 @@ test('room role resolution gives admin priority and never borrows another member
  assert.equal(M.role(room,'owner',members,true),'Yönetici');assert.equal(M.role(room,'owner',members),'Lider');assert.equal(M.role(room,'mod',members),'Moderatör');
  for(const uid of ['member','outsider'])assert.equal(M.role(room,uid,members),'Üye');
 });
+
+test('streak counts consecutive local calendar days, keeps yesterday until today completes, and reports the longest run',()=>{
+ const end=new Date(2026,9,13,1,30),days={'2026-10-08':60,'2026-10-09':120,'2026-10-10':90,'2026-10-12':60,'2026-10-13':59};assert.deepEqual(M.streak(days,end),{current:1,best:3,todayDone:false});days['2026-10-13']=60;assert.deepEqual(M.streak(days,end),{current:2,best:3,todayDone:true});assert.deepEqual(M.streak(days,new Date(2026,9,15)),{current:0,best:3,todayDone:false});
+});
+test('streak ignores invalid, future and sub-minute entries and works across leap days and year boundaries',()=>{
+ assert.deepEqual(M.streak({'2024-02-28':60,'2024-02-29':60,'2024-03-01':60,'2024-02-30':600,'2024-03-02':600,'bad':100,'2024-02-27':Infinity},new Date(2024,2,1)),{current:3,best:3,todayDone:true});assert.equal(M.streak({'2025-12-31':60,'2026-01-01':60},new Date(2026,0,1)).current,2);assert.deepEqual(M.streak({},new Date(2026,0,1)),{current:0,best:0,todayDone:false});
+});

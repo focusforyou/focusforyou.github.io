@@ -26,3 +26,7 @@
 :is(.plate-gold,.plate-ice,.plate-violet)::after{mask-image:linear-gradient(270deg,#000 70%,transparent)}
 
 .gift-item-form{display:grid;gap:8px;width:100%;text-align:left}.gift-item-form input{width:100%;min-width:0;min-height:40px;padding:10px;border:1px solid #afc6ff35;border-radius:10px;background:#091329;color:var(--tx);font:14px Figtree,system-ui}.gift-item-form small{line-height:1.5;overflow-wrap:anywhere;color:var(--mu)}.gift-item{border:1px solid #afc6ff40}
+
+.cosmetic-try-on{border:1px solid var(--pr);border-radius:18px;padding:18px;margin-top:18px;background:#afc6ff0a}.cosmetic-try-on h3{margin:0 0 14px;font-size:17px}.try-on-identity{display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding:14px 0;font-size:22px}.try-on-identity .cosmetic-avatar{flex:0 0 60px;width:60px;height:60px}.try-on-identity img{width:100%;height:100%;object-fit:cover;border-radius:50%}.cosmetic-try-on small{display:block;margin:12px 0;color:var(--mu)}.try-item[aria-pressed="true"]{border-color:var(--pr);background:#afc6ff20}
+
+.shop-wallet small{display:block;margin-top:4px}
