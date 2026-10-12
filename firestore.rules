@@ -304,8 +304,9 @@ service cloud.firestore {
    match /messages/{message} {
     // Own-author queries remain available for export and account deletion.
     allow read: if member(rid) || moderator(rid) || (request.auth != null && resource.data.uid == request.auth.uid);
-    allow create: if active() && member(rid) && roomOpen(rid) && request.resource.data.keys().hasOnly(['uid','text','image','time','replyTo','reactions','question','solved'])
+    allow create: if active() && member(rid) && roomOpen(rid) && request.resource.data.keys().hasOnly(['uid','text','image','time','replyTo','reactions','question','solved','pinned'])
      && request.resource.data.get('question',false) is bool && request.resource.data.get('solved',false) == false
+     && request.resource.data.get('pinned',false) == false
      && request.resource.data.uid == request.auth.uid && message.matches('[A-Z2-9]{20}')
      && request.resource.data.time == request.time && request.resource.data.text is string && request.resource.data.text.size() <= 2000
      && request.resource.data.image is string && request.resource.data.image.size() <= 450000
@@ -314,7 +315,9 @@ service cloud.firestore {
      && (!('replyTo' in request.resource.data) || (request.resource.data.replyTo is map && request.resource.data.replyTo.keys().hasOnly(['id','sender','text']) && request.resource.data.replyTo.id is string && request.resource.data.replyTo.id.matches('[A-Z2-9]{20}') && request.resource.data.replyTo.sender is string && request.resource.data.replyTo.sender.size() <= 50 && request.resource.data.replyTo.text is string && request.resource.data.replyTo.text.size() <= 500))
      && (!('reactions' in request.resource.data) || (request.resource.data.reactions is map && request.resource.data.reactions.size() == 0));
     allow update: if active() && member(rid) && roomOpen(rid)
-     && ((request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
+     && ((request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pinned'])
+      && request.resource.data.pinned is bool && moderator(rid))
+      || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
       && validReactionUpdate(resource.data.get('reactions',{}),request.resource.data.reactions))
       || (resource.data.get('question',false) == true && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['solved'])
        && request.resource.data.solved is bool && (resource.data.uid == request.auth.uid || moderator(rid))));

@@ -179,7 +179,7 @@ function receive(input,identity,onDelete){
     if(row){
       if(identity)header(row,message,identity);
       if(message.reactions)renderReactions(row,message.reactions);
-      window.FocusExtras?.messageBadge?.(row.item,message);
+      window.FocusExtras?.messageBadge?.(row.item,message);window.FocusRoomTools?.decorate?.(row.item,message);
     }
     return;
   }
@@ -338,7 +338,7 @@ function receive(input,identity,onDelete){
 
   if(message.reactions)renderReactions(row,message.reactions);
 
-  window.FocusExtras?.messageBadge?.(item,message);
+  window.FocusExtras?.messageBadge?.(item,message);window.FocusRoomTools?.decorate?.(item,message);
   list.append(item);
   rows.push(row);
   while(rows.length>60||rows.filter(r=>r.size>0).length>(persistent?20:8)||rows.reduce((n,r)=>n+r.size,0)>(persistent?9000000:4500000)){

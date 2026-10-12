@@ -50,13 +50,14 @@ function randomCode(){const limit=Math.floor(4294967296/90000)*90000;let value;d
 function clear(){
  clearTimeout(timeout);clearTimeout(retry);clearTimeout(signalRetry);timeout=retry=signalRetry=null;
  const old=peer;peer=null;upstream=null;connecting=false;joined=false;host=false;code='';attempts=0;
- members.clear();pending.clear();departed.clear();history.length=0;ownRoom=ownBase=roomPast=0;roomMembers=[];views=[];RoomChat.reset();old?.destroy();by('roomPanel').hidden=true;busy();
+ window.FocusRoomTools?.state?.(null);window.FocusRoomTools?.pins?.([]);members.clear();pending.clear();departed.clear();history.length=0;ownRoom=ownBase=roomPast=0;roomMembers=[];views=[];RoomChat.reset();old?.destroy();by('roomPanel').hidden=true;busy();
  profiles.clear();sentProfiles='';sentOwnProfile='';
  if(by('homeLobbyCoWorkers'))by('homeLobbyCoWorkers').hidden=true;if(by('chatRosterPane'))by('chatRosterPane').hidden=true;
  window.FocusNative?.room('');
 }
 function render(){
  if(!joined)return;
+ window.FocusRoomTools?.state?.({id:code,name:'Geçici oda '+code,moderator:false,manager:false});
  window.FocusNative?.room(code);
  views=[];
  by('roomPanel').hidden=false;by('roomCode').textContent='Oda '+code;
@@ -246,3 +247,4 @@ window.FocusTemporaryRoom={active:()=>joined,leaveNow:()=>{if(!peer)return;if(ho
 sessionStorage.removeItem('focus_room');busy();status('Ücretsiz lobi hazır. Oda aç veya kodla katıl.');
 window.addEventListener('focus-profile',()=>{const profile=ownProfile();if(!peer&&profile.uid&&profile.name)by('lobbyName').value=profile.name});
 })();
+

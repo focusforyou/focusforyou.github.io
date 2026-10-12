@@ -67,3 +67,24 @@ test('questions start unsolved and only author or moderator can resolve without 
  await assertFails(updateDoc(r,{solved:'yes'}));await assertFails(updateDoc(r,{solved:true,text:'Changed text'}));await assertFails(updateDoc(r,{question:false}));
  await assertSucceeds(setDoc(doc(b,'rooms',rid,'messages','R'.repeat(20)),{uid:'questionAuthor',text:'Normal message',image:'',time:serverTimestamp()}));await assertFails(updateDoc(doc(b,'rooms',rid,'messages','R'.repeat(20)),{solved:true}));
 });
+
+test('only active room moderators pin existing messages, members read pins, and pin writes preserve immutable message fields',async()=>{
+ const rid='79888796',leader=account('pinLeader'),author=account('pinAuthor'),mod=account('pinMod'),admin=account('adminPin','efeozbilgin550@gmail.com'),outside=account('pinOutside');
+ await setup(rid,['pinLeader','pinAuthor','pinMod','adminPin']);
+ await assertSucceeds(updateDoc(doc(leader,'rooms',rid,'members','pinMod'),{role:'moderator'}));
+ const id='P'.repeat(20),body={uid:'pinAuthor',text:'Paylaşılan bilgi',image:'',time:serverTimestamp()},r=doc(author,'rooms',rid,'messages',id);
+ await assertFails(setDoc(r,{...body,pinned:true}));await assertFails(setDoc(r,{...body,pinned:'false'}));await assertSucceeds(setDoc(r,{...body,pinned:false}));
+ // Legacy messages without pinned remain pinnable too.
+ const legacy='S'.repeat(20);await assertSucceeds(setDoc(doc(author,'rooms',rid,'messages',legacy),body));
+ await assertFails(updateDoc(r,{pinned:true}));await assertFails(updateDoc(doc(outside,'rooms',rid,'messages',id),{pinned:true}));
+ const mr=doc(mod,'rooms',rid,'messages',id);
+ await assertSucceeds(updateDoc(mr,{pinned:true}));await assertSucceeds(getDoc(r));
+ await assertSucceeds(getDocs(query(collection(author,'rooms',rid,'messages'),where('pinned','==',true))));
+ await assertSucceeds(updateDoc(doc(leader,'rooms',rid,'messages',id),{pinned:false}));await assertSucceeds(updateDoc(doc(admin,'rooms',rid,'messages',legacy),{pinned:true}));
+ for(const patch of [{pinned:'true'},{pinned:true,text:'Changed'},{pinned:true,uid:'pinMod'},{pinned:true,time:serverTimestamp()},{pinned:true,reactions:{'👍':['pinMod']}}])await assertFails(updateDoc(mr,patch));
+ await env.withSecurityRulesDisabled(async ctx=>{await setDoc(doc(ctx.firestore(),'rooms',rid,'bans','pinMod'),{by:'pinLeader',at:serverTimestamp()})});
+ await assertFails(updateDoc(mr,{pinned:true}));
+ await assertSucceeds(setDoc(doc(leader,'deletions','pinLeader'),{startedAt:serverTimestamp()}));await assertFails(updateDoc(doc(leader,'rooms',rid,'messages',id),{pinned:true}));
+ await env.withSecurityRulesDisabled(async ctx=>{await updateDoc(doc(ctx.firestore(),'rooms',rid),{deleting:true})});
+ await assertFails(updateDoc(doc(admin,'rooms',rid,'messages',id),{pinned:true}));
+});

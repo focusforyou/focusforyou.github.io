@@ -468,3 +468,18 @@ test('showcase hours opt-out shares only selected milestone thresholds and timer
  const f=fixture();await f.login();f.work(50000);await f.ctx.FocusSocial.saveShowcase({bio:'Hi',showHours:false,seconds:50000,badges:['ten','hundred']});const s=f.records.get('publicProfiles/alice').showcase;assert.equal(s.seconds,36000);assert.deepEqual([...s.badges],['ten']);
  f.put('rooms/'+OPEN,{name:'Quiet',ownerUid:'alice',locked:false});await f.join(OPEN);f.ctx.FocusExtras={quietUntil:()=>Date.now()+60000};await f.ctx.FocusSocial.syncQuiet();const until=f.records.get(`rooms/${OPEN}/members/alice`).quietUntil;f.work(20);await f.tick();assert.equal(f.records.get(`rooms/${OPEN}/members/alice`).quietUntil,until);
 });
+
+
+test('pinning updates the message, streams pinned history, and unsubscribes when leaving',async()=>{
+ const f=fixture(),seen=[];f.ctx.FocusRoomTools={state(){},pins:rows=>seen.push(rows),close(){}};
+ const id='A'.repeat(20);f.put('rooms/'+OPEN,{name:'Pinned',ownerUid:'alice',locked:false});f.put(`rooms/${OPEN}/messages/${id}`,{uid:'alice',text:'Important',image:'',time:{toMillis:()=>1000}});
+ await f.login();await f.join(OPEN);await f.ctx.FocusSocial.pinMessage(id,true);await f.settle();assert.equal(f.records.get(`rooms/${OPEN}/messages/${id}`).pinned,true);assert.equal(seen.at(-1)[0].id,id);
+ await f.ctx.FocusSocial.pinMessage(id,false);await f.settle();assert.equal(seen.at(-1).length,0);
+ await f.ctx.FocusSocial.pauseRoom();const after=seen.length;f.emit();await f.settle();assert.equal(seen.length,after);assert.equal(f.subscriptions.some(s=>s.active&&s.q.path===`rooms/${OPEN}/messages`),false);
+});
+test('ordinary members cannot pin, moderators can, and mixed profile updates keep unaffected lobby cards',async()=>{
+ const f=fixture(),id='B'.repeat(20);f.put('rooms/'+OPEN,{name:'First',ownerUid:'bob',locked:false});f.put('rooms/'+LOCKED,{name:'Second',ownerUid:'carol',locked:false});f.put('publicProfiles/bob',profile('bob'));f.put('publicProfiles/carol',profile('carol'));f.put('users/alice/rooms/'+OPEN,{name:'First'});f.put('users/alice/rooms/'+LOCKED,{name:'Second'});f.put(`rooms/${OPEN}/messages/${id}`,{uid:'bob',text:'Pinned',image:'',time:{toMillis:()=>1000}});
+ await f.login();await f.join(OPEN);await assert.rejects(f.ctx.FocusSocial.pinMessage(id,true),/pin-not-allowed/);
+ const second=f.node('savedRooms').children[1];f.put('publicProfiles/bob',{...profile('bob'),name:'Updated'});f.emit();await f.settle();assert.equal(f.node('savedRooms').children[1],second);
+ f.put(`rooms/${OPEN}/members/alice`,{...f.records.get(`rooms/${OPEN}/members/alice`),role:'moderator'});f.emit();await f.settle();await f.ctx.FocusSocial.pinMessage(id,true);assert.equal(f.records.get(`rooms/${OPEN}/messages/${id}`).pinned,true);
+});
