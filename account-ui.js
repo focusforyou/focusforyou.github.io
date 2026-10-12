@@ -7,7 +7,7 @@ let cached='',cachedUid='';try{cached=localStorage.getItem('focus_profile_label'
 // This name is presentation only. Firebase alone authorizes account actions.
 if(cached&&cached.length<=30&&/^[A-Za-z0-9_-]{1,128}$/.test(cachedUid)){by('openAccount').textContent='Profilim';by('accountGuest').hidden=true;by('accountMember').hidden=true;by('accountStatus').textContent='Hesabın yükleniyor…'}
 let mode='';
-const setMode=value=>{mode=value;const onboarding=value==='onboarding';if(by('profileSetupTitle'))by('profileSetupTitle').textContent=onboarding?'Profilini tamamla':'Profilin';if(by('profileSetupHelp')){by('profileSetupHelp').hidden=!onboarding;by('profileSetupHelp').textContent='Görünen adını ve benzersiz @kullanıcıadını seç. Arkadaşların seni bu kullanıcı adıyla bulabilir.'}};
+const setMode=value=>{mode=value;window.FocusProfileStudio?.mode?.(value);const onboarding=value==='onboarding';if(by('profileSetupTitle'))by('profileSetupTitle').textContent=onboarding?'Profilini tamamla':'Profilin';if(by('profileSetupHelp')){by('profileSetupHelp').hidden=!onboarding;by('profileSetupHelp').textContent='Görünen adını ve benzersiz @kullanıcıadını seç. Arkadaşların seni bu kullanıcı adıyla bulabilir.'}};
 window.FocusAccountUI={
  get mode(){return mode},
  open(value='profile'){setMode(value);if(!sheet.open)sheet.showModal()},
@@ -20,3 +20,4 @@ by('openAccount').onclick=()=>window.FocusAccountUI.open(by('openAccount').textC
 sheet.addEventListener('close',()=>{mode=''});
 sheet.addEventListener('click',event=>{if(event.target!==sheet)return;const rect=sheet.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)sheet.close()});
 })();
+

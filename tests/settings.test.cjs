@@ -52,6 +52,7 @@ function setup(initialStorage={}){
   sky,
   themeDarkBtn:darkBtn,
   themeLightBtn:lightBtn,
+  themeAmoledBtn:new Element('button'),
   bgAnimOnBtn:onBtn,
   bgAnimOffBtn:offBtn,
   bgAnimStateLabel:label,
@@ -108,6 +109,14 @@ test('Default settings are dark theme and background animation on', ()=>{
  assert.equal(app.elements.bgAnimOffBtn.attrs['aria-pressed'],'false');
  assert.equal(app.ctx.FocusSettings.theme,'dark');
  assert.equal(app.ctx.FocusSettings.anim,true);
+});
+
+test('AMOLED persists independently of animation and switches cleanly to other themes',()=>{
+ const app=setup();app.elements.themeAmoledBtn.click();
+ assert.equal(app.ctx.FocusSettings.theme,'amoled');assert.equal(app.metaTheme.attrs.content,'#000000');assert.equal(app.storage.get('focus_theme'),'amoled');assert.equal(app.sky.hidden,false);
+ assert.equal(app.elements.themeDarkBtn.attrs['aria-pressed'],'false');assert.equal(app.elements.themeAmoledBtn.attrs['aria-pressed'],'true');
+ app.elements.themeLightBtn.click();assert.equal(app.body.classList.contains('theme-amoled'),false);assert.equal(app.elements.themeAmoledBtn.attrs['aria-pressed'],'false');
+ const restored=setup({focus_theme:'amoled'});assert.equal(restored.ctx.FocusSettings.theme,'amoled');assert.equal(restored.docElement.classList.contains('theme-amoled'),true);assert.equal(restored.sky.hidden,false);
 });
 
 test('Rejected duration change shows timer rejection and restores current durations',()=>{
@@ -186,3 +195,4 @@ test('Saving durations from settings triggers original duration save', ()=>{
  assert.equal(app.isOrigSaved(),true);
  assert.equal(app.elements.settingsDurationsFeedback.textContent,'Süreler kaydedildi!');
 });
+

@@ -6,6 +6,13 @@ before(async()=>{env=await initializeTestEnvironment({projectId:'demo-focus-extr
 after(async()=>{await env?.cleanup()});
 const account=(uid,email=uid+'@example.com')=>env.authenticatedContext(uid,{email,email_verified:true,auth_time:Math.floor(Date.now()/1000)}).firestore();
 const timer={phase:'focus',running:true,left:1500,total:1500,worked:100,roomWorked:100,focus:1500,rest:300,rounds:0};
+
+test('banner is owner-only bounded JPEG; legacy profiles, removal and privacy locks remain valid',async()=>{
+ const uid='bannerUser',a=account(uid),b=account('bannerSpy');await setup('87123456',[uid]);const r=doc(a,'publicProfiles',uid),jpg='data:image/jpeg;base64,YWJjZA==';
+ await assertSucceeds(updateDoc(r,{banner:jpg}));await assertFails(updateDoc(doc(b,'publicProfiles',uid),{banner:jpg}));await assertSucceeds(getDoc(doc(b,'publicProfiles',uid)));
+ for(const banner of ['https://example.com/a.jpg','data:image/svg+xml;base64,YWJjZA==',42,'data:image/jpeg;base64,'+'a'.repeat(40000)])await assertFails(updateDoc(r,{banner}));
+ await assertSucceeds(updateDoc(r,{banner:''}));await assertSucceeds(setDoc(doc(a,'deletions',uid),{startedAt:serverTimestamp()}));await assertFails(updateDoc(r,{banner:jpg}));
+});
 async function setup(rid,ids){await env.withSecurityRulesDisabled(async ctx=>{const db=ctx.firestore();await setDoc(doc(db,'rooms',rid),{name:'Extras',ownerUid:ids[0],locked:false,salt:'',exam:'',createdAt:serverTimestamp()});for(const uid of ids){await setDoc(doc(db,'publicProfiles',uid),{uid,username:uid.startsWith('admin')?'efe':uid.toLowerCase(),name:uid,photo:'',exam:'',cosmetics:{tag:'none',nameStyle:'plain',frame:'none',plate:'none'}});await setDoc(doc(db,'usernames',uid.toLowerCase()),{uid});await setDoc(doc(db,'rooms',rid,'members',uid),{uid,joinedAt:serverTimestamp(),presenceAt:serverTimestamp(),online:true,timer});await setDoc(doc(db,'users',uid,'rooms',rid),{name:'Extras'})}})}
 
 test('leader assigns moderator without self/peer escalation and moderator cannot obtain password, room theme, leader/admin/peer sanctions',async()=>{

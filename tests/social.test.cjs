@@ -3,6 +3,12 @@ const LobbyModel=require('../lobby-model.js');
 const OPEN='open_room_123456789',LOCKED='locked_room_1234567';
 const profile=(uid,username=uid)=>({uid,username,name:uid,photo:'',exam:'',cosmetics:{tag:'none',nameStyle:'plain',frame:'none',plate:'none'}});
 const timer=(extra={})=>({phase:'focus',running:true,left:1500,total:1500,worked:0,roomWorked:0,focus:1500,rest:300,rounds:0,...extra});
+test('identity edits preserve legacy banners and save/remove the studio draft without losing showcase',async()=>{
+ const f=fixture(),jpg='data:image/jpeg;base64,YWJjZA==';f.put('publicProfiles/alice',{...profile('alice'),banner:jpg,showcase:{bio:'Hello',badges:[],showHours:false,seconds:0}});await f.login();
+ await f.ctx.FocusSocial.saveIdentity();assert.equal(f.records.get('publicProfiles/alice').banner,jpg);
+ f.ctx.FocusProfileStudio={banner:()=>''};await f.ctx.FocusSocial.saveIdentity();assert.equal(f.records.get('publicProfiles/alice').banner,'');assert.equal(f.records.get('publicProfiles/alice').showcase.bio,'Hello');
+ f.ctx.FocusProfileStudio.banner=()=>jpg;await f.ctx.FocusSocial.saveIdentity();assert.equal(f.records.get('publicProfiles/alice').banner,jpg);
+});
 test('own presence does not require room membership and respects a disconnected browser',async()=>{
  const f=fixture();await f.login();assert.equal(f.ctx.FocusSocial.memberState('alice'),'Odaklanıyor');assert.equal(f.ctx.FocusSocial.memberState('bob'),'Çevrimdışı');f.ctx.navigator.onLine=false;assert.equal(f.ctx.FocusSocial.memberState('alice'),'Çevrimdışı');
 });

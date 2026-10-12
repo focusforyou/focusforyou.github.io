@@ -5,7 +5,7 @@ import {initializeAppCheck,ReCaptchaEnterpriseProvider} from 'https://www.gstati
 import {firebaseConfig,googleClientId,appCheckSiteKey} from './firebase-config.js';
 import {eraseAccount} from './account-delete.js?v=push1';
 import {initCosmeticStore} from './cosmetic-store.js?v=features2';
-import {initSocial} from './social.js?v=rooms1';
+import {initSocial} from './social.js?v=profile1';
 import {initPush} from './push-client.js?v=push1';
 
 const app=initializeApp(firebaseConfig);
@@ -138,7 +138,7 @@ by('logoutAccount').onclick=()=>busy(async()=>{if(Study.liveSession?.().running)
 by('profilePhoto').onchange=async e=>{
  if(!by('profilePhotoConsent').checked){message('Fotoğrafını saklamak ve katıldığın odada göstermek için fotoğraf onayını işaretle.');e.target.value='';return}
  const file=e.target.files[0];if(!file)return;if(!file.type.startsWith('image/')||file.size>20*1024*1024){message('20 MB’tan küçük bir fotoğraf seç.');return}const owner=uid,revision=generation;let bitmap;
- try{bitmap=await createImageBitmap(file);if(owner!==uid||revision!==generation)return;const canvas=document.createElement('canvas');canvas.width=canvas.height=128;const ctx=canvas.getContext('2d'),size=Math.min(bitmap.width,bitmap.height);ctx.fillStyle='#fff';ctx.fillRect(0,0,128,128);ctx.drawImage(bitmap,(bitmap.width-size)/2,(bitmap.height-size)/2,size,size,0,0,128,128);avatar=canvas.toDataURL('image/jpeg',.8);photoDraft=true;if(!CloudModel.photo(avatar))throw Error();by('profileAvatar').src=avatar;by('profileAvatar').hidden=false;message('Fotoğraf hazır. Profilini kaydet’e bas.')}catch(e){if(owner===uid&&revision===generation)message('Fotoğraf açılamadı. JPEG veya PNG ile tekrar dene.')}finally{bitmap?.close();if(owner===uid&&revision===generation)e.target.value=''}
+ try{bitmap=await createImageBitmap(file);if(owner!==uid||revision!==generation)return;const canvas=document.createElement('canvas');canvas.width=canvas.height=128;const ctx=canvas.getContext('2d'),size=Math.min(bitmap.width,bitmap.height);ctx.fillStyle='#fff';ctx.fillRect(0,0,128,128);ctx.drawImage(bitmap,(bitmap.width-size)/2,(bitmap.height-size)/2,size,size,0,0,128,128);avatar=canvas.toDataURL('image/jpeg',.8);photoDraft=true;if(!CloudModel.photo(avatar))throw Error();by('profileAvatar').src=avatar;by('profileAvatar').hidden=false;window.FocusProfileStudio?.refresh?.();message('Fotoğraf hazır. Değişiklikleri kaydet’e bas.')}catch(e){if(owner===uid&&revision===generation)message('Fotoğraf açılamadı. JPEG veya PNG ile tekrar dene.')}finally{bitmap?.close();if(owner===uid&&revision===generation)e.target.value=''}
 };
 by('saveProfile').onclick=()=>busy(async()=>{
  if(!uid||!ready){message('Önce bulut kayıtlarının bağlanmasını bekle.');return}

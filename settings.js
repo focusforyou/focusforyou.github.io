@@ -4,28 +4,33 @@
  const THEME_KEY='focus_theme',ANIM_KEY='focus_bg_anim';
 
  function applyTheme(theme,save=true){
+  theme=['dark','light','amoled'].includes(theme)?theme:'dark';
   const isLight=theme==='light';
+  document.documentElement.classList.toggle('theme-amoled',theme==='amoled');
+  if(document.body)document.body.classList.toggle('theme-amoled',theme==='amoled');
   document.documentElement.classList.toggle('theme-light',isLight);
   if(document.body)document.body.classList.toggle('theme-light',isLight);
   const meta=document.querySelector('meta[name="theme-color"]');
-  if(meta)meta.setAttribute('content',isLight?'#EDF2FC':'#0A1128');
+  if(meta)meta.setAttribute('content',isLight?'#EDF2FC':theme==='amoled'?'#000000':'#0A1128');
 
   const darkBtn=by('themeDarkBtn'),lightBtn=by('themeLightBtn');
   if(darkBtn){
-   darkBtn.setAttribute('aria-pressed',String(!isLight));
-   darkBtn.classList.toggle('active',!isLight);
+   darkBtn.setAttribute('aria-pressed',String(theme==='dark'));
+   darkBtn.classList.toggle('active',theme==='dark');
   }
   if(lightBtn){
    lightBtn.setAttribute('aria-pressed',String(isLight));
    lightBtn.classList.toggle('active',isLight);
   }
+  const amoledBtn=by('themeAmoledBtn');
+  if(amoledBtn){amoledBtn.setAttribute('aria-pressed',String(theme==='amoled'));amoledBtn.classList.toggle('active',theme==='amoled')}
   const info=by('currentThemeInfo');
-  if(info)info.textContent=isLight?'Beyaz Mod (Açık)':'Siyah Mod (Koyu)';
+  if(info)info.textContent=isLight?'Beyaz Mod (Açık)':theme==='amoled'?'AMOLED (Tam siyah)':'Siyah Mod (Koyu)';
 
   if(save){
-   try{localStorage.setItem(THEME_KEY,isLight?'light':'dark')}catch(e){}
+   try{localStorage.setItem(THEME_KEY,theme)}catch(e){}
   }
-  window.dispatchEvent(new CustomEvent('focus-theme-change',{detail:{theme:isLight?'light':'dark'}}));
+  window.dispatchEvent(new CustomEvent('focus-theme-change',{detail:{theme}}));
  }
 
  function applyBgAnim(enabled,save=true){
@@ -76,6 +81,7 @@
 
   by('themeDarkBtn')?.addEventListener('click',()=>applyTheme('dark'));
   by('themeLightBtn')?.addEventListener('click',()=>applyTheme('light'));
+  by('themeAmoledBtn')?.addEventListener('click',()=>applyTheme('amoled'));
   by('bgAnimOnBtn')?.addEventListener('click',()=>applyBgAnim(true));
   by('bgAnimOffBtn')?.addEventListener('click',()=>applyBgAnim(false));
 
@@ -114,7 +120,8 @@
  window.FocusSettings={
   applyTheme,
   applyBgAnim,
-  get theme(){return document.documentElement.classList.contains('theme-light')?'light':'dark'},
+  get theme(){return document.documentElement.classList.contains('theme-light')?'light':document.documentElement.classList.contains('theme-amoled')?'amoled':'dark'},
   get anim(){return window.FocusSkyAnim!==false}
  };
 })();
+

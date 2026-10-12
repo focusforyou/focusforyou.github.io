@@ -164,7 +164,7 @@ service cloud.firestore {
     && purchaseGrant(before,after,nextWallet.lastPurchase);
   }
   function validPublic(p,uid) {
-   return p.keys().hasOnly(['uid','username','name','photo','exam','cosmetics','showcase'])
+   return p.keys().hasOnly(['uid','username','name','photo','exam','cosmetics','showcase','banner'])
     && p.uid == uid && p.username is string && p.username.matches('[a-z0-9_]{3,24}')
     && availableHandle(p.username)
     && getAfter(/databases/$(database)/documents/usernames/$(p.username)).data.uid == uid
@@ -172,6 +172,7 @@ service cloud.firestore {
     && p.photo is string && p.photo.size() <= 40000
     && (p.photo == '' || p.photo.matches('data:image/jpeg;base64,[A-Za-z0-9+/]+={0,2}')
      || (p.photo.size() < 1500 && p.photo.matches('https://lh[0-9]+[.]googleusercontent[.]com/.*')))
+    && (!('banner' in p) || (p.banner is string && p.banner.size() <= 40000 && (p.banner == '' || p.banner.matches('data:image/jpeg;base64,[A-Za-z0-9+/]+={0,2}'))))
     && p.exam in ['', 'YKS','LGS','TUS','OTHER'] && validCosmetics(p.cosmetics,uid)
     && (!('showcase' in p) || showcaseValid(p.showcase));
   }

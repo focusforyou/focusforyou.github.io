@@ -35,7 +35,7 @@
   const modal=by('memberProfileModal');
   if(!modal)return;
   const p=(window.FocusSocial?.getProfile?window.FocusSocial.getProfile(targetUid):null)||extraData||{};
-  const name=p.name||fallbackName||'Kullanıcı';
+  const name=p.name||fallbackName||'Kullanıcı';window.FocusProfileStudio?.member?.(p,targetUid===(window.FocusSocial?.uid?.()||window.FocusAccount?.profile?.()?.uid));
   by('memberProfileTitle').textContent=name;
   window.SocialModel?.decorate(by('memberProfileTitle'),{...p,username:null});
   const frame=window.SocialModel?.cosmetics(p.cosmetics).frame;for(const value of ['gold','ruby','ice','violet','emerald'])for(const id of ['memberProfileAvatar','memberProfileFallback'])by(id).classList.toggle('frame-'+value,frame===value);
