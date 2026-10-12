@@ -64,11 +64,25 @@ service cloud.firestore {
   function ownPreview(rid,before,after) {
    let old = before.get('previewUids',[]);
    let next = after.get('previewUids',[]);
-   return roomExtrasValid(after) && old is list
+   return old is list
     && next.toSet().difference(old.toSet()).hasOnly([request.auth.uid])
     && old.toSet().difference(next.toSet()).hasOnly([request.auth.uid])
-    && ((active() && member(rid) && roomOpen(rid))
+    && ((member(rid) && roomOpen(rid))
      || (locked(request.auth.uid) && next.toSet().difference(old.toSet()).size() == 0));
+  }
+  function roomUpdateAllowed(rid,before,after) {
+   let changed = after.diff(before).affectedKeys();
+   // Preview authorization is evaluated once, including for admin updates.
+   // Other updates never need membership/preview authorization.
+   return roomExtrasValid(after) && (changed.hasAny(['previewUids'])
+    ? ((changed.hasOnly(['previewUids']) || admin()) && ownPreview(rid,before,after))
+    : (admin()
+     || (changed.hasOnly(['theme']) && roomManager(rid) && roomOpen(rid))
+     || (changed.hasOnly(['deleting']) && after.deleting == true
+      && !(rid in ['YKS','LGS','TUS']) && leader(rid) && active())
+     || (changed.hasOnly(['ownerUid']) && after.ownerUid != request.auth.uid
+      && leader(rid) && locked(request.auth.uid)
+      && exists(/databases/$(database)/documents/rooms/$(rid)/members/$(after.ownerUid)))));
   }
   function joiningAllowed(rid) { return admin() || (!exists(/databases/$(database)/documents/rooms/$(rid)/bans/$(request.auth.uid)) && (!exists(/databases/$(database)/documents/rooms/$(rid)/kicks/$(request.auth.uid)) || get(/databases/$(database)/documents/rooms/$(rid)/kicks/$(request.auth.uid)).data.at < request.time)); }
   function validModeration(m) { return m.keys().hasOnly(['by','at']) && m.by == request.auth.uid && m.at == request.time; }
@@ -250,16 +264,7 @@ service cloud.firestore {
     && ((rid.matches('[1-9][0-9]{7}') && request.resource.data.exam == '')
       || (admin() && rid in ['YKS','LGS','TUS'] && request.resource.data.exam == rid && request.resource.data.locked == false));
    // A deleting leader transfers a room to an existing member before losing Auth.
-   allow update: if request.auth != null && roomExtrasValid(request.resource.data)
-    && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['previewUids']) || ownPreview(rid,resource.data,request.resource.data))
-    && (admin() || (roomManager(rid) && roomOpen(rid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['theme']))
-    || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['previewUids']) && ownPreview(rid,resource.data,request.resource.data))
-    || (leader(rid) && active() && !(rid in ['YKS','LGS','TUS'])
-    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deleting'])
-    && request.resource.data.deleting == true) || (leader(rid) && locked(request.auth.uid)
-    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ownerUid'])
-    && request.resource.data.ownerUid != request.auth.uid
-    && exists(/databases/$(database)/documents/rooms/$(rid)/members/$(request.resource.data.ownerUid))));
+   allow update: if request.auth != null && roomUpdateAllowed(rid,resource.data,request.resource.data);
    allow delete: if admin() || (resource.data.ownerUid == request.auth.uid && active()) || (resource.data.ownerUid == request.auth.uid && locked(request.auth.uid));
    match /secrets/{secret} {
     allow get: if roomManager(rid) || (leader(rid) && locked(request.auth.uid));
