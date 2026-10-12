@@ -3,6 +3,9 @@ const LobbyModel=require('../lobby-model.js');
 const OPEN='open_room_123456789',LOCKED='locked_room_1234567';
 const profile=(uid,username=uid)=>({uid,username,name:uid,photo:'',exam:'',cosmetics:{tag:'none',nameStyle:'plain',frame:'none',plate:'none'}});
 const timer=(extra={})=>({phase:'focus',running:true,left:1500,total:1500,worked:0,roomWorked:0,focus:1500,rest:300,rounds:0,...extra});
+test('own presence does not require room membership and respects a disconnected browser',async()=>{
+ const f=fixture();await f.login();assert.equal(f.ctx.FocusSocial.memberState('alice'),'Odaklanıyor');assert.equal(f.ctx.FocusSocial.memberState('bob'),'Çevrimdışı');f.ctx.navigator.onLine=false;assert.equal(f.ctx.FocusSocial.memberState('alice'),'Çevrimdışı');
+});
 test('sending from old history returns to live messages so delivery is acknowledged',async()=>{
  const f=fixture();f.put('rooms/'+OPEN,{name:'Room',ownerUid:'alice',locked:false});
  for(let i=0;i<25;i++)f.put(`rooms/${OPEN}/messages/${String.fromCharCode(65+i).repeat(20)}`,{uid:'alice',text:'Message '+i,image:'',time:{toMillis:()=>1000+i}});

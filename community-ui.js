@@ -9,6 +9,19 @@
  by('closeCreateRoom').onclick=()=>create.close();create.addEventListener('click',e=>{if(e.target!==create)return;const r=create.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)create.close()});
 
  const memberModal=by('memberProfileModal');
+ let viewedMember='';
+ function refreshMemberSession(explicitTimer){
+  if(!viewedMember)return;
+  const selfUid=window.FocusSocial?.uid?.()||window.FocusAccount?.profile?.()?.uid;
+  const self=!!selfUid&&viewedMember===selfUid;
+  const t=self&&typeof Study!=='undefined'?Study.liveSession():window.FocusSocial?.getMemberTimer?.(viewedMember)||explicitTimer;
+  const state=self?(window.ExtrasModel?.state(t,navigator.onLine!==false)||LobbyModel.describe(t)):window.FocusSocial?.memberState?.(viewedMember)||'Çevrimdışı';
+  by('memberProfileStatusText').textContent=state;
+  by('memberProfileTotalHours').textContent=t&&window.LobbyModel?LobbyModel.hours(t.worked||0):'—';
+  const roomTimer=window.FocusSocial?.getMemberTimer?.(viewedMember)||(!self?explicitTimer:null);
+  by('memberProfileRoomHours').textContent=roomTimer&&window.LobbyModel?LobbyModel.hours(roomTimer.roomWorked||0):'—';
+ }
+ setInterval(()=>{if(memberModal?.open&&!document.hidden)refreshMemberSession()},1000);
  if(memberModal){
   by('closeMemberProfile')?.addEventListener('click',()=>memberModal.close());
   memberModal.addEventListener('click',e=>{
@@ -33,14 +46,8 @@
   }else{
    by('memberProfileAvatar').hidden=true;by('memberProfileFallback').textContent=name.slice(0,1).toUpperCase();by('memberProfileFallback').hidden=false;
   }
-  const t=explicitTimer||(window.FocusSocial?.getMemberTimer?window.FocusSocial.getMemberTimer(targetUid):null);
-  if(t&&window.LobbyModel){
-   by('memberProfileTotalHours').textContent=LobbyModel.hours(t.worked||0);
-   by('memberProfileRoomHours').textContent=LobbyModel.hours(t.roomWorked||0);
-   by('memberProfileStatusText').textContent=window.FocusSocial?.memberState?.(targetUid)||window.ExtrasModel?.state(t)||LobbyModel.describe(t);
-  }else{
-   by('memberProfileTotalHours').textContent='—';by('memberProfileRoomHours').textContent='—';by('memberProfileStatusText').textContent='Çevrimdışı';
-  }
+  viewedMember=targetUid;
+  refreshMemberSession(explicitTimer);
   window.FocusExtras?.paintVitrine?.(p);window.FocusExtras?.profileControls?.(targetUid);
   window.FocusSocial?.setupPokeButton?.(targetUid);
   const friendBtn=by('memberProfileFriendBtn');
