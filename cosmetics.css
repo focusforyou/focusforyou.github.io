@@ -24,3 +24,5 @@
 
 :is(.plate-gold,.plate-ice,.plate-violet)::before{mask-image:linear-gradient(90deg,#000 70%,transparent)}
 :is(.plate-gold,.plate-ice,.plate-violet)::after{mask-image:linear-gradient(270deg,#000 70%,transparent)}
+
+.gift-item-form{display:grid;gap:8px;width:100%;text-align:left}.gift-item-form input{width:100%;min-width:0;min-height:40px;padding:10px;border:1px solid #afc6ff35;border-radius:10px;background:#091329;color:var(--tx);font:14px Figtree,system-ui}.gift-item-form small{line-height:1.5;overflow-wrap:anywhere;color:var(--mu)}.gift-item{border:1px solid #afc6ff40}

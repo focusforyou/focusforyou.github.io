@@ -98,7 +98,7 @@ main{padding:32px 16px}.card{padding:24px}
 @media(min-width:900px) and (max-width:1199px){#calisma>.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.room-chat{grid-column:1/-1}}
 @media(max-width:899px){#calisma>.grid{grid-template-columns:minmax(0,1fr)}}
 </style>
-<link rel="stylesheet" href="profile.css?v=profile2"><link rel="stylesheet" href="extras.css?v=community1"><link rel="stylesheet" href="mobile-ui.css?v=uiopt2"><link rel="stylesheet" href="social.css?v=friends1"><link rel="stylesheet" href="desktop-timer.css?v=features1"><link rel="stylesheet" href="cosmetics.css?v=platecaps1"><link rel="stylesheet" href="theme-controls.css?v=profile2"><link rel="stylesheet" href="workspace-performance.css?v=compact1"><link rel="stylesheet" href="name-fonts.css?v=funfonts1">
+<link rel="stylesheet" href="profile.css?v=profile2"><link rel="stylesheet" href="extras.css?v=community1"><link rel="stylesheet" href="mobile-ui.css?v=uiopt2"><link rel="stylesheet" href="social.css?v=friends1"><link rel="stylesheet" href="desktop-timer.css?v=features1"><link rel="stylesheet" href="cosmetics.css?v=gifts1"><link rel="stylesheet" href="theme-controls.css?v=profile2"><link rel="stylesheet" href="workspace-performance.css?v=pcfast1"><link rel="stylesheet" href="name-fonts.css?v=funfonts1">
 </head>
 <body>
 <canvas id="sky" aria-hidden="true"></canvas>
@@ -245,7 +245,7 @@ Focus For You
 
 <footer>Focus For You · Kendi ritminde, birlikte odaklan.<span class="author-credit">Made by Efe Özbilgin · <a href="/privacy.html" target="_blank" rel="noopener" style="color:inherit">Gizlilik politikası</a> · <a href="/terms.html" target="_blank" rel="noopener" style="color:inherit">Kullanım koşulları</a> · <a href="mailto:t1orstudios@proton.me" style="color:inherit">İletişim</a></span></footer>
 <dialog id="installSheet" aria-label="Uygulamayı kur"><form method="dialog"><button class="sheet-close" aria-label="Kurulum penceresini kapat">Kapat <span aria-hidden="true">×</span></button></form><div class="install-content"></div></dialog>
-<div id="nudgeNotice" role="status" aria-live="polite"></div><dialog id="cosmeticShop" aria-labelledby="shopTitle"><form method="dialog"><button class="sheet-close" id="closeCosmeticShop">Kapat <span aria-hidden="true">×</span></button></form><div class="shop-content"><h2 id="shopTitle">Kozmetik mağazası</h2><div class="shop-wallet"><small>Kullanılabilir çalışma bakiyen</small><strong id="shopBalance">0 saat</strong><small id="shopEarned"></small></div><p>Her kozmetik 1.000 çalışma saati. Satın almak toplam çalışma istatistiğini azaltmaz; yalnızca mağaza bakiyenden düşer. Bakiye bu özellik açıldıktan sonraki giriş yapılmış, çevrimiçi odak sürelerinden kazanılır. Önceki kayıtların geriye dönük mağaza bakiyesine çevrilmez.</p><div id="shopItems" class="shop-items"></div><section id="cosmeticAdmin" class="cosmetic-admin" hidden><h3>Yönetici · Hediye ver</h3><p>Verdiğin görünüm kullanıcının bulut envanterine eklenir; kullanıp kullanmayacağına kendisi karar verir.</p><label>Kullanıcı<input id="giftUsername" placeholder="@kullanıcıadı" maxlength="25" autocomplete="off"></label><label>Kozmetik<select id="giftCosmetic"></select></label><button id="giftCosmeticAction" class="pill" type="button">Envantere ver</button><label>Özel etiket<input id="giftTag" maxlength="24" placeholder="Örn. EFSANE"></label><button id="giftTagAction" class="pill" type="button">Etiket ver</button></section><p id="shopStatus" role="status"></p></div></dialog>
+<div id="nudgeNotice" role="status" aria-live="polite"></div><dialog id="cosmeticShop" aria-labelledby="shopTitle"><form method="dialog"><button class="sheet-close" id="closeCosmeticShop">Kapat <span aria-hidden="true">×</span></button></form><div class="shop-content"><h2 id="shopTitle">Kozmetik mağazası</h2><div class="shop-wallet"><small>Kullanılabilir çalışma bakiyen</small><strong id="shopBalance">0 saat</strong><small id="shopEarned"></small></div><p>Her kozmetik 1.000 çalışma saati. Satın almak toplam çalışma istatistiğini azaltmaz; yalnızca mağaza bakiyenden düşer. Bakiye bu özellik açıldıktan sonraki giriş yapılmış, çevrimiçi odak sürelerinden kazanılır. Önceki kayıtların geriye dönük mağaza bakiyesine çevrilmez.</p><div id="shopItems" class="shop-items"></div><section id="cosmeticAdmin" class="cosmetic-admin" hidden><h3>Yönetici · Özel etiket ver</h3><p>Verdiğin görünüm kullanıcının bulut envanterine eklenir; kullanıp kullanmayacağına kendisi karar verir.</p><label>Kullanıcı<input id="giftUsername" placeholder="@kullanıcıadı" maxlength="25" autocomplete="off"></label><label>Özel etiket<input id="giftTag" maxlength="24" placeholder="Örn. EFSANE"></label><button id="giftTagAction" class="pill" type="button">Etiket ver</button></section><p id="shopStatus" role="status"></p></div></dialog>
 <dialog id="accountSheet" aria-label="Hesabın"><form method="dialog"><button class="sheet-close" aria-label="Hesap penceresini kapat">Kapat <span aria-hidden="true">×</span></button></form><div id="accountContent"></div></dialog>
 <dialog id="memberProfileModal" class="community-sheet member-profile-dialog" aria-labelledby="memberProfileTitle"><form method="dialog"><button class="sheet-close" id="closeMemberProfile" aria-label="Profili kapat">Kapat <span aria-hidden="true">×</span></button></form><div class="community-sheet-content"><div class="member-profile-header"><img id="memberProfileAvatar" class="member-profile-avatar" alt="" width="64" height="64" hidden><div id="memberProfileFallback" class="owner-fallback member-profile-fallback">?</div><div class="member-profile-info"><h3 id="memberProfileTitle" style="margin:0">Kullanıcı</h3><span id="memberProfileHandle" class="username" style="display:block;margin-top:2px">@kullanici</span><span id="memberProfileExam" class="chip" style="margin-top:6px;font-size:12px;padding:3px 10px" hidden></span></div></div><div class="member-profile-stats"><div class="stat-pill"><small>Toplam Çalışma</small><strong id="memberProfileTotalHours">0 sa 00 dk</strong></div><div class="stat-pill"><small>Bu Odada</small><strong id="memberProfileRoomHours">0 sa 00 dk</strong></div><div class="stat-pill"><small>Şu Anki Durum</small><strong id="memberProfileStatusText">Odak</strong></div></div><div class="member-profile-actions" style="margin-top:8px"><button class="pill p" id="memberProfileFriendBtn" type="button">Arkadaş Ekle</button><button class="pill" id="memberProfilePokeBtn" type="button" hidden>Dürt</button></div></div></dialog>
 
@@ -256,16 +256,19 @@ const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 /* Gökyüzü: yıldızlar, yağan noktalar, kayan yıldız, kometler */
 const cv=$('sky'),cx=cv.getContext('2d');
 let W,H,D,stars,flakes,shoot=null,comets=[],ns=R(2,5),nc=R(1,3),mx=0,my=0,sx=0,sy=0,t=0,last=performance.now(),animRunning=false,skyFrame=0;
+let skyInteracting=false,skyInteractionTimer=0;
+function skyInteraction(){if(innerWidth<900)return;skyInteracting=true;pauseSky();clearTimeout(skyInteractionTimer);skyInteractionTimer=setTimeout(()=>{skyInteracting=false;resumeSky()},160)}
+addEventListener('scroll',skyInteraction,{passive:true});addEventListener('focus-desktop-navigation',skyInteraction);
 let isLight=document.documentElement.classList.contains('theme-light');
 addEventListener('pointermove',e=>{if(window.FocusMotion?.active||window.FocusSkyAnim===false)return;mx=e.clientX/innerWidth-.5;my=e.clientY/innerHeight-.5});
 function pauseSky(){cancelAnimationFrame(skyFrame);skyFrame=0;animRunning=false}
-function resumeSky(){if(animRunning||document.hidden||window.FocusOverlayOpen||window.FocusSkyAnim===false)return;animRunning=true;last=performance.now()-34;skyFrame=requestAnimationFrame(frame)}
+function resumeSky(){if(animRunning||skyInteracting||document.hidden||window.FocusOverlayOpen||window.FocusSkyAnim===false)return;animRunning=true;last=performance.now()-(innerWidth<900?34:51);skyFrame=requestAnimationFrame(frame)}
 window.FocusSky={set:(x,y)=>{mx=x;my=y},resume:resumeSky};
 addEventListener('focus-overlay-change',e=>{if(e.detail.open)pauseSky();else resumeSky()});
 function fit(){
-D=Math.min(devicePixelRatio||1,1.5,Math.sqrt((innerWidth<900?650000:1100000)/Math.max(1,innerWidth*innerHeight)));W=innerWidth;H=innerHeight;cv.width=W*D;cv.height=H*D;
-stars=Array.from({length:Math.min(W<900?140:280,W*H/6500|0)},()=>({x:R(0,W),y:R(0,H),r:R(.3,1.1),a:R(.25,.85),s:R(.6,2),p:R(0,6.28),z:R(.2,1)}));
-flakes=reduce?[]:Array.from({length:Math.min(W<900?90:160,W*H/10000|0)},()=>({x:R(0,W),y:R(0,H),r:R(.4,1.4),v:R(10,32),w:R(.4,1.4),p:R(0,6.28),z:R(.3,1),a:R(.35,.85)}));
+D=Math.min(devicePixelRatio||1,1.5,Math.sqrt((innerWidth<900?650000:550000)/Math.max(1,innerWidth*innerHeight)));W=innerWidth;H=innerHeight;cv.width=W*D;cv.height=H*D;
+stars=Array.from({length:Math.min(W<900?140:120,W*H/6500|0)},()=>({x:R(0,W),y:R(0,H),r:R(.3,1.1),a:R(.25,.85),s:R(.6,2),p:R(0,6.28),z:R(.2,1)}));
+flakes=reduce?[]:Array.from({length:Math.min(W<900?90:45,W*H/10000|0)},()=>({x:R(0,W),y:R(0,H),r:R(.4,1.4),v:R(10,32),w:R(.4,1.4),p:R(0,6.28),z:R(.3,1),a:R(.35,.85)}));
 }
 const starBuckets=Array.from({length:12},()=>[]),flakeBuckets=Array.from({length:8},()=>[]);
 let resizeFrame=0;addEventListener('resize',()=>{cancelAnimationFrame(resizeFrame);resizeFrame=requestAnimationFrame(()=>{resizeFrame=0;fit();if(reduce){pauseSky();resumeSky()}})});fit();
@@ -274,9 +277,9 @@ addEventListener('pagehide',pauseSky);addEventListener('pageshow',resumeSky);
 addEventListener('focus-theme-change',e=>{isLight=e.detail.theme==='light';if(reduce){pauseSky();resumeSky()}});
 addEventListener('focus-anim-change',e=>{if(e.detail.enabled)resumeSky();else{pauseSky();cx.setTransform(D,0,0,D,0,0);cx.clearRect(0,0,W,H)}});
 function frame(now){
-skyFrame=0;if(document.hidden||window.FocusOverlayOpen||window.FocusSkyAnim===false){pauseSky();return}
+skyFrame=0;if(skyInteracting||document.hidden||window.FocusOverlayOpen||window.FocusSkyAnim===false){pauseSky();return}
 if(!reduce)skyFrame=requestAnimationFrame(frame);else animRunning=false;
-if(!reduce&&now-last<1000/30)return;
+if(!reduce&&now-last<1000/(W<900?30:20))return;
 const dt=Math.min(.1,(now-last)/1000);last=now;t+=dt;
 cx.setTransform(D,0,0,D,0,0);cx.clearRect(0,0,W,H);
 const k=Math.min(1,dt*3);sx+=(mx-sx)*k;sy+=(my-sy)*k;
@@ -457,9 +460,9 @@ window.FocusData={
 <script src="mobile-ui.js?v=uiopt1"></script>
 <script src="motion.js?v=features1"></script>
 <dialog id="legalSheet" aria-label="Yasal bilgiler"><form method="dialog"><button class="pill" type="submit">Kapat ×</button></form><iframe id="legalFrame" title="Gizlilik ve kullanım bilgileri" sandbox="allow-same-origin"></iframe></dialog>
-<script src="legal-sheet.js"></script><script src="shop-ui.js?v=funfonts1"></script><script src="community-ui.js?v=profile1"></script>
+<script src="legal-sheet.js"></script><script src="shop-ui.js?v=gifts1"></script><script src="community-ui.js?v=profile1"></script>
 <script src="account-ui.js?v=profile1"></script><script src="profile-model.js?v=profile1"></script><script src="profile-studio.js?v=funfonts1"></script>
-<script src="settings.js?v=profile2"></script><script src="popup-motion.js?v=exit1"></script><script src="overlay-performance.js?v=workspace1"></script>
+<script src="settings.js?v=profile2"></script><script src="popup-motion.js?v=exit1"></script><script src="overlay-performance.js?v=pcfast1"></script>
 <script type="module">import('./account.js?v=compact1').catch(()=>{document.getElementById('accountStatus').textContent='Hesap hizmetine bağlanılamadı. İnternet bağlantın gelince sayfayı yeniden aç; cihaz kayıtların korunuyor.'})</script>
 </body>
 </html>
