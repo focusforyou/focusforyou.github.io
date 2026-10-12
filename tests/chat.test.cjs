@@ -134,3 +134,8 @@ test('empty-text reply or structured replyTo is not dropped and reactions render
  assert.match(reactionsBox.children[0].textContent,/👍 2/);
  assert.match(reactionsBox.children[1].textContent,/🔥 1/);
 });
+
+
+test('touch message menu exposes the room moderation hook and its close action',()=>{
+ let called,close;const f=setup({window:{FocusRoomTools:{menu:(picker,m,done)=>{called={picker,m};close=done}}}});f.chat.receive(message());const item=f.list.children[0];item.dispatch('touchstart',touch());f.runTimers(450);assert.equal(called.m.id,message().id);assert.equal(called.picker.className,'reaction-picker');close();assert.equal(item.children.some(c=>c.className==='reaction-picker'),false);
+});

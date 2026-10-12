@@ -80,6 +80,7 @@ function showPicker(parent,message,withReply=false){
     reply.onclick=e=>{e.stopPropagation();closePicker();setReply(message)};
     picker.append(reply);
   }
+  window.FocusRoomTools?.menu?.(picker,message,closePicker);
   for(const emoji of EMOJIS){
     const btn=document.createElement('button');
     btn.type='button';
