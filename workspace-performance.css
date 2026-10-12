@@ -8,3 +8,6 @@ dialog::backdrop{backdrop-filter:none!important;-webkit-backdrop-filter:none!imp
 dialog[open],.friends-popover:not([hidden]),.photo-edit-menu:not([hidden]),.reaction-picker{animation:focus-popup-enter 180ms cubic-bezier(.2,.75,.25,1) both;animation-iteration-count:1}
 .friends-popover,.photo-edit-menu,.reaction-picker{transform-origin:bottom right}
 @media(prefers-reduced-motion:reduce){dialog[open],.friends-popover:not([hidden]),.photo-edit-menu:not([hidden]),.reaction-picker{animation:none}}
+
+.work-community[hidden]{display:none!important}
+@media(min-width:900px){#calisma>.grid:has(.work-community[hidden]){grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}#calisma>.grid:has(.work-community[hidden]) .room-chat{grid-column:auto}}

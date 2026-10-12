@@ -98,7 +98,7 @@ main{padding:32px 16px}.card{padding:24px}
 @media(min-width:900px) and (max-width:1199px){#calisma>.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.room-chat{grid-column:1/-1}}
 @media(max-width:899px){#calisma>.grid{grid-template-columns:minmax(0,1fr)}}
 </style>
-<link rel="stylesheet" href="profile.css?v=profile2"><link rel="stylesheet" href="extras.css?v=community1"><link rel="stylesheet" href="mobile-ui.css?v=uiopt2"><link rel="stylesheet" href="social.css?v=friends1"><link rel="stylesheet" href="desktop-timer.css?v=features1"><link rel="stylesheet" href="cosmetics.css?v=plates2"><link rel="stylesheet" href="theme-controls.css?v=profile2"><link rel="stylesheet" href="workspace-performance.css?v=popup1"><link rel="stylesheet" href="name-fonts.css?v=funfonts1">
+<link rel="stylesheet" href="profile.css?v=profile2"><link rel="stylesheet" href="extras.css?v=community1"><link rel="stylesheet" href="mobile-ui.css?v=uiopt2"><link rel="stylesheet" href="social.css?v=friends1"><link rel="stylesheet" href="desktop-timer.css?v=features1"><link rel="stylesheet" href="cosmetics.css?v=platecaps1"><link rel="stylesheet" href="theme-controls.css?v=profile2"><link rel="stylesheet" href="workspace-performance.css?v=exit1"><link rel="stylesheet" href="name-fonts.css?v=funfonts1">
 </head>
 <body>
 <canvas id="sky" aria-hidden="true"></canvas>
@@ -145,7 +145,7 @@ Focus For You
 <div class="row"><input type="text" id="kn" aria-label="Görev adı" placeholder="Görev adı (ör. Matematik tekrarı)" style="flex:1;min-width:220px"><input type="number" id="km" min="1" max="600" value="25" aria-label="Dakika" style="width:110px"><button class="pill p" id="ka" type="button">Ekle</button></div>
 <div id="kl" style="display:flex;flex-direction:column;gap:8px"></div>
 </section></article></div>
-<article class="card work-community"><span class="chip">Birlikte daha kolay</span><h3>Çalışma arkadaşlarını bul.</h3><p id="activeRoomSummary">Sana ait bir oda oluştur veya bir çalışma lobisine katıl. Sayacın burada senin ritminde devam eder.</p><a class="pill p" href="#lobi">Lobilere göz at <span aria-hidden="true">↗</span></a></article>
+<article class="card work-community" id="workCommunityCard"><span class="chip">Birlikte daha kolay</span><h3>Çalışma arkadaşlarını bul.</h3><p id="activeRoomSummary">Sana ait bir oda oluştur veya bir çalışma lobisine katıl. Sayacın burada senin ritminde devam eder.</p><a class="pill p" href="#lobi">Lobilere göz at <span aria-hidden="true">↗</span></a></article>
 <aside class="card c2 room-chat" aria-label="Oda sohbeti" data-calm="1"><div class="room-chat-layout"><div class="chat-roster-pane" id="chatRosterPane" hidden><div class="chat-roster-title"><strong>Odada çalışanlar</strong><span id="chatRosterCount" class="chip">0</span></div><ul id="chatRosterList" class="chat-roster-list"></ul></div><div class="chat-main-pane"><h3>Oda sohbeti</h3><p class="chat-note">Mesajlar ve fotoğraflar bu açık odada tutulur; oda kapanınca silinir.</p><div id="chatHistory" class="row" hidden><button class="pill" id="olderMessages" type="button">Önceki mesajlar</button><button class="pill" id="latestMessages" type="button">Son mesajlar</button></div><div id="chatMessages" role="log" aria-label="Oda mesajları" aria-live="polite"></div>
 <form id="chatForm"><div id="replyDraft" class="reply-draft" hidden><div class="reply-draft-content"><span class="reply-draft-icon">↩</span><div class="reply-draft-text"><strong id="replyDraftSender"></strong><span id="replyDraftSnippet"></span></div></div><button class="reply-draft-cancel" id="cancelReply" type="button" aria-label="Yanıtı iptal et">×</button></div><label class="sr-only" for="chatText">Mesajın</label><textarea id="chatText" maxlength="2000" rows="2" placeholder="Bir soru sor veya mesaj yaz…"></textarea><div id="photoDraft" hidden><img id="chatPreview" alt="Göndermeden önce fotoğraf önizlemesi"><button class="pill d" type="button" id="removePhoto">Fotoğrafı kaldır</button></div>
 <div class="row"><label class="pill photo-picker">Galeriden seç<input id="chatPhoto" type="file" accept="image/*"></label><label class="pill photo-picker">Fotoğraf çek<input id="chatCamera" type="file" accept="image/*" capture="environment"></label><button class="pill p" id="sendChat" type="submit">Gönder</button></div><p id="chatStatus" role="status"></p></form></div></div></aside>
@@ -471,8 +471,8 @@ document.addEventListener('pointerup',up);document.addEventListener('pointercanc
 <dialog id="legalSheet" aria-label="Yasal bilgiler"><form method="dialog"><button class="pill" type="submit">Kapat ×</button></form><iframe id="legalFrame" title="Gizlilik ve kullanım bilgileri" sandbox="allow-same-origin"></iframe></dialog>
 <script src="legal-sheet.js"></script><script src="shop-ui.js?v=funfonts1"></script><script src="community-ui.js?v=profile1"></script>
 <script src="account-ui.js?v=profile1"></script><script src="profile-model.js?v=profile1"></script><script src="profile-studio.js?v=funfonts1"></script>
-<script src="settings.js?v=profile2"></script><script src="overlay-performance.js?v=workspace1"></script>
-<script type="module">import('./account.js?v=friends1').catch(()=>{document.getElementById('accountStatus').textContent='Hesap hizmetine bağlanılamadı. İnternet bağlantın gelince sayfayı yeniden aç; cihaz kayıtların korunuyor.'})</script>
+<script src="settings.js?v=profile2"></script><script src="popup-motion.js?v=exit1"></script><script src="overlay-performance.js?v=workspace1"></script>
+<script type="module">import('./account.js?v=exit1').catch(()=>{document.getElementById('accountStatus').textContent='Hesap hizmetine bağlanılamadı. İnternet bağlantın gelince sayfayı yeniden aç; cihaz kayıtların korunuyor.'})</script>
 </body>
 </html>
 

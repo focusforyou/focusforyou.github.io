@@ -14,3 +14,13 @@
 :is(.plate-gold,.plate-ruby,.plate-ice,.plate-violet,.plate-emerald)::after{right:0;transform:translateY(-50%) scaleX(-1)}
 .cosmetic-preview{height:82px;width:100%;min-width:0}.cosmetic-preview :is(.plate-gold,.plate-ice,.plate-violet){font-size:18px}.cosmetic-sample:is(.plate-gold,.plate-ice,.plate-violet){font-size:12px;min-height:36px}
 .studio-showcase{margin-top:24px!important;padding-top:20px!important;border-top:1px solid #ffffff18!important}.studio-showcase::before{content:'Vitrinin';display:block;font-size:16px;font-weight:700;margin-bottom:14px}
+
+/* Preserve the original PNG ornaments at both ends without scaling their width. */
+.plate-gold{--plate-cap-art:url('assets/cosmetics/orbit-gold-plate.png')}.plate-ice{--plate-cap-art:url('assets/cosmetics/ice-blue-plate.png')}.plate-violet{--plate-cap-art:url('assets/cosmetics/nebula-violet-plate.png')}
+:is(.plate-gold,.plate-ice,.plate-violet){padding:8px 42px!important;min-height:40px}
+:is(.plate-gold,.plate-ice,.plate-violet)::before,:is(.plate-gold,.plate-ice,.plate-violet)::after{width:40px;height:60px;background-image:var(--plate-cap-art);background-size:180px 60px;background-repeat:no-repeat;opacity:1;transform:translateY(-50%)}
+:is(.plate-gold,.plate-ice,.plate-violet)::before{background-position:left center;left:0}
+:is(.plate-gold,.plate-ice,.plate-violet)::after{background-position:right center;right:0}
+
+:is(.plate-gold,.plate-ice,.plate-violet)::before{mask-image:linear-gradient(90deg,#000 70%,transparent)}
+:is(.plate-gold,.plate-ice,.plate-violet)::after{mask-image:linear-gradient(270deg,#000 70%,transparent)}
