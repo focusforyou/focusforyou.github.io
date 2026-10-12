@@ -58,3 +58,12 @@ test('idle and break heartbeat performs no recurring transactions while focus st
  for(let i=0;i<12;i++){f.advance(30000);await f.tick()}assert.equal(f.transactions,4);assert.equal(f.records.get('wallets/buyer').earnedSeconds,29);
 });
 
+
+test('a hidden page still credits a running focus session and a break stops earning',async()=>{
+ const f=fixture();await f.login();await f.tick();f.ctx.document.hidden=true;f.advance(30000);await f.tick();assert.equal(f.records.get('wallets/buyer').earnedSeconds,29);
+ f.setSession({phase:'break',running:true});await f.tick();assert.equal(f.records.get('wallets/buyer').running,false);f.advance(30000);await f.tick();assert.equal(f.records.get('wallets/buyer').earnedSeconds,29);
+});
+test('failed wallet writes expose a recoverable sync error and a successful retry clears it',async()=>{
+ const f=fixture();await f.login();const original=f.ctx.runTransaction;f.ctx.runTransaction=async()=>{throw Error('offline')};await f.tick();assert.equal(f.api.snapshot().error,'wallet-sync-failed');
+ f.ctx.runTransaction=original;f.advance(30000);await f.tick();assert.equal(f.api.snapshot().error,'');assert.equal(f.records.get('wallets/buyer').running,true);
+});

@@ -4,7 +4,7 @@ import {getFirestore,doc,getDocFromServer,getDocsFromServer,collection,onSnapsho
 import {initializeAppCheck,ReCaptchaEnterpriseProvider} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-app-check.js';
 import {firebaseConfig,googleClientId,appCheckSiteKey} from './firebase-config.js';
 import {eraseAccount} from './account-delete.js?v=push1';
-import {initCosmeticStore} from './cosmetic-store.js?v=features2';
+import {initCosmeticStore} from './cosmetic-store.js?v=wallet2';
 import {initSocial} from './social.js?v=compact1';
 import {initPush} from './push-client.js?v=push1';
 

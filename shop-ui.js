@@ -1,7 +1,7 @@
 'use strict';
 (()=>{
  const by=id=>document.getElementById(id),model=window.FocusCosmetics,modal=by('cosmeticShop'),cards=new Map();let adminState=null,owner='',lastUsername='';
- const hours=n=>(Math.max(0,n)/3600).toLocaleString('tr-TR',{maximumFractionDigits:1})+' saat';
+ const hours=n=>{const seconds=Math.max(0,Math.floor(Number(n)||0)),h=Math.floor(seconds/3600),m=Math.floor(seconds%3600/60),s=seconds%60;return [h?h.toLocaleString('tr-TR')+' sa':'',m?m+' dk':'',s||(!h&&!m)?s+' sn':''].filter(Boolean).join(' ')};
  const text=(node,value)=>{if(node.textContent!==value)node.textContent=value};
  function error(e){const map={'sign-in-required':'Önce giriş yap.','insufficient-hours':'Bu kozmetik için 1.000 saat kullanılabilir bakiye gerekiyor.','already-owned':'Bu kozmetik zaten envanterinde.','invalid-username':'Geçerli bir @kullanıcıadı yaz.','user-not-found':'Bu kullanıcı bulunamadı.','invalid-tag':'Etiket 1–24 karakter olmalı.','admin-required':'Bu işlem yöneticiye özel.','online-banned':'Çevrimiçi özelliklerin yasaklı.'};return map[e?.message]||'İşlem tamamlanamadı. İnternet bağlantını kontrol et.'}
  function build(state){
@@ -24,7 +24,7 @@
  }
  function render(){
   const store=window.FocusCosmeticStore,state=store?.snapshot?.()||{};
-  text(by('shopBalance'),hours(state.balance||0));text(by('shopEarned'),'Kazanılan '+hours(state.earnedSeconds||0)+' · Harcanan '+hours(state.spentSeconds||0));by('cosmeticAdmin').hidden=!state.admin;
+  text(by('shopBalance'),state.loading?'Yükleniyor…':state.error?'Senkronizasyon bekleniyor':hours(state.balance||0));text(by('shopEarned'),state.error?'Çalışma bakiyesi buluta kaydedilemedi. Bağlantı ve hesabın e-posta doğrulamasını kontrol et; otomatik yeniden denenecek.':'Kazanılan '+hours(state.earnedSeconds||0)+' · Harcanan '+hours(state.spentSeconds||0));by('cosmeticAdmin').hidden=!state.admin;
   if(adminState!==!!state.admin||owner!==(state.uid||'')){adminState=!!state.admin;owner=state.uid||'';lastUsername='';build(state)}
   for(const item of model.catalog()){const record=cards.get(item.id),owned=store?.owned?.(item.id);text(record.buy,owned?'Envanterinde':'1.000 saat · Satın al');record.buy.disabled=record.busy||!!owned||!state.uid||state.banned||state.balance<item.cost;if(record.send)record.send.disabled=record.busy||!state.admin||state.banned;}
  }
