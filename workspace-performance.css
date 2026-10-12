@@ -11,3 +11,15 @@ dialog[open],.friends-popover:not([hidden]),.photo-edit-menu:not([hidden]),.reac
 
 .work-community[hidden]{display:none!important}
 @media(min-width:900px){#calisma>.grid:has(.work-community[hidden]){grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}#calisma>.grid:has(.work-community[hidden]) .room-chat{grid-column:auto}}
+
+/* Compact desktop workspace, without scaling text or touch targets on mobile. */
+.card,.card:hover,.card:active{transform:none!important;transition:border-color .15s!important;box-shadow:none!important}.card::before,.card::after{display:none!important}
+header,.mini-timer,.mobile-nav,.sheet-close-pill,.chat-actions,.reaction-picker{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+@media(min-width:900px){
+ main{padding:28px 24px;gap:32px}section{gap:18px}h2{font-size:30px}.card{padding:24px;border-radius:24px}.card h3{font-size:22px}
+ #calisma>.grid:has(.work-community[hidden]){grid-template-columns:minmax(280px,.65fr) minmax(0,1.75fr)}
+ #calisma .timer{padding:22px 18px;gap:10px}#calisma .timer .ring{width:160px;height:160px}#calisma .timer .ring svg{width:100%;height:100%}#calisma .timer .ring b{font-size:36px}#calisma .timer .pill{font-size:14px;padding:8px 16px;min-height:40px}
+ .chat-roster-pane{width:clamp(220px,22vw,290px);padding-right:14px}.chat-roster-item{flex-wrap:wrap;padding:10px;gap:8px}.chat-roster-info{flex:1;min-width:0}.chat-roster-name{white-space:normal;overflow:visible;line-height:1.35}.roster-nudge{margin-left:auto}.chat-roster-list{max-height:calc(100dvh - 300px)}
+ #calisma .timer #homeLobbyCoWorkers{display:none!important}.timer-tasks{padding-top:16px}.timer-tasks h3{font-size:18px}
+}
+@media(min-width:900px) and (max-width:1100px){#calisma>.grid:has(.work-community[hidden]){grid-template-columns:minmax(240px,.6fr) minmax(0,1.4fr)}.chat-roster-pane{width:205px}.room-chat-layout{gap:10px}.room-chat{padding:16px}}

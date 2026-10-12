@@ -98,7 +98,7 @@ main{padding:32px 16px}.card{padding:24px}
 @media(min-width:900px) and (max-width:1199px){#calisma>.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.room-chat{grid-column:1/-1}}
 @media(max-width:899px){#calisma>.grid{grid-template-columns:minmax(0,1fr)}}
 </style>
-<link rel="stylesheet" href="profile.css?v=profile2"><link rel="stylesheet" href="extras.css?v=community1"><link rel="stylesheet" href="mobile-ui.css?v=uiopt2"><link rel="stylesheet" href="social.css?v=friends1"><link rel="stylesheet" href="desktop-timer.css?v=features1"><link rel="stylesheet" href="cosmetics.css?v=platecaps1"><link rel="stylesheet" href="theme-controls.css?v=profile2"><link rel="stylesheet" href="workspace-performance.css?v=exit1"><link rel="stylesheet" href="name-fonts.css?v=funfonts1">
+<link rel="stylesheet" href="profile.css?v=profile2"><link rel="stylesheet" href="extras.css?v=community1"><link rel="stylesheet" href="mobile-ui.css?v=uiopt2"><link rel="stylesheet" href="social.css?v=friends1"><link rel="stylesheet" href="desktop-timer.css?v=features1"><link rel="stylesheet" href="cosmetics.css?v=platecaps1"><link rel="stylesheet" href="theme-controls.css?v=profile2"><link rel="stylesheet" href="workspace-performance.css?v=compact1"><link rel="stylesheet" href="name-fonts.css?v=funfonts1">
 </head>
 <body>
 <canvas id="sky" aria-hidden="true"></canvas>
@@ -445,19 +445,7 @@ window.FocusData={
  }
 };
 
-/* Kartlarda 3D eğilme ve basma efekti */
-if(matchMedia('(hover:hover) and (prefers-reduced-motion:no-preference)').matches){
-let pr=false,cardFrame=0,cardEvent=null;
-const fc=e=>{if(window.FocusOverlayOpen)return null;const el=e.target.closest&&e.target.closest('.card');return el&&!el.closest('dialog,#lobiler')?el:null};
-const mv=e=>{const el=fc(e);if(!el)return;const r=el.getBoundingClientRect(),nx=(e.clientX-r.left)/r.width-.5,ny=(e.clientY-r.top)/r.height-.5,s=(pr?-1:1)*(el.matches('[data-calm],.wide,.verdict')||r.width>650||r.height>450?.15:1);
-el.style.setProperty('--ry',(-nx*8*s).toFixed(2)+'deg');el.style.setProperty('--rx',(ny*8*s).toFixed(2)+'deg');
-el.style.setProperty('--mx',((nx+.5)*100).toFixed(1)+'%');el.style.setProperty('--my',((ny+.5)*100).toFixed(1)+'%')};
-document.addEventListener('pointermove',e=>{if(document.hidden||!fc(e))return;cardEvent=e;if(!cardFrame)cardFrame=requestAnimationFrame(()=>{cardFrame=0;const latest=cardEvent;cardEvent=null;if(latest&&!document.hidden)mv(latest)})},{passive:true});
-document.addEventListener('pointerout',e=>{const el=fc(e);if(!el||(e.relatedTarget&&el.contains(e.relatedTarget)))return;if(cardEvent&&fc(cardEvent)===el){cancelAnimationFrame(cardFrame);cardFrame=0;cardEvent=null}el.style.removeProperty('--rx');el.style.removeProperty('--ry')});
-document.addEventListener('pointerdown',e=>{const el=fc(e);if(!el)return;pr=true;mv(e)});
-const up=e=>{if(pr){pr=false;mv(e)}};
-document.addEventListener('pointerup',up);document.addEventListener('pointercancel',up);
-}
+/* Large cards stay still so pointer movement never repaints the workspace. */
 </script>
 <script src="vendor/peerjs-1.5.5.min.js"></script>
 <script src="lobby-model.js?v=community1"></script>
@@ -472,7 +460,7 @@ document.addEventListener('pointerup',up);document.addEventListener('pointercanc
 <script src="legal-sheet.js"></script><script src="shop-ui.js?v=funfonts1"></script><script src="community-ui.js?v=profile1"></script>
 <script src="account-ui.js?v=profile1"></script><script src="profile-model.js?v=profile1"></script><script src="profile-studio.js?v=funfonts1"></script>
 <script src="settings.js?v=profile2"></script><script src="popup-motion.js?v=exit1"></script><script src="overlay-performance.js?v=workspace1"></script>
-<script type="module">import('./account.js?v=exit1').catch(()=>{document.getElementById('accountStatus').textContent='Hesap hizmetine bağlanılamadı. İnternet bağlantın gelince sayfayı yeniden aç; cihaz kayıtların korunuyor.'})</script>
+<script type="module">import('./account.js?v=compact1').catch(()=>{document.getElementById('accountStatus').textContent='Hesap hizmetine bağlanılamadı. İnternet bağlantın gelince sayfayı yeniden aç; cihaz kayıtların korunuyor.'})</script>
 </body>
 </html>
 

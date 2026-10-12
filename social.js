@@ -21,7 +21,8 @@ export function initSocial({db,auth}){
  const presence=(t,fresh=true)=>window.ExtrasModel?.state(t,fresh)||(!fresh?'Çevrimdışı':t.running&&t.phase==='focus'?'Odaklanıyor':'Molada');
  let questionStop=null,questionLimit=12,questionRoom='',showcaseWrite=0,questionAuthors=new Set(),pinAuthors=new Set();
  async function syncShowcaseHours(){if(!own()||!me?.showcase?.showHours||typeof Study.totalSeconds!=='function'||Date.now()-showcaseWrite<300000)return;const seconds=Math.floor(Study.totalSeconds());if(Math.floor((me.showcase.seconds||0)/60)===Math.floor(seconds/60))return;showcaseWrite=Date.now();const op=operation();try{await updateDoc(ref('publicProfiles',op.uid),{'showcase.seconds':seconds});op.check()}catch(e){if(op.rev===epoch)showcaseWrite=Date.now()-240000}}
- function extrasState(){window.FocusRoomTools?.state?.(active&&room?{id:active,name:room.name,manager:manager(),moderator:moderator()}:null);window.FocusExtras?.room?.(active&&room?{id:active,room,uid:user?.uid,admin:admin(),leader:manager(),moderator:moderator(),members}:null)}
+ let extrasSignature='';
+ function extrasState(){const key=JSON.stringify([active,room?.name,room?.theme,room?.ownerUid,user?.uid,admin(),manager(),moderator(),members.map(m=>[m.uid,m.role])]);if(key===extrasSignature)return;extrasSignature=key;window.FocusRoomTools?.state?.(active&&room?{id:active,name:room.name,manager:manager(),moderator:moderator()}:null);window.FocusExtras?.room?.(active&&room?{id:active,room,uid:user?.uid,admin:admin(),leader:manager(),moderator:moderator(),members}:null)}
  const stamp=v=>v?.toMillis?.()||0;
  const protectedUid=uid=>uid===user?.uid||identity(uid).username==='efe';
  const report=e=>status(e?.message==='username-taken'?'Bu kullanıcı adı alınmış. Başka bir ad seç.':e?.code==='permission-denied'?'Bu işlem için izin yok. Oda şifresini, üyeliğini veya yayımlanan Firebase kurallarını kontrol et.':'Bağlantı kurulamadı. İnternet gelince tekrar dene.');
@@ -36,7 +37,8 @@ export function initSocial({db,auth}){
  const row=(name,buttons=[],p=null)=>{const n=document.createElement('div');n.className='social-row';const label=document.createElement('strong');label.textContent=name;if(p)model.decorate(label,p);n.append(label,...buttons);return n};
  const identity=uid=>{if(uid==='focusforyou')return {name:'Focus For You',username:'focusforyou',photo:'icon-192.png',cosmetics:{tag:'system',nameStyle:'gold'}};if(profiles.has(uid))return profiles.get(uid);if(user&&uid===user.uid){const base=window.FocusAccount?.profile?.()||{};return {name:me?.name||base.name||'Sen',username:me?.username||'',photo:me?.photo||base.photo||'',cosmetics:me?.cosmetics||{},showcase:me?.showcase,banner:me?.banner}}return {name:'Odak arkadaşı',username:'',photo:'',cosmetics:{}}};
  const memberViews=new Map(),profileChanges=new Set();let profilePaintQueued=null;
- const profileKey=p=>JSON.stringify([p?.name||'',p?.username||'',p?.photo||'',p?.exam||'',p?.cosmetics||{},p?.showcase||{},p?.banner||'']);
+ const profileKeys=new WeakMap();
+ const profileKey=p=>{if(p&&profileKeys.has(p))return profileKeys.get(p);const key=JSON.stringify([p?.name||'',p?.username||'',p?.photo||'',p?.exam||'',p?.cosmetics||{},p?.showcase||{},p?.banner||'']);if(p)profileKeys.set(p,key);return key};
  const setText=(node,text)=>{if(node&&node.textContent!==text)node.textContent=text};
  const viewVisible=node=>!!node&&!document.hidden&&!node.hidden&&(!node.closest||!node.closest('[hidden]'))&&(!node.getClientRects||node.getClientRects().length>0);
  function pruneProfileListeners(){
@@ -170,7 +172,7 @@ export function initSocial({db,auth}){
 
  function renderMembers(){
   extrasState();
-  if(!active||!room||document.hidden)return;by('permanentRoomSettings').hidden=!manager();const list=by('roomMembers'),home=by('homeLobbyCoWorkers'),roster=by('chatRosterPane');if(home)home.hidden=!members.length;if(roster)roster.hidden=!members.length;
+  if(!active||!room||document.hidden||window.FocusOverlayOpen)return;by('permanentRoomSettings').hidden=!manager();const list=by('roomMembers'),home=by('homeLobbyCoWorkers'),roster=by('chatRosterPane');if(home)home.hidden=!members.length;if(roster)roster.hidden=!members.length;
   if(!viewVisible(list)&&!viewVisible(by('homeLobbyList'))&&!viewVisible(by('chatRosterList')))return;const entries=projectedMembers();
   if(viewVisible(list)){
    const sixAM=getSixAMTimestamp();let total=0,online=0,dailyTotal=0;for(const v of entries){total+=v.timer.roomWorked;if(v.fresh)online++;if(v.presenceMs>=sixAM)dailyTotal+=v.timer.roomWorked}
@@ -358,6 +360,7 @@ export function initSocial({db,auth}){
  by('refreshLobby').onclick=action(async()=>{if(!own()){by('openAccount').click();return}const op=operation(),s=await getDocsFromServer(query(collection(db,'rooms'),orderBy('createdAt','desc'),limit(24)));op.check();directory=s.docs.map(d=>({id:d.id,...d.data()}));searchResults=null;renderDirectory()});
  for(const exam of model.exams)by('join'+exam).onclick=pendingButton(by('join'+exam),()=>roomTask(exam,'join',()=>join(exam,'')),'Bağlanılıyor…');
  setInterval(()=>{if(active){if(!document.hidden)paintPokeButtons();renderMembers();void flush()}void syncShowcaseHours()},1000);
+ window.addEventListener?.('focus-overlay-change',e=>{if(!e.detail.open)renderMembers()});
  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&active)void flush(true).catch(()=>{})});
  by('clearRoomChat').onclick=action(async()=>{if(!active||!manager()||!by('clearChatConsent').checked){status('Sohbeti silmek için onay kutusunu işaretle.');return}const op=operation(),id=active,control=by('clearRoomChat');control.disabled=true;try{for(let page=0;page<1000;page++){op.check();if(active!==id)throw Error('room-changed');const rows=await getDocsFromServer(query(collection(db,'rooms',id,'messages'),limit(150)));op.check();if(active!==id)throw Error('room-changed');if(rows.empty){historyPage=false;latest=[];historyCursor=null;messages=[];RoomChat.retain([]);by('clearChatConsent').checked=false;status('Sohbet geçmişi ve fotoğraflar silindi.');return}const batch=writeBatch(db);for(const message of rows.docs)batch.delete(message.ref);op.check();await batch.commit();op.check()}throw Error('chat-cleanup-limit')}finally{if(op.rev===epoch)control.disabled=false}});
  const delRoomBtn=by('deleteRoomAction');if(delRoomBtn)delRoomBtn.onclick=action(deleteRoom);

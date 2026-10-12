@@ -489,3 +489,13 @@ test('ordinary members cannot pin, moderators can, and mixed profile updates kee
  const second=f.node('savedRooms').children[1];f.put('publicProfiles/bob',{...profile('bob'),name:'Updated'});f.emit();await f.settle();assert.equal(f.node('savedRooms').children[1],second);
  f.put(`rooms/${OPEN}/members/alice`,{...f.records.get(`rooms/${OPEN}/members/alice`),role:'moderator'});f.emit();await f.settle();await f.ctx.FocusSocial.pinMessage(id,true);assert.equal(f.records.get(`rooms/${OPEN}/messages/${id}`).pinned,true);
 });
+
+test('unchanged room ticks do not rewrite room tools and overlays defer member painting without stopping presence',async()=>{
+ const f=fixture();let tools=0,extras=0;f.ctx.FocusRoomTools={state(){tools++}};f.ctx.FocusExtras={room(){extras++}};
+ f.put('rooms/'+OPEN,{name:'Room',ownerUid:'alice',locked:false});await f.login();await f.join(OPEN);
+ const baseline=[tools,extras];for(let i=0;i<4;i++){f.work(1);await f.tick()}assert.deepEqual([tools,extras],baseline);
+ const before=f.node('roomMembers').textContent;f.ctx.FocusOverlayOpen=true;f.work(35);await f.tick();assert.equal(f.node('roomMembers').textContent,before);
+ assert.ok(f.records.get(`rooms/${OPEN}/members/alice`).timer.roomWorked>=35,'presence still flushes while profile is open');
+ f.ctx.FocusOverlayOpen=false;await f.tick();assert.notEqual(f.node('roomMembers').textContent,before);
+ f.put('rooms/'+OPEN,{name:'Renamed',ownerUid:'alice',locked:false});f.emit();await f.settle();assert.ok(tools>baseline[0]);
+});
