@@ -3,3 +3,8 @@
 /* Avoid full-screen blur over a moving canvas, especially on WebView GPUs. */
 dialog::backdrop{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:#030713b8!important}dialog{box-shadow:0 12px 32px #0005!important;overscroll-behavior:contain}body.overlay-open>main *,body.overlay-open>header *,body.overlay-open>footer *,body.overlay-open>.mini-timer *,body.overlay-open>.mobile-nav *{animation-play-state:paused!important}body.overlay-open .card{transform:none!important}body.overlay-open main .card::after{display:none!important}
 @media(max-width:899px){.mini-timer .timer-tasks{padding-top:18px;margin-top:10px}.mini-timer #timerSheet .ring{max-width:180px}.timer-tasks h3{font-size:18px}.timer-tasks #kn{flex-basis:100%!important}.timer-tasks #km{flex:1!important;width:auto!important}.timer-tasks #kl{max-height:230px}.timer-tasks #kh{font-size:12px}}
+/* One short entrance per opening. No blur, layout animation or persistent layer. */
+@keyframes focus-popup-enter{from{opacity:0;transform:translateY(6px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+dialog[open],.friends-popover:not([hidden]),.photo-edit-menu:not([hidden]),.reaction-picker{animation:focus-popup-enter 180ms cubic-bezier(.2,.75,.25,1) both;animation-iteration-count:1}
+.friends-popover,.photo-edit-menu,.reaction-picker{transform-origin:bottom right}
+@media(prefers-reduced-motion:reduce){dialog[open],.friends-popover:not([hidden]),.photo-edit-menu:not([hidden]),.reaction-picker{animation:none}}
