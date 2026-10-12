@@ -8,6 +8,19 @@ const account=(uid,email=uid+'@example.com')=>env.authenticatedContext(uid,{emai
 const wallet=(earned=0,running=false)=>({earnedSeconds:earned,spentSeconds:0,running,checkpoint:serverTimestamp(),lastPurchase:''});
 const owned=()=>({nameStyles:[],frames:[],plates:[],tags:[]});
 
+test('fonts require atomic payment or trusted gift and only the owner can equip and sync them',async()=>{
+ const uid='fontBuyer',a=account(uid),admin=account('fontAdmin','efeozbilgin550@gmail.com'),viewer=account('fontViewer'),other=account(uid),plain={tag:'none',nameStyle:'plain',frame:'none',plate:'none'};
+ const register=writeBatch(a);register.set(doc(a,'usernames','font_buyer'),{uid});register.set(doc(a,'publicProfiles',uid),{uid,username:'font_buyer',name:'Çağrı',photo:'',exam:'',cosmetics:plain});await assertSucceeds(register.commit());
+ const profile=doc(a,'publicProfiles',uid),e=doc(a,'entitlements',uid),w=doc(a,'wallets',uid);
+ await assertFails(updateDoc(profile,{cosmetics:{...plain,font:'fredoka'}}));await assertFails(updateDoc(profile,{cosmetics:{...plain,font:'evil'}}));await assertFails(setDoc(e,{...owned(),fonts:['fredoka']}));
+ await env.withSecurityRulesDisabled(async ctx=>setDoc(doc(ctx.firestore(),'wallets',uid),wallet(7200000)));
+ const buy=(data)=>{const batch=writeBatch(a);batch.update(w,{spentSeconds:3600000,lastPurchase:'font:fredoka'});batch.set(e,data);return batch.commit()};
+ await assertFails(buy({...owned(),fonts:['fredoka','cinzel']}));await assertFails(buy({...owned(),fonts:['fredoka'],nameStyles:['gold']}));await assertSucceeds(buy({...owned(),fonts:['fredoka']}));
+ const equipped={...plain,nameStyle:'plain',font:'fredoka'};await assertSucceeds(updateDoc(profile,{cosmetics:equipped}));await assertFails(updateDoc(doc(viewer,'publicProfiles',uid),{cosmetics:equipped}));
+ for(const db of [other,viewer])require('node:assert/strict').deepEqual((await assertSucceeds(getDoc(doc(db,'publicProfiles',uid)))).data().cosmetics,equipped);
+ await assertSucceeds(setDoc(doc(admin,'entitlements',uid),{...owned(),fonts:['fredoka','cinzel']}));await assertSucceeds(updateDoc(profile,{cosmetics:{...plain,font:'cinzel'}}));await assertFails(updateDoc(profile,{cosmetics:{...plain,font:'space-mono'}}));
+});
+
 test('wallet cannot mint initial credit, advance faster than server time, double-count device credit or reset spent balance',async()=>{
  const uid='storeClock',a=account(uid),b=account(uid),r=doc(a,'wallets',uid);
  await assertFails(setDoc(r,wallet(3600000)));await assertSucceeds(setDoc(r,wallet()));

@@ -116,19 +116,21 @@ service cloud.firestore {
     && value in get(/databases/$(database)/documents/entitlements/$(uid)).data.get(key,[]));
   }
   function validCosmetics(c,uid) {
-   return c is map && c.keys().hasOnly(['tag','nameStyle','frame','plate'])
+   return c is map && c.keys().hasOnly(['tag','nameStyle','frame','plate','font'])
+    && c.get('font','default') in ['default','fredoka','cinzel','space-mono']
     && c.tag is string && (c.tag in ['none','doctor'] || c.tag.matches('custom:.{1,24}'))
     && c.nameStyle in ['plain','gold','ruby','ice','violet','emerald'] && c.frame in ['none','gold','ruby','ice','violet','emerald'] && c.plate in ['none','gold','ruby','ice','violet','emerald']
     && (admin() || ((c.tag == 'none' || (c.tag != 'doctor' && ownedStyle(uid,'tags',c.tag,'none')))
-     && ownedStyle(uid,'nameStyles',c.nameStyle,'plain') && ownedStyle(uid,'frames',c.frame,'none') && ownedStyle(uid,'plates',c.plate,'none')));
+     && ownedStyle(uid,'fonts',c.get('font','default'),'default') && ownedStyle(uid,'nameStyles',c.nameStyle,'plain') && ownedStyle(uid,'frames',c.frame,'none') && ownedStyle(uid,'plates',c.plate,'none')));
   }
   function itemInfo(id) {
-   return {'name:gold':['nameStyles','gold'],'name:ruby':['nameStyles','ruby'],'name:ice':['nameStyles','ice'],'name:violet':['nameStyles','violet'],'name:emerald':['nameStyles','emerald'],
+   return {'font:fredoka':['fonts','fredoka'],'font:cinzel':['fonts','cinzel'],'font:space-mono':['fonts','space-mono'],'name:gold':['nameStyles','gold'],'name:ruby':['nameStyles','ruby'],'name:ice':['nameStyles','ice'],'name:violet':['nameStyles','violet'],'name:emerald':['nameStyles','emerald'],
     'frame:gold':['frames','gold'],'frame:ruby':['frames','ruby'],'frame:ice':['frames','ice'],'frame:violet':['frames','violet'],'frame:emerald':['frames','emerald'],
     'plate:gold':['plates','gold'],'plate:ruby':['plates','ruby'],'plate:ice':['plates','ice'],'plate:violet':['plates','violet'],'plate:emerald':['plates','emerald']}.get(id,['','']);
   }
   function validOwned(e) {
-   return e is map && e.keys().hasOnly(['nameStyles','frames','plates','tags'])
+   return e is map && e.keys().hasOnly(['nameStyles','frames','plates','tags','fonts'])
+    && e.get('fonts',[]) is list && e.get('fonts',[]).size() <= 3 && e.get('fonts',[]).hasOnly(['fredoka','cinzel','space-mono'])
     && e.get('nameStyles',[]) is list && e.get('nameStyles',[]).size() <= 6 && e.get('nameStyles',[]).hasOnly(['plain','gold','ruby','ice','violet','emerald'])
     && e.get('frames',[]) is list && e.get('frames',[]).size() <= 6 && e.get('frames',[]).hasOnly(['none','gold','ruby','ice','violet','emerald'])
     && e.get('plates',[]) is list && e.get('plates',[]).size() <= 6 && e.get('plates',[]).hasOnly(['none','gold','ruby','ice','violet','emerald'])
@@ -144,7 +146,7 @@ service cloud.firestore {
   function purchaseGrant(before,after,id) {
    let info = itemInfo(id);
    return info[0] != '' && validOwned(after) && before.get('tags',[]) == after.get('tags',[])
-    && itemGrant(before,after,'nameStyles',info) && itemGrant(before,after,'frames',info) && itemGrant(before,after,'plates',info);
+    && itemGrant(before,after,'fonts',info) && itemGrant(before,after,'nameStyles',info) && itemGrant(before,after,'frames',info) && itemGrant(before,after,'plates',info);
   }
   function previousOwned(uid) {
    return exists(/databases/$(database)/documents/entitlements/$(uid)) ? get(/databases/$(database)/documents/entitlements/$(uid)).data : {};

@@ -12,7 +12,7 @@
    const card=document.createElement('article');card.className='cosmetic-item';
    const preview=document.createElement('div');preview.className='cosmetic-preview';
    if(item.kind==='frame'){const avatar=document.createElement('span');avatar.className='cosmetic-avatar frame-'+item.value;avatar.textContent='F';preview.append(avatar)}
-   else{const name=document.createElement('strong');name.textContent='Focus';name.className=(item.kind==='name'?'name-':'plate-')+item.value;preview.append(name)}
+   else{const name=document.createElement('strong');name.textContent=item.kind==='font'?'Çağrı · Focus':'Focus';name.className=(item.kind==='font'?'font-':item.kind==='name'?'name-':'plate-')+item.value;preview.append(name)}
    const label=document.createElement('h4');label.textContent=item.label;
    const button=document.createElement('button');button.type='button';button.className='pill';
    const owned=store?.owned?.(item.id);button.textContent=owned?'Envanterinde':'1.000 saat · Satın al';button.disabled=!!owned||!state.uid||state.banned||state.balance<item.cost;
@@ -27,6 +27,7 @@
  for(const item of model.catalog()){const option=document.createElement('option');option.value=item.id;option.textContent=item.label;by('giftCosmetic').append(option)}
  by('giftCosmeticAction').onclick=()=>act(async()=>{await window.FocusCosmeticStore.grant(by('giftUsername').value,by('giftCosmetic').value);by('shopStatus').textContent='Kozmetik kullanıcının bulut envanterine verildi.'},by('giftCosmeticAction'));
  by('giftTagAction').onclick=()=>act(async()=>{await window.FocusCosmeticStore.grantTag(by('giftUsername').value,by('giftTag').value);by('shopStatus').textContent='Özel etiket kullanıcının envanterine verildi.'},by('giftTagAction'));
- addEventListener('focus-cosmetics',render);
+ addEventListener('focus-cosmetics',()=>{if(modal.open)render()});
  render();
 })();
+

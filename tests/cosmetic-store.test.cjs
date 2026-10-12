@@ -12,9 +12,9 @@ function fixture(){
  };ctx.window=ctx;vm.createContext(ctx);vm.runInContext(fs.readFileSync('cosmetic-store.js','utf8').replace(/^import .*;\r?\n/gm,'').replace('export function','function'),ctx);const api=ctx.initCosmeticStore({db:{},auth});
  return {api,ctx,records,events,get transactions(){return transactions},async login(uid='buyer',admin=false){auth.currentUser={uid,emailVerified:true,email:admin?'efeozbilgin550@gmail.com':uid+'@example.com'};await api.bind(auth.currentUser)},advance:ms=>clock+=ms,setSession:v=>session=v,async tick(){for(const fn of intervals)fn();for(let i=0;i<20;i++)await Promise.resolve()}};
 }
-test('catalog has fifteen explicit thousand-hour items and normalized inventory never grants free ownership',()=>{
- assert.equal(model.catalog().length,15);for(const item of model.catalog())assert.equal(item.cost,3600000);
- assert.deepEqual(model.normalize(),{nameStyles:[],frames:[],plates:[],tags:[]});assert.equal(model.owned({},'frame:gold'),false);
+test('catalog has eighteen explicit thousand-hour items and normalized inventory never grants free ownership',()=>{
+ assert.equal(model.catalog().length,18);for(const item of model.catalog())assert.equal(item.cost,3600000);
+ assert.deepEqual(model.normalize(),{fonts:[],nameStyles:[],frames:[],plates:[],tags:[]});assert.equal(model.owned({},'frame:gold'),false);
  assert.equal(model.validTag('custom:Merhaba'),true);assert.equal(model.validTag('custom:\nFake'),false);assert.equal(model.validTag('custom:'+'x'.repeat(25)),false);
  assert.equal(model.balance({earnedSeconds:7200000,spentSeconds:3600000}),3600000);
 });
@@ -42,6 +42,13 @@ test('account changes cancel delayed purchases without writing inventory or bala
  assert.equal(f.records.has('entitlements/other'),false);assert.equal(f.records.get('wallets/buyer').spentSeconds,0);
 });
 
+test('font purchases and admin gifts preserve colors and only add the chosen font',async()=>{
+ const f=fixture();await f.login();f.records.set('wallets/buyer',{earnedSeconds:3600000,spentSeconds:0,running:false,checkpoint:{toMillis:()=>1000000},lastPurchase:''});f.records.set('entitlements/buyer',{nameStyles:['ice'],frames:['gold'],plates:[],tags:[]});
+ await f.api.purchase('font:fredoka');assert.deepEqual(f.records.get('entitlements/buyer').fonts,['fredoka']);assert.deepEqual(f.records.get('entitlements/buyer').nameStyles,['ice']);assert.equal(f.records.get('wallets/buyer').spentSeconds,3600000);
+ assert.deepEqual(model.normalize({fonts:['evil','cinzel','cinzel']}).fonts,['cinzel']);assert.equal(model.owned({},'font:cinzel'),false);
+ f.records.set('usernames/friend',{uid:'friendUid'});await f.login('admin',true);await f.api.grant('@friend','font:space-mono');assert.deepEqual(f.records.get('entitlements/friendUid').fonts,['space-mono']);
+});
+
 test('idle and break heartbeat performs no recurring transactions while focus start, credit and stop still sync',async()=>{
  const f=fixture();f.setSession({phase:'focus',running:false});await f.login();await f.tick();assert.equal(f.transactions,1);const initialCheckpoint=f.records.get('wallets/buyer').checkpoint;
  for(let i=0;i<12;i++){f.advance(30000);await f.tick()}assert.equal(f.transactions,1);assert.equal(f.records.get('wallets/buyer').checkpoint,initialCheckpoint);
@@ -50,3 +57,4 @@ test('idle and break heartbeat performs no recurring transactions while focus st
  f.setSession({phase:'break',running:true});await f.tick();assert.equal(f.transactions,4);assert.equal(f.records.get('wallets/buyer').running,false);
  for(let i=0;i<12;i++){f.advance(30000);await f.tick()}assert.equal(f.transactions,4);assert.equal(f.records.get('wallets/buyer').earnedSeconds,29);
 });
+

@@ -5,7 +5,7 @@ import {initializeAppCheck,ReCaptchaEnterpriseProvider} from 'https://www.gstati
 import {firebaseConfig,googleClientId,appCheckSiteKey} from './firebase-config.js';
 import {eraseAccount} from './account-delete.js?v=push1';
 import {initCosmeticStore} from './cosmetic-store.js?v=features2';
-import {initSocial} from './social.js?v=profile1';
+import {initSocial} from './social.js?v=font1';
 import {initPush} from './push-client.js?v=push1';
 
 const app=initializeApp(firebaseConfig);

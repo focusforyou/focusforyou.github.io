@@ -1,0 +1,8 @@
+/* Bundled SIL Open Font License fonts: no third-party request on selection. */
+@font-face{font-family:FocusFredoka;src:url('fonts/fredoka.ttf') format('truetype');font-weight:300 700;font-display:swap}
+@font-face{font-family:FocusCinzel;src:url('fonts/cinzel.ttf') format('truetype');font-weight:400 900;font-display:swap}
+@font-face{font-family:FocusSpaceMono;src:url('fonts/space-mono.ttf') format('truetype');font-weight:400;font-display:swap}
+.font-fredoka{font-family:FocusFredoka,system-ui!important}
+.font-cinzel{font-family:FocusCinzel,serif!important}
+.font-space-mono{font-family:FocusSpaceMono,monospace!important}
+.identity .username{font-family:Figtree,system-ui}
