@@ -33,3 +33,10 @@ test('Reduced-motion sky draws a static scene without continuous frames, and red
  app.frame(1);assert.equal(app.draws,2);assert.equal(app.callbacks.size,0);
 });
 
+test('modal pauses every sky frame and a hidden/disabled sky cannot be restarted by closing it',()=>{
+ const app=setup();app.frame(0);const before=app.draws;
+ app.context.FocusOverlayOpen=true;app.events['focus-overlay-change']({detail:{open:true}});assert.equal(app.callbacks.size,0);app.context.FocusSky.resume();assert.equal(app.callbacks.size,0);assert.equal(app.draws,before);
+ app.context.FocusOverlayOpen=false;app.events['focus-overlay-change']({detail:{open:false}});assert.equal(app.callbacks.size,1);app.frame(34);assert.equal(app.draws,before+1);
+ app.context.FocusSkyAnim=false;app.events['focus-anim-change']({detail:{enabled:false}});app.events['focus-overlay-change']({detail:{open:false}});assert.equal(app.callbacks.size,0);
+});
+

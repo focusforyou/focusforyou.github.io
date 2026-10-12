@@ -98,7 +98,7 @@ main{padding:32px 16px}.card{padding:24px}
 @media(min-width:900px) and (max-width:1199px){#calisma>.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.room-chat{grid-column:1/-1}}
 @media(max-width:899px){#calisma>.grid{grid-template-columns:minmax(0,1fr)}}
 </style>
-<link rel="stylesheet" href="profile.css?v=profile2"><link rel="stylesheet" href="extras.css?v=community1"><link rel="stylesheet" href="mobile-ui.css?v=uiopt2"><link rel="stylesheet" href="social.css?v=rooms2"><link rel="stylesheet" href="desktop-timer.css?v=features1"><link rel="stylesheet" href="cosmetics.css?v=features2"><link rel="stylesheet" href="theme-controls.css?v=profile2">
+<link rel="stylesheet" href="profile.css?v=profile2"><link rel="stylesheet" href="extras.css?v=community1"><link rel="stylesheet" href="mobile-ui.css?v=uiopt2"><link rel="stylesheet" href="social.css?v=rooms2"><link rel="stylesheet" href="desktop-timer.css?v=features1"><link rel="stylesheet" href="cosmetics.css?v=features2"><link rel="stylesheet" href="theme-controls.css?v=profile2"><link rel="stylesheet" href="workspace-performance.css?v=workspace1">
 </head>
 <body>
 <canvas id="sky" aria-hidden="true"></canvas>
@@ -139,12 +139,12 @@ Focus For You
 <div id="fo" class="row" style="gap:6px"></div>
 </div>
 </div></details>
-</article><article class="card c2 wide" data-calm="1">
+<section class="timer-tasks" id="timerTasks" aria-label="Sayaç görevleri">
 <h3>Görevler</h3>
 <p id="kh"></p>
 <div class="row"><input type="text" id="kn" aria-label="Görev adı" placeholder="Görev adı (ör. Matematik tekrarı)" style="flex:1;min-width:220px"><input type="number" id="km" min="1" max="600" value="25" aria-label="Dakika" style="width:110px"><button class="pill p" id="ka" type="button">Ekle</button></div>
 <div id="kl" style="display:flex;flex-direction:column;gap:8px"></div>
-</article></div>
+</section></article></div>
 <article class="card work-community"><span class="chip">Birlikte daha kolay</span><h3>Çalışma arkadaşlarını bul.</h3><p id="activeRoomSummary">Sana ait bir oda oluştur veya bir çalışma lobisine katıl. Sayacın burada senin ritminde devam eder.</p><a class="pill p" href="#lobi">Lobilere göz at <span aria-hidden="true">↗</span></a></article>
 <aside class="card c2 room-chat" aria-label="Oda sohbeti" data-calm="1"><div class="room-chat-layout"><div class="chat-roster-pane" id="chatRosterPane" hidden><div class="chat-roster-title"><strong>Odada çalışanlar</strong><span id="chatRosterCount" class="chip">0</span></div><ul id="chatRosterList" class="chat-roster-list"></ul></div><div class="chat-main-pane"><h3>Oda sohbeti</h3><p class="chat-note">Mesajlar ve fotoğraflar bu açık odada tutulur; oda kapanınca silinir.</p><div id="chatHistory" class="row" hidden><button class="pill" id="olderMessages" type="button">Önceki mesajlar</button><button class="pill" id="latestMessages" type="button">Son mesajlar</button></div><div id="chatMessages" role="log" aria-label="Oda mesajları" aria-live="polite"></div>
 <form id="chatForm"><div id="replyDraft" class="reply-draft" hidden><div class="reply-draft-content"><span class="reply-draft-icon">↩</span><div class="reply-draft-text"><strong id="replyDraftSender"></strong><span id="replyDraftSnippet"></span></div></div><button class="reply-draft-cancel" id="cancelReply" type="button" aria-label="Yanıtı iptal et">×</button></div><label class="sr-only" for="chatText">Mesajın</label><textarea id="chatText" maxlength="2000" rows="2" placeholder="Bir soru sor veya mesaj yaz…"></textarea><div id="photoDraft" hidden><img id="chatPreview" alt="Göndermeden önce fotoğraf önizlemesi"><button class="pill d" type="button" id="removePhoto">Fotoğrafı kaldır</button></div>
@@ -259,8 +259,9 @@ let W,H,D,stars,flakes,shoot=null,comets=[],ns=R(2,5),nc=R(1,3),mx=0,my=0,sx=0,s
 let isLight=document.documentElement.classList.contains('theme-light');
 addEventListener('pointermove',e=>{if(window.FocusMotion?.active||window.FocusSkyAnim===false)return;mx=e.clientX/innerWidth-.5;my=e.clientY/innerHeight-.5});
 function pauseSky(){cancelAnimationFrame(skyFrame);skyFrame=0;animRunning=false}
-function resumeSky(){if(animRunning||document.hidden||window.FocusSkyAnim===false)return;animRunning=true;last=performance.now()-34;skyFrame=requestAnimationFrame(frame)}
+function resumeSky(){if(animRunning||document.hidden||window.FocusOverlayOpen||window.FocusSkyAnim===false)return;animRunning=true;last=performance.now()-34;skyFrame=requestAnimationFrame(frame)}
 window.FocusSky={set:(x,y)=>{mx=x;my=y},resume:resumeSky};
+addEventListener('focus-overlay-change',e=>{if(e.detail.open)pauseSky();else resumeSky()});
 function fit(){
 D=Math.min(devicePixelRatio||1,1.5,Math.sqrt((innerWidth<900?650000:1100000)/Math.max(1,innerWidth*innerHeight)));W=innerWidth;H=innerHeight;cv.width=W*D;cv.height=H*D;
 stars=Array.from({length:Math.min(W<900?140:280,W*H/6500|0)},()=>({x:R(0,W),y:R(0,H),r:R(.3,1.1),a:R(.25,.85),s:R(.6,2),p:R(0,6.28),z:R(.2,1)}));
@@ -273,7 +274,7 @@ addEventListener('pagehide',pauseSky);addEventListener('pageshow',resumeSky);
 addEventListener('focus-theme-change',e=>{isLight=e.detail.theme==='light';if(reduce){pauseSky();resumeSky()}});
 addEventListener('focus-anim-change',e=>{if(e.detail.enabled)resumeSky();else{pauseSky();cx.setTransform(D,0,0,D,0,0);cx.clearRect(0,0,W,H)}});
 function frame(now){
-skyFrame=0;if(document.hidden||window.FocusSkyAnim===false){pauseSky();return}
+skyFrame=0;if(document.hidden||window.FocusOverlayOpen||window.FocusSkyAnim===false){pauseSky();return}
 if(!reduce)skyFrame=requestAnimationFrame(frame);else animRunning=false;
 if(!reduce&&now-last<1000/30)return;
 const dt=Math.min(.1,(now-last)/1000);last=now;t+=dt;
@@ -447,7 +448,7 @@ window.FocusData={
 /* Kartlarda 3D eğilme ve basma efekti */
 if(matchMedia('(hover:hover) and (prefers-reduced-motion:no-preference)').matches){
 let pr=false,cardFrame=0,cardEvent=null;
-const fc=e=>{const el=e.target.closest&&e.target.closest('.card');return el&&!el.closest('dialog,#lobiler')?el:null};
+const fc=e=>{if(window.FocusOverlayOpen)return null;const el=e.target.closest&&e.target.closest('.card');return el&&!el.closest('dialog,#lobiler')?el:null};
 const mv=e=>{const el=fc(e);if(!el)return;const r=el.getBoundingClientRect(),nx=(e.clientX-r.left)/r.width-.5,ny=(e.clientY-r.top)/r.height-.5,s=(pr?-1:1)*(el.matches('[data-calm],.wide,.verdict')||r.width>650||r.height>450?.15:1);
 el.style.setProperty('--ry',(-nx*8*s).toFixed(2)+'deg');el.style.setProperty('--rx',(ny*8*s).toFixed(2)+'deg');
 el.style.setProperty('--mx',((nx+.5)*100).toFixed(1)+'%');el.style.setProperty('--my',((ny+.5)*100).toFixed(1)+'%')};
@@ -464,13 +465,13 @@ document.addEventListener('pointerup',up);document.addEventListener('pointercanc
 <script src="native-session.js?v=features1"></script>
 <script src="lobby-peer.js?v=rooms1-features1"></script>
 <script src="install.js?v=features1"></script>
-<script src="room-tools.js?v=rooms2"></script><script src="extras-model.js?v=community1"></script><script src="extras.js?v=community1"></script>
+<script src="room-tools.js?v=rooms2"></script><script src="extras-model.js?v=community1"></script><script src="extras.js?v=workspace1"></script>
 <script src="mobile-ui.js?v=uiopt1"></script>
 <script src="motion.js?v=features1"></script>
 <dialog id="legalSheet" aria-label="Yasal bilgiler"><form method="dialog"><button class="pill" type="submit">Kapat ×</button></form><iframe id="legalFrame" title="Gizlilik ve kullanım bilgileri" sandbox="allow-same-origin"></iframe></dialog>
 <script src="legal-sheet.js"></script><script src="shop-ui.js?v=features2"></script><script src="community-ui.js?v=profile1"></script>
-<script src="account-ui.js?v=profile1"></script><script src="profile-model.js?v=profile1"></script><script src="profile-studio.js?v=profile2"></script>
-<script src="settings.js?v=profile2"></script>
+<script src="account-ui.js?v=profile1"></script><script src="profile-model.js?v=profile1"></script><script src="profile-studio.js?v=workspace1"></script>
+<script src="settings.js?v=profile2"></script><script src="overlay-performance.js?v=workspace1"></script>
 <script type="module">import('./account.js?v=profile1').catch(()=>{document.getElementById('accountStatus').textContent='Hesap hizmetine bağlanılamadı. İnternet bağlantın gelince sayfayı yeniden aç; cihaz kayıtların korunuyor.'})</script>
 </body>
 </html>
