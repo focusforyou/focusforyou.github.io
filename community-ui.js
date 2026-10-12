@@ -37,10 +37,11 @@
   if(t&&window.LobbyModel){
    by('memberProfileTotalHours').textContent=LobbyModel.hours(t.worked||0);
    by('memberProfileRoomHours').textContent=LobbyModel.hours(t.roomWorked||0);
-   by('memberProfileStatusText').textContent=LobbyModel.describe(t);
+   by('memberProfileStatusText').textContent=window.FocusSocial?.memberState?.(targetUid)||window.ExtrasModel?.state(t)||LobbyModel.describe(t);
   }else{
    by('memberProfileTotalHours').textContent='—';by('memberProfileRoomHours').textContent='—';by('memberProfileStatusText').textContent='Çevrimdışı';
   }
+  window.FocusExtras?.paintVitrine?.(p);window.FocusExtras?.profileControls?.(targetUid);
   window.FocusSocial?.setupPokeButton?.(targetUid);
   const friendBtn=by('memberProfileFriendBtn');
   const selfUid=window.FocusSocial?.uid?.()||window.FocusAccount?.profile?.()?.uid;
@@ -60,3 +61,4 @@
   }
  };
 })();
+

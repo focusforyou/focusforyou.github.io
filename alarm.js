@@ -13,7 +13,7 @@ window.FocusSound=(()=>{
   }catch(e){return Promise.resolve(false)}
  }
  function play(kind='alarm'){
-  if(!['alarm','nudge'].includes(kind))return false;
+  if(!['alarm','nudge'].includes(kind)||kind==='nudge'&&window.FocusExtras?.quiet?.())return false;
   const now=Date.now();if(lastKind===kind&&now-lastPlayed<1000)return false;
   if(window.FocusAndroid?.sound){try{window.FocusAndroid.sound(kind);lastKind=kind;lastPlayed=now;return true}catch(e){}}
   // A user gesture unlocks audio; never create an autoplay context from a timer.
@@ -34,3 +34,4 @@ window.FocusSound=(()=>{
  document.addEventListener('keydown',unlock);
  return {unlock,play};
 })();
+

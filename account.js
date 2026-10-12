@@ -5,7 +5,7 @@ import {initializeAppCheck,ReCaptchaEnterpriseProvider} from 'https://www.gstati
 import {firebaseConfig,googleClientId,appCheckSiteKey} from './firebase-config.js';
 import {eraseAccount} from './account-delete.js?v=push1';
 import {initCosmeticStore} from './cosmetic-store.js?v=features2';
-import {initSocial} from './social.js?v=push1';
+import {initSocial} from './social.js?v=community1';
 import {initPush} from './push-client.js?v=push1';
 
 const app=initializeApp(firebaseConfig);
@@ -171,7 +171,7 @@ function clearAccountDevice(owner){
  window.FocusCosmeticStore?.stop();window.FocusSocial?.stop();sessionStorage.removeItem('focus_active_room_'+owner);by('leaveRoom')?.click();Study.stopForAccountDeletion?.();
  by('lobbyName').value='';window.FocusNative?.pulse();
  profile={uid:'',name:'',photo:''};avatar='';photoDraft=false;nameDraft=false;renderProfile();
- localStorage.removeItem('focus_current_uid');localStorage.removeItem('focus_account_'+owner);localStorage.removeItem('focus_room_cards_'+owner);localStorage.removeItem('focus_guest_backup');localStorage.removeItem('focus_room_cards_'+owner);
+ localStorage.removeItem('focus_quiet_'+owner);localStorage.removeItem('focus_current_uid');localStorage.removeItem('focus_account_'+owner);localStorage.removeItem('focus_room_cards_'+owner);localStorage.removeItem('focus_guest_backup');localStorage.removeItem('focus_room_cards_'+owner);
  localStorage.removeItem('focus_profile_label');localStorage.removeItem('focus_profile_uid');
  Study.resetForDeletion?.();Study.applyDays({});window.FocusData?.apply({preferences:JSON.stringify({focus:25,break:5,goal:120}),tasks:'{"t":[],"a":null}',forest:'{"f":0,"l":0}',exam:''});
  for(const key of ['focus_study','mikro_tasks','mikro_forest','mikro_timer','ex'])localStorage.removeItem(key);

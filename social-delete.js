@@ -1,4 +1,4 @@
-import {doc,collection,collectionGroup,query,where,limit,getDocsFromServer,getDocFromServer,writeBatch,deleteDoc,updateDoc} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js';
+import {doc,collection,collectionGroup,query,where,limit,getDocsFromServer,getDocFromServer,writeBatch,deleteDoc,updateDoc,arrayRemove} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js';
 
 // Membership bookmarks are mandatory and outlive membership cleanup. They let
 // an interrupted deletion find every room containing this user's messages.
@@ -16,6 +16,16 @@ export async function eraseSocial({db,uid,assertCurrent}){
   }
   throw Error('social-cleanup-limit');
  };
+ // Lobby previews live on room roots, including rooms without a current
+ // bookmark. Clear every reference before removing the profile or Auth account.
+ // arrayRemove preserves concurrently changed themes, owners and other previews.
+ const previewRooms=query(collection(db,'rooms'),where('previewUids','array-contains',uid));
+ const previews=await readDocs(previewRooms);
+ for(let offset=0;offset<previews.docs.length;offset+=150){
+  const batch=writeBatch(db);for(const room of previews.docs.slice(offset,offset+150))batch.update(room.ref,{previewUids:arrayRemove(uid)});
+  await checked(()=>batch.commit());
+ }
+ if(!(await readDocs(query(previewRooms,limit(1)))).empty)throw Error('social-previews-remain');
  // Find legacy orphan messages too. A missing index safely preserves Auth and
  // the deletion lock for a later retry instead of abandoning personal data.
  const allOwnMessages=query(collectionGroup(db,'messages'),where('uid','==',uid));
@@ -63,9 +73,10 @@ export async function eraseSocial({db,uid,assertCurrent}){
  }
  await remove(profileRef);await remove(doc(db,'entitlements',uid));
  await remove(doc(db,'appBans',uid));await remove(doc(db,'wallets',uid));
- for(const q of [...ownNudges,allOwnMessages,collection(db,'users',uid,'rooms'),collection(db,'users',uid,'roomProofs'),ownRooms,query(collection(db,'friendships'),where('uids','array-contains',uid)),query(collection(db,'roomInvites'),where('from','==',uid)),query(collection(db,'roomInvites'),where('to','==',uid))]){
+ for(const q of [previewRooms,...ownNudges,allOwnMessages,collection(db,'users',uid,'rooms'),collection(db,'users',uid,'roomProofs'),ownRooms,query(collection(db,'friendships'),where('uids','array-contains',uid)),query(collection(db,'roomInvites'),where('from','==',uid)),query(collection(db,'roomInvites'),where('to','==',uid))]){
   if(!(await readDocs(query(q,limit(1)))).empty)throw Error('social-cleanup-not-empty');
  }
  if((await readDoc(profileRef)).exists()||(await readDoc(doc(db,'entitlements',uid))).exists()||(await readDoc(doc(db,'appBans',uid))).exists()||(await readDoc(doc(db,'wallets',uid))).exists())throw Error('social-profile-remains');
 }
+
 

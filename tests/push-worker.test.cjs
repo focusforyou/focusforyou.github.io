@@ -3,7 +3,7 @@ const project='focus-for-you-dd88b',ROOM='YKS',tokenFor=id=>'FCM_'+id+'_private_
 const b64=x=>Buffer.from(JSON.stringify(x)).toString('base64url');
 let keyPromise;
 async function key(){if(!keyPromise)keyPromise=(async()=>{const keys=await webcrypto.subtle.generateKey({name:'RSASSA-PKCS1-v1_5',modulusLength:2048,publicExponent:new Uint8Array([1,0,1]),hash:'SHA-256'},true,['sign','verify']);const raw=Buffer.from(await webcrypto.subtle.exportKey('pkcs8',keys.privateKey));return {publicKey:keys.publicKey,private_key:'-----BEGIN PRIVATE KEY-----\n'+raw.toString('base64')+'\n-----END PRIVATE KEY-----'}})();return keyPromise}
-function firestore(data){const fields={};for(const[k,v]of Object.entries(data)){if(typeof v==='string')fields[k]={stringValue:v};else if(typeof v==='boolean')fields[k]={booleanValue:v};else if(v?.timestamp)fields[k]={timestampValue:new Date(v.timestamp).toISOString()};else if(typeof v==='object')fields[k]={mapValue:{fields:firestore(v).fields}}}return {fields}}
+function firestore(data){const fields={};for(const[k,v]of Object.entries(data)){if(typeof v==='string')fields[k]={stringValue:v};else if(typeof v==='boolean')fields[k]={booleanValue:v};else if(typeof v==='number'&&Number.isFinite(v))fields[k]={integerValue:String(v)};else if(v?.timestamp)fields[k]={timestampValue:new Date(v.timestamp).toISOString()};else if(typeof v==='object')fields[k]={mapValue:{fields:firestore(v).fields}}}return {fields}}
 async function fixture(){
  const {createWorker}=await import('../push-worker/worker.mjs'),keys=await key();let time=Date.parse('2026-10-12T12:00:00Z'),fcmFailure=false,kvFailure='',authFailure=false,duringOAuth=null;
  const rows=new Map(),kv=new Map(),tokens=new Map(),calls=[],sent=[],denied=new Set();
@@ -65,4 +65,24 @@ test('retained sender membership does not bypass room ban or kick cutoff, but le
 });
 test('recipient gate and sender sanctions are checked again after OAuth delay before sending',async()=>{
  for(const change of ['recipientGate','senderKick','changedEvent']){const f=await fixture();f.populate();await f.register('bob');f.rows.get('rooms/'+ROOM+'/members/alice').joinedAt={timestamp:f.time-60000};f.onOAuth=()=>{if(change==='recipientGate')f.denied.add('rooms/'+ROOM+'/nudges/bob');if(change==='senderKick')f.rows.set('rooms/'+ROOM+'/kicks/alice',{by:'moderator',at:{timestamp:f.time}});if(change==='changedEvent')f.rows.get('rooms/'+ROOM+'/nudges/bob').from='charlie'};const response=await f.call('/send',{roomId:ROOM,targetUid:'bob'});assert.equal(response.status,change==='changedEvent'?409:403);assert.equal(f.sent.length,0)}
+});
+test('recipient quiet mode suppresses notifications before requesting OAuth credentials',async()=>{
+ const f=await fixture();f.populate();await f.register('bob');f.rows.get('rooms/'+ROOM+'/members/bob').quietUntil=f.time+60000;
+ const response=await f.call('/send',{roomId:ROOM,targetUid:'bob'});assert.equal(response.status,200);assert.deepEqual(response.data,{ok:true});assert.equal(f.sent.length,0);
+ assert.equal(f.calls.some(c=>c.url==='https://oauth2.googleapis.com/token'),false);
+});
+test('quiet mode expires at the exact boundary so fresh nudges resume normally',async()=>{
+ for(const offset of [-1,0,1]){const f=await fixture();f.populate();await f.register('bob');f.rows.get('rooms/'+ROOM+'/members/bob').quietUntil=f.time+offset;
+  const response=await f.call('/send',{roomId:ROOM,targetUid:'bob'});assert.equal(response.status,200);assert.equal(f.sent.length,offset>0?0:1);
+ }
+});
+test('quiet mode enabled during OAuth is read again before FCM sends any notification',async()=>{
+ const f=await fixture();f.populate();await f.register('bob');f.onOAuth=()=>{f.rows.get('rooms/'+ROOM+'/members/bob').quietUntil=f.time+60000};
+ const response=await f.call('/send',{roomId:ROOM,targetUid:'bob'});assert.equal(response.status,200);assert.deepEqual(response.data,{ok:true});assert.equal(f.sent.length,0);
+ assert.equal(f.calls.filter(c=>c.url.endsWith('/rooms/YKS/members/bob')).length,2);
+});
+test('an expired quiet setting observed after OAuth permits delivery, but missing recipient membership fails closed',async()=>{
+ for(const changed of ['expired','removed']){const f=await fixture();f.populate();await f.register('bob');f.onOAuth=()=>{if(changed==='removed')f.rows.delete('rooms/'+ROOM+'/members/bob');else f.rows.get('rooms/'+ROOM+'/members/bob').quietUntil=f.time};
+  const response=await f.call('/send',{roomId:ROOM,targetUid:'bob'});assert.equal(response.status,changed==='removed'?403:200);assert.equal(f.sent.length,changed==='removed'?0:1);
+ }
 });

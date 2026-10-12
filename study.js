@@ -23,6 +23,7 @@ const key=dateKey(date);days[key]=Math.min(86400,(days[key]||0)+part);localWorke
 }
 function render(){
 const by=id=>document.getElementById(id);if(!by('dailyMinutes'))return;
+window.FocusExtras?.renderStudy?.();
 const today=dateKey(new Date()),minutes=Math.floor((days[today]||0)/60);
 by('dailyMinutes').textContent=minutes;by('dailyProgress').max=preferences.goal;by('dailyProgress').value=Math.min(minutes,preferences.goal);
 by('dailySummary').textContent=minutes>=preferences.goal?'Bugünün hedefine ulaştın!':(preferences.goal-minutes)+' dakika sonra günlük hedef tamam.';
@@ -55,4 +56,5 @@ document.addEventListener('DOMContentLoaded',init);
 return {preferences,record,save,render,dateKey,totalSeconds:()=>Object.values(days).reduce((sum,n)=>sum+n,0),localSeconds:()=>localWorked,
 snapshot:()=>({days:{...days},preferences:{...preferences}}),resetForDeletion:()=>{localWorked=0},applyDays:value=>{days=cleanDays(value);save();render()},applyPreferences:value=>{preferences.focus=clamp(value?.focus,1,180);preferences.break=clamp(value?.break,1,60);preferences.goal=clamp(value?.goal,5,1440);save();render()}};
 })();
+
 

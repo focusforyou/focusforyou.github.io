@@ -179,6 +179,7 @@ function receive(input,identity,onDelete){
     if(row){
       if(identity)header(row,message,identity);
       if(message.reactions)renderReactions(row,message.reactions);
+      window.FocusExtras?.messageBadge?.(row.item,message);
     }
     return;
   }
@@ -337,6 +338,7 @@ function receive(input,identity,onDelete){
 
   if(message.reactions)renderReactions(row,message.reactions);
 
+  window.FocusExtras?.messageBadge?.(item,message);
   list.append(item);
   rows.push(row);
   while(rows.length>60||rows.filter(r=>r.size>0).length>(persistent?20:8)||rows.reduce((n,r)=>n+r.size,0)>(persistent?9000000:4500000)){
@@ -369,7 +371,7 @@ function rejected(id,message){
   clearTimeout(p.task);
   pending.delete(id);
   if(!by('chatText').value){
-    by('chatText').value=p.message.text;
+    by('chatText').value=p.message.text;if(by('questionMark'))by('questionMark').checked=!!p.message.question;
     if(!activeReply&&p.message.replyTo)setReply(p.message.replyTo);
   }
   if(!photo&&p.message.image){
@@ -432,6 +434,7 @@ by('chatForm').onsubmit=e=>{
     id:[...bytes].map(n=>letters[n%32]).join(''),
     text:by('chatText').value.trim(),
     image:photo,
+    question:by('questionMark')?.checked===true,
     replyTo:activeReply||undefined
   };
   if((!message.text&&!message.image)||!LobbyModel.content(message)){
@@ -448,6 +451,7 @@ by('chatForm').onsubmit=e=>{
     return;
   }
   by('chatText').value='';
+  if(by('questionMark'))by('questionMark').checked=false;
   remove();
   clearReply();
   scrollToBottom(true);
@@ -469,6 +473,7 @@ state(false);
 
 return {
   state,
+  setReply,
   reset,
   receive,
   updateReactions,

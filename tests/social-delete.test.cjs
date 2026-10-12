@@ -11,7 +11,7 @@ function fixture(){
   assert.equal(current,true,'changed accounts must not mutate');
   if(fail===`${op}:${path}`){fail='';throw Error('interrupted')}
   if(op==='delete'&&path!==keep)records.delete(path);
-  if(op==='update')records.set(path,{...records.get(path),...data});
+  if(op==='update'&&path!==keep){const next={...records.get(path)};for(const [key,value] of Object.entries(data))next[key]=value?.arrayRemove?(next[key]||[]).filter(item=>!value.arrayRemove.includes(item)):value;records.set(path,next);}
  };
  const ctx={
   doc:(_, ...p)=>ref(p.join('/')),collection:(_, ...p)=>({path:p.join('/'),clauses:[]}),
@@ -31,7 +31,8 @@ function fixture(){
   },
   getDocFromServer:async r=>{events.push(`read:${r.path}`);return snap(r.path)},
   deleteDoc:r=>mutate('delete',r.path),updateDoc:(r,data)=>mutate('update',r.path,data),
-  writeBatch:()=>{const pending=[];return {delete:r=>pending.push(r.path),commit:async()=>{for(const p of pending)await mutate('delete',p)}}},
+  arrayRemove:(...values)=>({arrayRemove:values}),
+  writeBatch:()=>{const pending=[];return {delete:r=>pending.push(['delete',r.path]),update:(r,data)=>pending.push(['update',r.path,data]),commit:async()=>{for(const [op,p,data] of pending)await mutate(op,p,data)}}},
   setDoc:async(r,data)=>{put(r.path,data);events.push(`lock:${r.path}`)},serverTimestamp:()=>0,
   deleteUser:async()=>{events.push('auth');assert.equal(records.has('publicProfiles/alice'),false)},
  };
@@ -114,4 +115,20 @@ test('account cleanup removes wallet and all sent/received nudge receipts before
 });
 test('missing nudge index prevents deleting inventory, wallet and Auth and allows retry',async()=>{
  const f=fixture();populate(f);f.put('wallets/alice',{balance:3});f.put('rooms/legacy/nudges/bob',{from:'alice',to:'bob'});f.failOnce('read:nudges');await assert.rejects(f.account(),/missing-index/);assert.equal(f.events.includes('auth'),false);assert.equal(f.records.has('wallets/alice'),true);assert.equal(f.records.has('entitlements/alice'),true);assert.equal(f.records.has('users/alice/rooms/shared'),true);await f.account();assert.equal(f.records.has('rooms/legacy/nudges/bob'),false);assert.equal(f.events.at(-1),'auth');
+});
+
+
+test('deletion clears lobby previews without bookmarks and preserves other references and room fields',async()=>{
+ const f=fixture();populate(f);f.put('rooms/forgotten',{ownerUid:'bob',name:'Forgotten',theme:'forest',previewUids:['bob','alice','charlie']});f.put('rooms/foreign',{ownerUid:'bob',previewUids:['charlie']});
+ for(let i=0;i<305;i++)f.put('rooms/preview'+i,{ownerUid:'bob',previewUids:['alice','bob']});
+ await f.account();assert.deepEqual(f.records.get('rooms/forgotten'),{ownerUid:'bob',name:'Forgotten',theme:'forest',previewUids:['bob','charlie']});assert.deepEqual(f.records.get('rooms/foreign').previewUids,['charlie']);
+ assert.equal([...f.records.values()].some(d=>d.previewUids?.includes('alice')),false);assert.equal(f.events.at(-1),'auth');assert.ok(f.events.indexOf('update:rooms/forgotten')<f.events.indexOf('delete:publicProfiles/alice'));
+});
+test('failed preview cleanup keeps Auth and profile, then resumes without bookmarks',async()=>{
+ const f=fixture();populate(f);f.put('rooms/forgotten',{ownerUid:'bob',previewUids:['alice','bob']});f.failOnce('update:rooms/forgotten');await assert.rejects(f.account(),/interrupted/);assert.equal(f.events.includes('auth'),false);assert.equal(f.records.has('publicProfiles/alice'),true);
+ await f.account();assert.deepEqual(f.records.get('rooms/forgotten').previewUids,['bob']);assert.equal(f.events.at(-1),'auth');
+});
+test('preview removal must be verified on the server before deleting profile or Auth',async()=>{
+ const f=fixture();populate(f);f.put('rooms/forgotten',{ownerUid:'bob',previewUids:['alice','bob']});f.keep('rooms/forgotten');await assert.rejects(f.account(),/social-previews-remain/);assert.equal(f.events.includes('auth'),false);assert.equal(f.records.has('publicProfiles/alice'),true);
+ f.keep('');await f.account();assert.equal(f.events.at(-1),'auth');
 });
