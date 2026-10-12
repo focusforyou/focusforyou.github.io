@@ -11,7 +11,7 @@ if(!Object.hasOwn(titles,value))return;expand(false);const changed=view!==value,
 transition?.cancel();
 // Animate the existing page; cloning all cards/chat duplicates layout, images and paint.
 
-view=value;if(mobile.matches||view!=='work')by('timerSlot').append(timer);else home.insertBefore(timer,next);document.body.dataset.view=view;by('workspaceTitle').textContent=mobile.matches?titles[view]:titles.work;document.querySelector('.mobile-nav')?.style.setProperty('--active-tab',order.indexOf(view));document.querySelectorAll('.mobile-nav button').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.view===view)));window.scrollTo({top:0,behavior:'instant'});
+view=value;if(mobile.matches||view!=='work')by('timerSlot').append(timer);else home.insertBefore(timer,next);document.body.dataset.view=view;by('workspaceTitle').textContent=mobile.matches?titles[view]:titles.work;document.querySelector('.mobile-nav')?.style.setProperty('--active-tab',order.indexOf(view));document.querySelectorAll('.mobile-nav button').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.view===view)));window.scrollTo({top:0,left:0,behavior:'instant'});
 if(moving)transition=main?.animate?.([{opacity:.15,transform:mobile.matches?'translateX('+(direction*40)+'px)':'translateY(10px)'},{opacity:1,transform:'translate(0,0)'}],{duration:mobile.matches?320:240,easing:'cubic-bezier(.22,.8,.25,1)'});
 }
 function sync(){by('miniTime').textContent=by('tt').textContent;by('miniPhase').textContent=by('tl').textContent;const running=by('tg').textContent==='Duraklat';by('miniToggle').textContent=running?'Ⅱ':'▶';by('miniToggle').setAttribute('aria-label',running?'Sayacı duraklat':'Sayacı başlat');const offset=Number(by('rg').style.strokeDashoffset)||0;by('openTimer').style.setProperty('--timer-progress',Math.max(0,Math.min(100,100-offset/527.79*100))+'%')}
@@ -24,6 +24,5 @@ document.querySelectorAll('header nav a').forEach(link=>link.addEventListener('c
 const observer=new MutationObserver(sync);for(const id of ['tt','tl','tg'])observer.observe(by(id),{childList:true,subtree:true,characterData:true});mobile.addEventListener('change',layout);layout();
 addEventListener('hashchange',()=>select(hashView(),true));
 addEventListener('popstate',()=>select(hashView(),true));
-addEventListener('load',()=>window.scrollTo({top:0,behavior:'instant'}));
+addEventListener('load',()=>window.scrollTo({top:0,left:0,behavior:'instant'}));
 })();
-

@@ -44,6 +44,12 @@ test('Mobile tab navigation keeps URL and back navigation aligned with the selec
  app.buttons[4].click();assert.equal(app.location.hash,'#ayarlar');
  app.location.hash='#chat';app.events.popstate();assert.equal(app.body.dataset.view,'chat');
 });
+test('Progress navigation and restored routes reset horizontal offsets as well as vertical scroll',()=>{
+ const app=setup();app.buttons[3].click();assert.equal(app.body.dataset.view,'progress');
+ assert.equal(app.scrolls.at(-1).left,0);assert.equal(app.scrolls.at(-1).top,0);
+ app.location.hash='#calisma';app.events.popstate();assert.equal(app.scrolls.at(-1).left,0);
+ app.events.load();assert.equal(app.scrolls.at(-1).left,0);
+});
 
 test('Desktop popup uses the original timer outside work and returns it without adding another ticker',()=>{
  const app=setup();app.media.matches=false;app.resize();assert.equal(app.timer.parentNode,app.home);
@@ -55,5 +61,3 @@ test('Desktop popup uses the original timer outside work and returns it without 
  app.links[0].events.click({preventDefault(){}});assert.equal(app.timer.parentNode,app.home);
  assert.equal(app.ids.timerSheet.inert,true);assert.deepEqual(app.home.children,[app.timer,app.task]);
 });
-
-
