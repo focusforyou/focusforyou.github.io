@@ -22,7 +22,9 @@
    cards.set(item.id,record);list.append(card);
   }
  }
+ function renderTotal(){const study=window.Study||(typeof Study!=='undefined'?Study:null);text(by('shopTotalStudy'),'Toplam çalışman: '+hours(study?.totalSeconds?.()||0)+' · İlerleme kaydın; mağaza bakiyesinden ayrıdır.')}
  function render(){
+  renderTotal();
   const store=window.FocusCosmeticStore,state=store?.snapshot?.()||{};
   text(by('shopBalance'),state.loading?'Yükleniyor…':state.error?'Senkronizasyon bekleniyor':hours(state.balance||0));text(by('shopEarned'),state.error?'Çalışma bakiyesi buluta kaydedilemedi. Bağlantı ve hesabın e-posta doğrulamasını kontrol et; otomatik yeniden denenecek.':'Kazanılan '+hours(state.earnedSeconds||0)+' · Harcanan '+hours(state.spentSeconds||0));by('cosmeticAdmin').hidden=!state.admin;
   if(adminState!==!!state.admin||owner!==(state.uid||'')){adminState=!!state.admin;owner=state.uid||'';lastUsername='';build(state)}
@@ -31,5 +33,6 @@
  async function act(fn,record,status,success){if(record?.busy)return;if(record)record.busy=true;render();text(status,'Gönderiliyor…');try{await fn();text(status,success)}catch(e){text(status,error(e))}finally{if(record)record.busy=false;render()}}
  by('openCosmeticShop').onclick=()=>{render();modal.showModal()};by('closeCosmeticShop').onclick=()=>modal.close();
  by('giftTagAction').onclick=async()=>{const button=by('giftTagAction');if(button.disabled)return;button.disabled=true;try{await window.FocusCosmeticStore.grantTag(by('giftUsername').value,by('giftTag').value);text(by('shopStatus'),'Özel etiket kullanıcının envanterine verildi.')}catch(e){text(by('shopStatus'),error(e))}finally{button.disabled=false}};
+ setInterval(()=>{if(modal.open&&!document.hidden)renderTotal()},1000);
  addEventListener('focus-cosmetics',()=>{if(modal.open)render()});render();
 })();
