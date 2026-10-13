@@ -1,5 +1,6 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),crypto=require('node:crypto');
 const TOKEN_A='native-token-aaaaaaaaaaaaaaaaaaaa',TOKEN_B='native-token-bbbbbbbbbbbbbbbbbbbb';
+test('room invite push uses the authenticated private service with only room and target identifiers',async()=>{const f=fixture();await f.bind(user());await f.ctx.FocusPush.invite('YKS','bob');const r=f.requests.at(-1);assert.equal(r.path,'/invite');assert.equal(r.headers.Authorization,'Bearer alice-id-token');assert.deepEqual(JSON.parse(JSON.stringify(r.body)),{roomId:'YKS',targetUid:'bob'})});
 const deferred=()=>{let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no});return {promise,resolve,reject}};
 function fixture(endpoint='https://focus-push.example.workers.dev'){
  const requests=[],timers=new Map(),storage=new Map(),listeners=new Map();let next=0,bridgeCalls=0;
@@ -70,3 +71,4 @@ test('failed unregister surfaces the error and permits an explicit retry while p
  await assert.rejects(f.ctx.FocusPush.unregister(),/push-http-503/);assert.equal(f.ctx.auth.currentUser.uid,'alice');
  await f.ctx.FocusPush.unregister();assert.equal(f.requests.filter(r=>r.path==='/unregister').length,2);
 });
+

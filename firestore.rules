@@ -235,7 +235,11 @@ service cloud.firestore {
    allow delete: if request.auth != null && request.auth.uid in resource.data.uids;
   }
   match /roomInvites/{id} {
-   allow get: if request.auth != null && (id.matches('.*_' + request.auth.uid) || resource.data.from == request.auth.uid);
+   allow get: if request.auth != null && (id.matches('.*_' + request.auth.uid) || (resource.data.from == request.auth.uid
+    && active() && roomManager(resource.data.roomId) && roomOpen(resource.data.roomId)
+    && nudgeAllowed(request.auth.uid,resource.data.to) && unlocked(resource.data.to)
+    && !exists(/databases/$(database)/documents/appBans/$(resource.data.to))
+    && !exists(/databases/$(database)/documents/rooms/$(resource.data.roomId)/bans/$(resource.data.to))));
    allow list: if request.auth != null && (resource.data.to == request.auth.uid || resource.data.from == request.auth.uid);
    allow create, update: if active() && request.resource.data.keys().hasOnly(['from','to','roomId'])
     && request.resource.data.from == request.auth.uid && request.resource.data.to is string

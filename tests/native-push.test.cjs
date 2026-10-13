@@ -43,7 +43,7 @@ test('Foreground alerts respect notification permissions and persist bounded rep
  assert(service.indexOf('POST_NOTIFICATIONS')<service.indexOf('rememberNudge(this, id)'));
  assert(service.indexOf('areNotificationsEnabled()')<service.indexOf('rememberNudge(this, id)'));
  assert.match(service,/manager\.notify\(id, 2,/);
- assert.match(service,/@" \+ username \+ " seni dürttü!/);
+ assert.match(service,/invitation \? " seni odaya davet etti!" : " seni dürttü!"/);
  assert.match(service,/FLAG_UPDATE_CURRENT \| PendingIntent.FLAG_IMMUTABLE/);
  assert.match(push,/if \(ids\.contains\(id\)\) return false/);
  assert.match(push,/while \(ids\.size\(\) > 64\) ids\.remove\(0\)/);
@@ -58,10 +58,11 @@ test('FCM sound is suppressed only when the trusted visible Activity receives th
  const silent=Function('room','foregroundRoom','return '+predicate);
  assert.equal(silent('YKS','YKS'),true);assert.equal(silent('TUS','YKS'),false);assert.equal(silent('YKS',''),false);assert.equal(silent('',''),false);assert.equal(silent(null,'YKS'),false);
  assert.match(push,/private static volatile String foregroundRoom/);
- assert.match(service,/\.setSilent\(FocusPush\.foregroundReceives\(room\)\)/);
+ assert.match(service,/\.setSilent\(!invitation && FocusPush\.foregroundReceives\(room\)\)/);
  assert.match(main,/updatePushForegroundRoom\(\)\{FocusPush\.setForegroundRoom\(resumed&&trustedPage\(\)\?sessionRoom:""\)/);
  assert.match(main,/sessionRoom=active\?code:"";updatePushForegroundRoom\(\);/);
  assert.match(main,/onPageStarted.*sessionRoom="";updatePushForegroundRoom\(\)/);
  for(const lifecycle of ['onPause','onDestroy'])assert.match(main,new RegExp(lifecycle+'\\(\\).*resumed=false;updatePushForegroundRoom\\(\\)'));
  assert.match(main,/onResume\(\).*resumed=true;updatePushForegroundRoom\(\)/);
 });
+

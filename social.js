@@ -82,7 +82,7 @@ export function initSocial({db,auth}){
   const list=by('friendList');list.replaceChildren();
   for(const f of friends){const other=f.from===user.uid?f.to:f.from;if(blocked(other))continue;const p=identity(other);watchProfile(other);const controls=[];
    if(f.state==='pending'){if(f.to===user.uid)controls.push(button('Kabul et',()=>updateDoc(ref('friendships',f.id),{state:'accepted'})));else controls.push(document.createTextNode('İstek gönderildi'))}
-   else if(active&&manager())controls.push(button('Odaya davet et',()=>invite(other)));
+   else if(active&&manager()){const send=button('Odaya davet et',()=>{});send.onclick=pendingButton(send,()=>invite(other,send),'Gönderiliyor…');controls.push(send)}
    controls.push(button(muted(other)?'Sesi aç':'Sessize al',()=>setContact(other,'muted',!muted(other))),button('Engelle',()=>setContact(other,'blocked',true)));
    controls.push(button(f.state==='pending'?'İptal':'Arkadaşlıktan çıkar',()=>deleteDoc(ref('friendships',f.id))));const entry=document.createElement('div');entry.className='social-row friend-card';const hit=button('',()=>openMemberProfile(other,p.name));hit.className='friend-profile';hit.ariaLabel=p.name+' profilini aç';
    if(p.banner){const banner=document.createElement('img');banner.className='friend-banner';banner.src=p.banner;banner.alt='';banner.loading='lazy';banner.decoding='async';banner.referrerPolicy='no-referrer';banner.onerror=()=>{banner.hidden=true};hit.append(banner)}
@@ -314,7 +314,15 @@ export function initSocial({db,auth}){
   for(let attempt=0;attempt<8;attempt++){const candidate=roomNumber();const created=await runTransaction(db,async tx=>{op.check();const r=ref('rooms',candidate),existing=await tx.get(r);op.check();if(existing.exists())return false;tx.set(r,{name,ownerUid:op.uid,locked:!!password,salt:password?salt:'',exam:'',createdAt:serverTimestamp()});if(password)tx.set(ref('rooms',candidate,'secrets','password'),{hash});return true});op.check();if(created){id=candidate;break}}
   if(!id)throw Error('room-code-collision');const created=await getDocFromServer(ref('rooms',id));op.check();if(created.exists()){roomCache.set(id,{id,...created.data()});if(!directory.some(r=>r.id===id))directory.unshift({id,...created.data()});renderDirectory()}status('Odan oluşturuldu; bağlanılıyor…');const joinedRoom=await join(id,password);op.check();if(joinedRoom!==true){status('Odan oluşturuldu. Lobilerden tekrar katılabilirsin.');return false}by('permanentPassword').value='';by('createRoomSheet').close?.();if(window.location)window.location.hash='lobi';
  }
- async function invite(uid){if(!active||!manager()||blocked(uid))return;const op=operation(),id=active;await setDoc(ref('roomInvites',id+'_'+uid),{from:op.uid,to:uid,roomId:id});op.check();if(active===id)status('Oda daveti gönderildi.')}
+ async function invite(uid,control){
+  if(!active||!manager()||blocked(uid))return;const op=operation(),id=active;
+  await setDoc(ref('roomInvites',id+'_'+uid),{from:op.uid,to:uid,roomId:id});op.check();
+  const pending=control&&pendingControls.get(control);if(pending)pending.original='Davet edildi ✓';
+  if(control){control.textContent='Davet edildi ✓';control.setAttribute?.('aria-busy','false')}
+  status(identity(uid).name+' odaya davet edildi.');const notice=by('nudgeNotice');if(notice){notice.hidden=false;const message=identity(uid).name+' odaya davet edildi ✓';notice.textContent=message;setTimeout(()=>{if(notice.textContent===message)notice.textContent=''},5000)}
+  try{const sent=await window.FocusPush?.invite?.(id,uid);op.check();if(sent===false&&active===id)status('Davet gönderildi; telefon bildirimi şu an kullanılamıyor.')}
+  catch(e){if(op.rev===epoch&&active===id)status('Davet gönderildi; telefon bildirimi gönderilemedi.')}
+ }
  async function search(){if(!own()){by('openAccount').click();return}const op=operation(),term=by('roomSearch').value.trim();if(!term){searchResults=null;renderDirectory();return}let rows=[];const id=model.roomId(term);if(id){const s=await getDocFromServer(ref('rooms',id));op.check();if(s.exists())rows=[{id:s.id,...s.data()}]}else{const s=await getDocsFromServer(query(collection(db,'rooms'),where('name','==',term),limit(20)));op.check();rows=s.docs.map(d=>({id:d.id,...d.data()}))}searchResults=rows;for(const r of rows){roomCache.set(r.id,r);watchProfile(r.ownerUid)}renderDirectory()}
  function cosmeticOptions(){
   const sets={nameFont:admin()?['default',...FocusCosmetics.fonts]:['default',...(entitlements.fonts||[])],nameStyle:admin()?['plain',...FocusCosmetics.palette]:['plain',...(entitlements.nameStyles||[])],avatarFrame:admin()?['none',...FocusCosmetics.frames.filter(v=>FocusCosmetics.available('frame:'+v))]:['none',...(entitlements.frames||[])],namePlate:admin()?['none',...FocusCosmetics.plates]:['none',...(entitlements.plates||[])]};

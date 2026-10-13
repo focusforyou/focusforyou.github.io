@@ -3,6 +3,11 @@ const LobbyModel=require('../lobby-model.js');
 const OPEN='open_room_123456789',LOCKED='locked_room_1234567';
 const profile=(uid,username=uid)=>({uid,username,name:uid,photo:'',exam:'',cosmetics:{tag:'none',nameStyle:'plain',frame:'none',plate:'none'}});
 const timer=(extra={})=>({phase:'focus',running:true,left:1500,total:1500,worked:0,roomWorked:0,focus:1500,rest:300,rounds:0,...extra});
+test('room invite button acknowledges the saved invite and sends push only after the authoritative write',async()=>{
+ const f=fixture();f.put('rooms/'+OPEN,{name:'Study',ownerUid:'alice',locked:false});f.put('friendships/alice_bob',{from:'alice',to:'bob',uids:['alice','bob'],state:'accepted'});f.put('publicProfiles/bob',profile('bob'));await f.login();await f.join(OPEN);f.emit();await f.settle();
+ let sent=0;f.ctx.FocusPush={invite:async(room,uid)=>{assert.equal(f.records.get('roomInvites/'+OPEN+'_bob').to,'bob');assert.equal(room,OPEN);assert.equal(uid,'bob');sent++;return true}};
+ const card=f.node('friendList').children[0],button=card.children.find(n=>n.textContent==='Odaya davet et');assert.ok(button);await button.onclick();assert.equal(sent,1);assert.equal(button.textContent,'Davet edildi ✓');assert.match(f.node('friendsStatus').textContent,/davet edildi/);assert.match(f.node('nudgeNotice').textContent,/davet edildi/);
+});
 test('profile save commits private identity and public cosmetics/showcase together',async()=>{
  const f=fixture(),jpg='data:image/jpeg;base64,YWJjZA==';f.put('users/alice/meta/main',{profile:{uid:'alice',name:'Old',photo:''},days:{keep:7}});await f.login();
  f.ctx.FocusExtras={profileDraft:()=>({bio:'New bio',badges:[],showHours:false,seconds:0})};f.ctx.FocusProfileStudio={banner:()=>jpg};
@@ -77,7 +82,7 @@ function fixture(){
   navigator:{clipboard:{writeText:async v=>events.push('clipboard:'+v)}},sessionStorage:{getItem:k=>sessions.get(k)||null,setItem:(k,v)=>sessions.set(k,v),removeItem:k=>sessions.delete(k)},
   localStorage:{getItem:k=>sessions.get(k)||null,setItem:(k,v)=>sessions.set(k,v),removeItem:k=>sessions.delete(k)},
   document:{hidden:false,getElementById:node,createElement:()=>new Element(),createTextNode:text=>{const n=new Element();n.textContent=text;return n},querySelector:()=>node('chat-note'),addEventListener(){}},
-  addEventListener(){},setInterval:f=>intervals.push(f),
+  addEventListener(){},setInterval:f=>intervals.push(f),setTimeout(){return 1},
   doc:(_, ...p)=>ref(p.join('/')),collection:(_, ...p)=>ref(p.join('/'),'collection'),collectionGroup:(_,name)=>({...ref(name,'collection'),group:true}),query:(base,...clauses)=>({...base,clauses:[...base.clauses,...clauses]}),
   where:(field,op,value)=>({type:'where',field,op,value}),orderBy:field=>({type:'order',field}),limit:value=>({type:'limit',value}),startAfter:cursor=>({type:'after',cursor}),
   getDoc:async r=>select(r),getDocFromServer:async r=>{if(offline)throw Error('offline');return select(r)},getDocs:async q=>select(q),getDocsFromServer:async q=>{if(offline)throw Error('offline');return select(q)},

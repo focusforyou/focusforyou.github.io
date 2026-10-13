@@ -19,6 +19,7 @@ public final class FocusMessagingService extends FirebaseMessagingService {
         if (!FocusPush.initialize(this)) return;
         Map<String, String> data = message.getData();
         String room = data.get("roomId"), username = data.get("senderUsername"), id = data.get("nudgeId");
+        boolean invitation = "invite".equals(data.get("kind"));
         String url = FocusPush.roomUrl(room);
         if (url == null || username == null || !username.matches("[a-z0-9_]{3,24}")) return;
         if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return;
@@ -28,11 +29,12 @@ public final class FocusMessagingService extends FirebaseMessagingService {
         if (!FocusPush.rememberNudge(this, id)) return;
         Intent open = new Intent(this, MainActivity.class).setData(Uri.parse(url)).putExtra("roomId", room)
             .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        PendingIntent click = PendingIntent.getActivity(this, 0, open, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent click = PendingIntent.getActivity(this, room.hashCode(), open, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         manager.notify(id, 2, new NotificationCompat.Builder(this, FocusPush.CHANNEL)
-            .setSmallIcon(R.drawable.notification_icon).setContentTitle("@" + username + " seni dürttü!")
-            .setContentText("Çalışma odana dönmek için dokun.").setContentIntent(click).setAutoCancel(true)
-            .setSilent(FocusPush.foregroundReceives(room))
+            .setSmallIcon(R.drawable.notification_icon).setContentTitle("@" + username + (invitation ? " seni odaya davet etti!" : " seni dürttü!"))
+            .setContentText(invitation ? "Oda davetini görmek için dokun." : "Çalışma odana dönmek için dokun.").setContentIntent(click).setAutoCancel(true)
+            .setSilent(!invitation && FocusPush.foregroundReceives(room))
             .setCategory(NotificationCompat.CATEGORY_SOCIAL).build());
     }
 }
+

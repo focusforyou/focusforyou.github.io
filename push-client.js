@@ -29,8 +29,10 @@ export function initPush({auth}){
  window.FocusPush={
   bind,unregister,erase,
   receiveToken(value){token=typeof value==='string'&&value.length>=20&&value.length<=4096?value:'';if(token)schedule()},
-  async send(roomId,targetUid){if(!endpoint)return false;await request('/send',{roomId,targetUid});return true}
+  async send(roomId,targetUid){if(!endpoint)return false;await request('/send',{roomId,targetUid});return true},
+  async invite(roomId,targetUid){if(!endpoint)return false;await request('/invite',{roomId,targetUid});return true}
  };
  addEventListener('online',()=>{if(owner?.emailVerified){window.FocusAndroid?.pushToken?.();schedule()}});
  return window.FocusPush;
 }
+

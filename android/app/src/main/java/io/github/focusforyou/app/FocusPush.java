@@ -34,7 +34,7 @@ final class FocusPush {
                     .setProjectId(BuildConfig.FIREBASE_PROJECT_ID).setGcmSenderId(BuildConfig.FIREBASE_SENDER_ID).build());
             }
             NotificationManager manager = context.getSystemService(NotificationManager.class);
-            if (manager != null) manager.createNotificationChannel(new NotificationChannel(CHANNEL, "Arkadaş dürtmeleri", NotificationManager.IMPORTANCE_DEFAULT));
+            if (manager != null) manager.createNotificationChannel(new NotificationChannel(CHANNEL, "Arkadaş bildirimleri", NotificationManager.IMPORTANCE_DEFAULT));
             FirebaseMessaging.getInstance().setAutoInitEnabled(true);
             enabled = true;
             return true;
@@ -72,3 +72,4 @@ final class FocusPush {
         return store.edit().putString("seen_nudges", String.join(",", ids)).commit();
     }
 }
+

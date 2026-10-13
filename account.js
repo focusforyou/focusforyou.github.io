@@ -5,9 +5,9 @@ import {initializeAppCheck,ReCaptchaEnterpriseProvider} from 'https://www.gstati
 import {firebaseConfig,googleClientId,appCheckSiteKey} from './firebase-config.js';
 import {eraseAccount} from './account-delete.js?v=features2';
 import {initCosmeticStore} from './cosmetic-store.js?v=features2';
-import {initSocial} from './social.js?v=profile-save1';
+import {initSocial} from './social.js?v=room-invite1';
 import {initRoomActivities} from './room-activities.js?v=features2';
-import {initPush} from './push-client.js?v=features2';
+import {initPush} from './push-client.js?v=room-invite1';
 
 const app=initializeApp(firebaseConfig);
 // Enable only after the matching web provider is registered in Firebase.
