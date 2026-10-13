@@ -3,7 +3,7 @@
  const by=id=>document.getElementById(id),model=window.FocusCosmetics,modal=by('cosmeticShop'),cards=new Map();let adminState=null,owner='',lastUsername='',trying='';
  const hours=n=>{const seconds=Math.max(0,Math.floor(Number(n)||0)),h=Math.floor(seconds/3600),m=Math.floor(seconds%3600/60),s=seconds%60;return [h?h.toLocaleString('tr-TR')+' sa':'',m?m+' dk':'',s||(!h&&!m)?s+' sn':''].filter(Boolean).join(' ')};
  const text=(node,value)=>{if(node.textContent!==value)node.textContent=value};
- function error(e){const map={'sign-in-required':'Önce giriş yap.','insufficient-hours':'Bu kozmetik için 1.000 saat kullanılabilir bakiye gerekiyor.','already-owned':'Bu kozmetik zaten envanterinde.','invalid-username':'Geçerli bir @kullanıcıadı yaz.','user-not-found':'Bu kullanıcı bulunamadı.','invalid-tag':'Etiket 1–24 karakter olmalı.','admin-required':'Bu işlem yöneticiye özel.','online-banned':'Çevrimiçi özelliklerin yasaklı.'};return map[e?.message]||'İşlem tamamlanamadı. İnternet bağlantını kontrol et.'}
+ function error(e){const map={'sign-in-required':'Önce giriş yap.','insufficient-hours':'Bu kozmetik için yeterli çalışma bakiyen yok.','already-owned':'Bu kozmetik zaten envanterinde.','invalid-username':'Geçerli bir @kullanıcıadı yaz.','user-not-found':'Bu kullanıcı bulunamadı.','invalid-tag':'Etiket 1–24 karakter olmalı.','admin-required':'Bu işlem yöneticiye özel.','online-banned':'Çevrimiçi özelliklerin yasaklı.'};return map[e?.message]||'İşlem tamamlanamadı. İnternet bağlantını kontrol et.'}
  function clearTryOn(){trying='';const panel=by('cosmeticTryOn');panel.hidden=true;panel.replaceChildren();for(const r of cards.values())if(r.tryButton){r.tryButton.textContent='Dene';r.tryButton.setAttribute('aria-pressed','false')}}
  function tryOn(item){
   const own=window.FocusAccount?.profile?.()||{},social=window.FocusSocial?.getProfile?.(own.uid)||{},profile={...own,...social},c={...(profile.cosmetics||{})};c[({name:'nameStyle',frame:'frame',plate:'plate',font:'font'})[item.kind]]=item.value;const panel=by('cosmeticTryOn');panel.replaceChildren();panel.hidden=false;trying=item.id;
@@ -13,7 +13,7 @@
   cards.clear();const list=by('shopItems');list.replaceChildren();
   for(const item of model.catalog()){
    const card=document.createElement('article');card.className='cosmetic-item';const preview=document.createElement('div');preview.className='cosmetic-preview';
-   if(item.kind==='frame'){const avatar=document.createElement('span');avatar.className='cosmetic-avatar frame-'+item.value;avatar.textContent='F';preview.append(avatar)}else{const name=document.createElement('strong');name.textContent=item.kind==='font'?(window.FocusAccount?.profile?.()?.name||'Focus'):'Focus';name.className=(item.kind==='font'?'font-':item.kind==='name'?'name-':'plate-')+item.value;preview.append(name)}
+   if(item.kind==='frame'){const avatar=document.createElement('span');avatar.className='cosmetic-avatar frame-'+item.value;avatar.textContent='F';preview.append(avatar)}else{const name=document.createElement('strong');name.textContent=item.kind==='font'?(window.FocusAccount?.profile?.()?.name||'Focus'):'Focus';name.className=(item.kind==='font'?'font-':item.kind==='name'?'name-':'plate-')+item.value;if(item.kind==='plate'&&window.SocialModel)SocialModel.decorate(name,{cosmetics:{plate:item.value}});preview.append(name)}
    const label=document.createElement('h4');label.textContent=item.label;const buy=document.createElement('button');buy.type='button';buy.className='pill';const record={id:item.id,buy,busy:false};
    buy.onclick=()=>act(()=>window.FocusCosmeticStore.purchase(item.id),record,by('shopStatus'),'Envanterine eklendi. Profilinden kullanabilirsin.');card.append(preview,label,buy);
    if(state.admin){
@@ -43,3 +43,4 @@
  setInterval(()=>{if(modal.open&&!document.hidden)renderTotal()},1000);
  addEventListener('focus-cosmetics',()=>{if(modal.open)render()});render();
 })();
+
