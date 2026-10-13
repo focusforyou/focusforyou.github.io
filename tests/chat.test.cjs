@@ -84,7 +84,7 @@ test('existing messages update cloud identity and cosmetics in place without dup
  assert.match(label.textContent,/Renamed/);assert.match(label.textContent,/\[DOKTOR\]/);assert.match(label.textContent,/@unique_name/);assert.match(label.className,/name-gold/);assert.match(label.className,/plate-gold/);
  assert.equal(item.children.filter(c=>c.className.includes('chat-avatar')).length,1);assert.equal(item.children[0].src,'https://lh4.googleusercontent.com/new');assert.match(item.children[0].className,/frame-gold/);
  chat.receive({...message,sender:'Plain',avatar:''},identity('Plain',plain));
- assert.equal(list.children.length,1);assert.equal(label.textContent,'Plain @unique_name');assert.equal(label.className,'identity');assert.equal(item.children.filter(c=>c.className.includes('chat-avatar')).length,0);
+ assert.equal(list.children.length,1);assert.equal(label.textContent,'Plain @unique_name');assert.equal(label.className,'identity');assert.equal(item.children.filter(c=>c.className.includes('chat-avatar')).length,1);assert.match(item.children[0].className,/chat-avatar-fallback/);assert.equal(item.children[0].textContent,'P');
  assert(item.children.includes(deleteButton));deleteButton.onclick();assert.equal(deleted,1);
  // A late transport duplicate without a cloud identity must not strip it.
  chat.receive(message);assert.equal(label.textContent,'Plain @unique_name');

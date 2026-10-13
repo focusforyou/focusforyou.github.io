@@ -151,10 +151,15 @@ function header(row,message,identity){
   row.label.textContent=message.sender;
   row.label.className='';
   if(identity)SocialModel.decorate(row.label,identity);
+  const avatarTag=message.avatar?'IMG':'SPAN';
+  if(row.avatar&&row.avatar.tagName.toUpperCase()!==avatarTag){
+    if(row.avatar.parentNode?.classList?.contains?.('cosmetic-helmet'))row.avatar.parentNode.remove();
+    row.avatar.remove();row.avatar=null;
+  }
   if(message.avatar){
     if(!row.avatar){
       row.avatar=document.createElement('img');
-      row.avatar.width=row.avatar.height=28;
+      row.avatar.width=row.avatar.height=52;
       row.avatar.alt='';
       row.avatar.referrerPolicy='no-referrer';
       row.item.prepend(row.avatar);
@@ -166,9 +171,12 @@ function header(row,message,identity){
       e.stopPropagation();
       (window.openMemberProfile||window.FocusSocial?.openMemberProfile)?.(message.uid||'',message.sender);
     };
-  }else if(row.avatar){
-    row.avatar.remove();
-    row.avatar=null;
+  }else{
+    if(!row.avatar){row.avatar=document.createElement('span');row.item.prepend(row.avatar)}
+    const frame=window.SocialModel?.cosmetics(identity?.cosmetics).frame||'none';
+    row.avatar.className='chat-avatar chat-avatar-fallback'+(frame!=='none'?' frame-'+frame:'');
+    row.avatar.textContent=(message.sender||'?').slice(0,1).toUpperCase();
+    row.avatar.onclick=e=>{e.stopPropagation();(window.openMemberProfile||window.FocusSocial?.openMemberProfile)?.(message.uid||'',message.sender)};
   }
 }
 
