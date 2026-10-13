@@ -3,33 +3,17 @@
  const by=id=>document.getElementById(id);
  const THEME_KEY='focus_theme',ANIM_KEY='focus_bg_anim';
 
+ const THEMES={dark:['Siyah Mod (Koyu)','#0A1128','themeDarkBtn'],light:['Beyaz Mod (Açık)','#EDF2FC','themeLightBtn'],amoled:['AMOLED (Tam siyah)','#000000','themeAmoledBtn'],forest:['Orman','#081c16','themeForestBtn'],ocean:['Okyanus','#071c2b','themeOceanBtn'],dusk:['Mor Gece','#1a1029','themeDuskBtn']};
+ let currentTheme='dark';
  function applyTheme(theme,save=true){
-  theme=['dark','light','amoled'].includes(theme)?theme:'dark';
-  const isLight=theme==='light';
-  document.documentElement.classList.toggle('theme-amoled',theme==='amoled');
-  if(document.body)document.body.classList.toggle('theme-amoled',theme==='amoled');
-  document.documentElement.classList.toggle('theme-light',isLight);
-  if(document.body)document.body.classList.toggle('theme-light',isLight);
-  const meta=document.querySelector('meta[name="theme-color"]');
-  if(meta)meta.setAttribute('content',isLight?'#EDF2FC':theme==='amoled'?'#000000':'#0A1128');
-
-  const darkBtn=by('themeDarkBtn'),lightBtn=by('themeLightBtn');
-  if(darkBtn){
-   darkBtn.setAttribute('aria-pressed',String(theme==='dark'));
-   darkBtn.classList.toggle('active',theme==='dark');
+  theme=Object.hasOwn(THEMES,theme)?theme:'dark';currentTheme=theme;
+  for(const [key,value]of Object.entries(THEMES)){
+   for(const node of [document.documentElement,document.body])node?.classList.toggle('theme-'+key,key===theme);
+   const button=by(value[2]);if(button){button.setAttribute('aria-pressed',String(key===theme));button.classList.toggle('active',key===theme)}
   }
-  if(lightBtn){
-   lightBtn.setAttribute('aria-pressed',String(isLight));
-   lightBtn.classList.toggle('active',isLight);
-  }
-  const amoledBtn=by('themeAmoledBtn');
-  if(amoledBtn){amoledBtn.setAttribute('aria-pressed',String(theme==='amoled'));amoledBtn.classList.toggle('active',theme==='amoled')}
-  const info=by('currentThemeInfo');
-  if(info)info.textContent=isLight?'Beyaz Mod (Açık)':theme==='amoled'?'AMOLED (Tam siyah)':'Siyah Mod (Koyu)';
-
-  if(save){
-   try{localStorage.setItem(THEME_KEY,theme)}catch(e){}
-  }
+  const meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.setAttribute('content',THEMES[theme][1]);
+  const info=by('currentThemeInfo');if(info)info.textContent=THEMES[theme][0];
+  if(save)try{localStorage.setItem(THEME_KEY,theme)}catch(e){}
   window.dispatchEvent(new CustomEvent('focus-theme-change',{detail:{theme}}));
  }
 
@@ -79,9 +63,7 @@
   applyTheme(savedTheme,false);
   applyBgAnim(savedAnim!=='off',false);
 
-  by('themeDarkBtn')?.addEventListener('click',()=>applyTheme('dark'));
-  by('themeLightBtn')?.addEventListener('click',()=>applyTheme('light'));
-  by('themeAmoledBtn')?.addEventListener('click',()=>applyTheme('amoled'));
+  for(const [key,value]of Object.entries(THEMES))by(value[2])?.addEventListener('click',()=>applyTheme(key));
   by('bgAnimOnBtn')?.addEventListener('click',()=>applyBgAnim(true));
   by('bgAnimOffBtn')?.addEventListener('click',()=>applyBgAnim(false));
 
@@ -120,7 +102,7 @@
  window.FocusSettings={
   applyTheme,
   applyBgAnim,
-  get theme(){return document.documentElement.classList.contains('theme-light')?'light':document.documentElement.classList.contains('theme-amoled')?'amoled':'dark'},
+  get theme(){return currentTheme},
   get anim(){return window.FocusSkyAnim!==false}
  };
 })();

@@ -7,10 +7,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Focus For You | Odaklan ve birlikte çalış</title>
 <meta name="theme-color" content="#0A1128">
-<script>(()=>{try{const t=localStorage.getItem('focus_theme');if(t==='light'||t==='amoled'){document.documentElement.classList.add('theme-'+t);document.querySelector('meta[name="theme-color"]').setAttribute('content',t==='light'?'#EDF2FC':'#000000');}}catch(e){}})();</script>
+<script>(()=>{try{const t=localStorage.getItem('focus_theme'),colors={light:'#EDF2FC',amoled:'#000000',forest:'#081c16',ocean:'#071c2b',dusk:'#1a1029'};if(Object.hasOwn(colors,t)){document.documentElement.classList.add('theme-'+t);document.querySelector('meta[name="theme-color"]').setAttribute('content',colors[t]);}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg">
-<script src="gif-media.js?v=features2"></script>
+<script src="gif-media.js?v=gif-crop1"></script>
 <script src="planner-model.js?v=features2"></script>
 <script src="cloud-model.js?v=features2"></script>
 <script src="study.js?v=features2"></script>
@@ -101,8 +101,8 @@ main{padding:32px 16px}.card{padding:24px}
 @media(max-width:899px){#calisma>.grid{grid-template-columns:minmax(0,1fr)}}
 </style>
 <link rel="stylesheet" href="planner-notes.css?v=features2"><link rel="stylesheet" href="focus-audio.css?v=features2"><link rel="stylesheet" href="profile.css?v=features2"><link rel="stylesheet" href="extras.css?v=features2"><link rel="stylesheet" href="mobile-ui.css?v=features2"><link rel="stylesheet" href="social.css?v=features2"><link rel="stylesheet" href="desktop-timer.css?v=features2"><link rel="stylesheet" href="cosmetics.css?v=cosmetic-gif-fix1"><link rel="stylesheet" href="robot-leds.css?v=cosmetic-gif-fix1"><link rel="stylesheet" href="theme-controls.css?v=features2"><link rel="stylesheet" href="workspace-performance.css?v=keyboard2"><link rel="stylesheet" href="name-fonts.css?v=features2">
-<link rel="stylesheet" href="profile-crop.css?v=profile-save1"><link rel="stylesheet" href="profile-edit.css?v=profile-save1"><link rel="stylesheet" href="chat-readability.css?v=mobile-chat1"><link rel="stylesheet" href="robot-plates.css?v=cosmetic-gif-fix1"><link rel="stylesheet" href="mobile-layout.css?v=2">
-<link rel="stylesheet" href="ui-consistency.css?v=1"></head>
+<link rel="stylesheet" href="profile-crop.css?v=gif-crop1"><link rel="stylesheet" href="profile-edit.css?v=profile-save1"><link rel="stylesheet" href="chat-readability.css?v=mobile-chat1"><link rel="stylesheet" href="robot-plates.css?v=cosmetic-gif-fix1"><link rel="stylesheet" href="mobile-layout.css?v=2">
+<link rel="stylesheet" href="ui-consistency.css?v=1"><link rel="stylesheet" href="color-themes.css?v=1"></head>
 <body>
 <canvas id="sky" aria-hidden="true"></canvas>
 <header>
@@ -204,6 +204,9 @@ Focus For You
 <div class="theme-options"><button type="button" class="theme-choice-btn" id="themeAmoledBtn" aria-pressed="false"><span class="theme-choice-icon">◐</span><div class="theme-choice-info"><strong>AMOLED (Tam siyah)</strong><small>Simsiyah yüzeyler, yıldızlı gökyüzü</small></div><span class="theme-choice-check">✓</span></button>
 <button type="button" class="theme-choice-btn" id="themeDarkBtn" aria-pressed="true"><span class="theme-choice-icon">🌙</span><div class="theme-choice-info"><strong>Siyah Mod (Koyu)</strong><small>Gece çalışmaları ve göz dinlendiren koyu tonlar</small></div><span class="theme-choice-check">✓</span></button>
 <button type="button" class="theme-choice-btn" id="themeLightBtn" aria-pressed="false"><span class="theme-choice-icon">☀️</span><div class="theme-choice-info"><strong>Beyaz Mod (Açık)</strong><small>Aydınlık ortamlar için ferah ve net görünüm</small></div><span class="theme-choice-check">✓</span></button>
+<button type="button" class="theme-choice-btn" id="themeForestBtn" aria-pressed="false"><span class="theme-choice-icon">🌿</span><div class="theme-choice-info"><strong>Orman</strong><small>Yeşil vurgular, sakin koyu yüzeyler</small></div><span class="theme-choice-check">✓</span></button>
+<button type="button" class="theme-choice-btn" id="themeOceanBtn" aria-pressed="false"><span class="theme-choice-icon">🌊</span><div class="theme-choice-info"><strong>Okyanus</strong><small>Turkuaz vurgular, derin mavi tonlar</small></div><span class="theme-choice-check">✓</span></button>
+<button type="button" class="theme-choice-btn" id="themeDuskBtn" aria-pressed="false"><span class="theme-choice-icon">🌌</span><div class="theme-choice-info"><strong>Mor Gece</strong><small>Lavanta vurgular, sıcak mor tonlar</small></div><span class="theme-choice-check">✓</span></button>
 </div>
 </article>
 <article class="card c2 settings-card" data-calm="1">
@@ -464,11 +467,11 @@ window.FocusData={
 <script src="motion.js?v=features2"></script>
 <dialog id="legalSheet" aria-label="Yasal bilgiler"><form method="dialog"><button class="pill" type="submit">Kapat ×</button></form><iframe id="legalFrame" title="Gizlilik ve kullanım bilgileri" sandbox="allow-same-origin"></iframe></dialog>
 <script src="legal-sheet.js"></script><script src="shop-ui.js?v=robot-plates2"></script><script src="community-ui.js?v=keyboard2"></script>
-<script src="account-ui.js?v=features2"></script><script src="profile-model.js?v=profile-save1"></script><script src="profile-studio.js?v=profile-save1"></script>
+<script src="account-ui.js?v=features2"></script><script src="profile-model.js?v=profile-save1"></script><script src="profile-studio.js?v=gif-crop1"></script>
 <script src="planner-notes.js?v=features2"></script><script src="focus-audio.js?v=features2"></script><script src="spotify.js?v=android1"></script>
-<script src="settings.js?v=features2"></script><script src="popup-motion.js?v=features2"></script><script src="overlay-performance.js?v=features2"></script>
-<script src="profile-crop.js?v=profile-save1"></script><script src="profile-edit.js?v=profile-save1"></script>
-<script type="module">import('./account.js?v=room-invite1').catch(()=>{document.getElementById('accountStatus').textContent='Hesap hizmetine bağlanılamadı. İnternet bağlantın gelince sayfayı yeniden aç; cihaz kayıtların korunuyor.'})</script>
+<script src="settings.js?v=themes1"></script><script src="popup-motion.js?v=features2"></script><script src="overlay-performance.js?v=features2"></script>
+<script src="profile-crop.js?v=gif-crop1"></script><script src="profile-edit.js?v=profile-save1"></script>
+<script type="module">import('./account.js?v=gif-crop1').catch(()=>{document.getElementById('accountStatus').textContent='Hesap hizmetine bağlanılamadı. İnternet bağlantın gelince sayfayı yeniden aç; cihaz kayıtların korunuyor.'})</script>
 <script src="mobile-viewport.js?v=2"></script>
 </body>
 </html>

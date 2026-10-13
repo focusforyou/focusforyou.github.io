@@ -1,0 +1,16 @@
+/* Flat colour palettes share the existing layout and star canvas. */
+html.theme-forest{--page:#081c16;--surface:#102b23;--raised:#18382e;--line:#89d4b833;--tx:#e4f5ed;--mu:#afcfc0;--pr:#8fe3bc;--on:#082217}
+html.theme-ocean{--page:#071c2b;--surface:#102c3c;--raised:#183b4d;--line:#89d8ec33;--tx:#e1f4fc;--mu:#abcbdc;--pr:#87def0;--on:#07242c}
+html.theme-dusk{--page:#1a1029;--surface:#281d39;--raised:#38274e;--line:#cfb2f333;--tx:#f3eafa;--mu:#c9b7db;--pr:#d4b4fa;--on:#291439}
+html:is(.theme-forest,.theme-ocean,.theme-dusk){background:var(--page);color-scheme:dark}
+html:is(.theme-forest,.theme-ocean,.theme-dusk) body{background:var(--page)!important;color:var(--tx)}
+html:is(.theme-forest,.theme-ocean,.theme-dusk) :is(header,.card,.hero,dialog,.account-menu,.community-sheet-content,.studio-preview-card,.studio-preview-body,.member-profile-stats,.profile-about,.lobby-tile,.social-row,.room-chat,.active-room-card,.chat-roster-pane,.chat-roster-item,.question-board,.question-card,.pinned-message,.mini-timer,.mobile-nav,.mobile-timer,.friends-panel,.cosmetic-item,.shop-wallet,.theme-choice-btn,.photo-edit-menu,.stat-pill,.achievement,.profile-crop-dialog,#accountSheet>form){background:var(--surface)!important;color:var(--tx);border-color:var(--line);box-shadow:none}
+html:is(.theme-forest,.theme-ocean,.theme-dusk) :is(.card,.hero)::after{display:none}
+html:is(.theme-forest,.theme-ocean,.theme-dusk) :is(input:not([type=range]),textarea,select,.pill,.studio-tab,.cosmetic-choice,.chip,.tag,.chat-message,.reaction-picker,.reaction-pill,.pinned-messages,.calendar-cell,.showcase-badge){background:var(--raised)!important;color:var(--tx);border-color:var(--line)}
+html:is(.theme-forest,.theme-ocean,.theme-dusk) :is(.pill.p,.cosmetic-choice.selected,.theme-choice-btn.active,.studio-tab[aria-selected=true]){border-color:var(--pr)!important;color:var(--pr)}
+html:is(.theme-forest,.theme-ocean,.theme-dusk) :is(.muted,.identity-help,.studio-help,.theme-choice-info small,.profile-crop-dialog p){color:var(--mu)}
+html:is(.theme-forest,.theme-ocean,.theme-dusk) input[type=checkbox]:checked{background:var(--pr)!important;color:var(--on)}
+html:is(.theme-forest,.theme-ocean,.theme-dusk) :is(.profile-cover,.profile-crop-stage){background:var(--raised)}
+html:is(.theme-forest,.theme-ocean,.theme-dusk) .profile-crop-apply{background:var(--pr);color:var(--on)}
+.theme-choice-info{min-width:0}.theme-choice-info small{overflow-wrap:anywhere}
+@media(max-width:899px){.theme-options{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}.theme-choice-btn{min-width:0;max-width:100%;padding:14px}.theme-choice-icon{flex:0 0 36px}.theme-choice-check{flex:0 0 20px}}
