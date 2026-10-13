@@ -18,7 +18,7 @@ final class SpotifyAuth {
  }
  static String authorizeState(String value){try{
   URI uri=new URI(value);if(!"https".equals(uri.getScheme())||!"accounts.spotify.com".equals(uri.getHost())||uri.getPort()!=-1||uri.getUserInfo()!=null||uri.getFragment()!=null||!"/authorize".equals(uri.getPath()))return null;
-  Map<String,String> q=query(uri);String state=q.get("state");if(q.size()!=8)return null;
+  Map<String,String> q=query(uri);String state=q.get("state");if(q.size()!=7)return null;
   if(!CLIENT.equals(q.get("client_id"))||!REDIRECT.equals(q.get("redirect_uri"))||!"code".equals(q.get("response_type"))||!"S256".equals(q.get("code_challenge_method"))||!"user-read-playback-state user-modify-playback-state".equals(q.get("scope"))||state==null||!state.matches("android_[A-Za-z0-9_-]{16,80}")||q.get("code_challenge")==null||!q.get("code_challenge").matches("[A-Za-z0-9_-]{43}"))return null;
   return state;
  }catch(Exception ignored){return null;}}
