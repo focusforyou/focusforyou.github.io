@@ -28,3 +28,16 @@ test('playback controls use proper API methods and polling stops when hidden or 
 test('Spotify callback removes secrets from URL and only messages its same-origin opener',()=>{
  const sent=[],ctx={URLSearchParams,location:{search:'?state=s&code=secret',pathname:'/spotify-callback.html',origin:'https://focusforyou.github.io'},history:{replaceState:(...a)=>sent.push(['history',...a])},document:{getElementById:()=>({})},opener:{postMessage:(data,origin)=>sent.push([data,origin])},close(){}};ctx.window=ctx;vm.runInNewContext(fs.readFileSync('spotify-callback.js','utf8'),ctx);assert.equal(sent[0].at(-1),'/spotify-callback.html');assert.equal(sent[1][1],'https://focusforyou.github.io');assert.equal(sent[1][0].code,'secret');
 });
+
+test('successful playback commands never parse an empty response body, including HTTP 200 and 202',async()=>{
+ for(const status of [200,202,204]){
+ const f=fixture({access_token:'access',refresh_token:'refresh',expires:Date.now()+3600000});
+ f.ctx.handler=async()=>({...response(status),json:async()=>{throw new SyntaxError('Unexpected end of JSON input')}});
+ await f.get('play').onclick();assert.equal(f.get('status').textContent,'Spotify’a gönderildi.');assert.equal(f.get('play').disabled,false);
+ await f.get('next').onclick();assert.equal(f.get('status').textContent,'Spotify’a gönderildi.');
+ await f.get('prev').onclick();assert.equal(f.get('status').textContent,'Spotify’a gönderildi.');
+ }
+});
+test('playback errors remain visible instead of being treated as successful commands',async()=>{
+ const f=fixture({access_token:'access',refresh_token:'refresh',expires:Date.now()+3600000});f.ctx.handler=async()=>response(404);await f.get('play').onclick();assert.match(f.get('status').textContent,/bir şarkı aç/);
+});
