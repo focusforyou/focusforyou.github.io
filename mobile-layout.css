@@ -1,5 +1,11 @@
 /* Keep mobile controls in the visible viewport, including Android WebView resizes. */
 @media(max-width:899px){
+ #friendsPanel{top:calc(var(--mobile-viewport-top,0px) + 12px);bottom:auto;left:12px;right:12px;width:auto;max-height:calc(var(--mobile-viewport-height,100dvh) - 24px);box-sizing:border-box;padding:18px;overflow:auto;scroll-padding:12px}
+ #friendsPanel .friends-heading{margin-bottom:8px}
+ #friendsPanel .row{margin:10px 0}
+ #friendsPanel #friendUsername{font-size:16px;min-height:44px}
+ html[data-mobile-keyboard] :is(.mobile-nav,.mini-timer,.friends-toggle){visibility:hidden;pointer-events:none}
+ #createRoomSheet{box-sizing:border-box;max-height:calc(var(--mobile-viewport-height,100dvh) - 24px);overflow:auto}
  body{--nav-height:calc(70px + env(safe-area-inset-bottom,0px));padding-bottom:calc(var(--nav-height) + 110px)}
  main,main>section,.settings-page,.settings-page>.grid,.settings-card{min-width:0;max-width:100%;box-sizing:border-box}
  .settings-page>.grid{grid-template-columns:minmax(0,1fr)}

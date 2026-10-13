@@ -18,17 +18,18 @@ test('Member popup reflects cloud cosmetics and removes previous user styling',(
  assert.equal(app.ids.memberProfileAvatar['frame-gold'],false);
  assert.equal(app.ids.memberProfileTitle.textContent,'Yeni kişi');
 });
-test('Friends popup respects reduced motion and returns keyboard focus when closed',()=>{
+test('Friends popup avoids opening the mobile keyboard and returns focus when closed',()=>{
  const app=setup(true);app.ids.friendsPanel.hidden=true;
  app.ids.friendsToggle.onclick();
- assert.equal(app.ids.friendsPanel.hidden,false);assert.equal(app.document.activeElement,app.ids.friendUsername);
+ assert.equal(app.ids.friendsPanel.hidden,false);assert.equal(app.document.activeElement,app.ids.closeFriends);
  assert.equal(app.ids.friendsPanel.animated,undefined);
  app.events.keydown({key:'Escape'});
  assert.equal(app.ids.friendsPanel.hidden,true);assert.equal(app.document.activeElement,app.ids.friendsToggle);
- app.ids.friendsMember.hidden=true;app.ids.friendsToggle.onclick();
+ app.document.getElementById('friendsMember').hidden=true;app.ids.friendsToggle.onclick();
  assert.equal(app.document.activeElement,app.ids.closeFriends);
 });
 test('member profile renders gifted custom tag with cloud-selected colors',()=>{
  const app=setup();app.profile.cosmetics={tag:'custom:UZMAN',nameStyle:'ruby',frame:'ice',plate:'emerald'};app.context.openMemberProfile('test-user');assert.equal(app.ids.memberProfileTitle.tag,'[UZMAN]');assert.equal(app.ids.memberProfileTitle['name-ruby'],true);assert.equal(app.ids.memberProfileTitle['plate-emerald'],true);assert.equal(app.ids.memberProfileAvatar['frame-ice'],true);
 });
+
 
