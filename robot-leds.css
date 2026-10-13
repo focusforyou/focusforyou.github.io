@@ -2,4 +2,4 @@
 .helmet-robot-silver{--helmet-art:url('assets/cosmetics/robot-silver-visor-v2.gif')}
 .helmet-robot-duo{--helmet-art:url('assets/cosmetics/robot-duo-leds-v2.gif')}
 .helmet-robot-duo::before{display:none}.helmet-robot-duo::after{clip-path:none}
-@media(prefers-reduced-motion:reduce){.helmet-robot-gold{--helmet-art:url('assets/cosmetics/robot-gold-leds-v2.png')}.helmet-robot-silver{--helmet-art:url('assets/cosmetics/robot-silver-visor-v2.png')}.helmet-robot-duo{--helmet-art:url('assets/cosmetics/robot-duo-leds-v2.png')}}
+/* GIF LED animations are independent of the desktop OS animation switch. */
