@@ -5,7 +5,7 @@ const SocialModel=(()=>{
  const pair=(a,b)=>[a,b].sort().join('_');
  const roomId=value=>typeof value==='string'&&/^(YKS|LGS|TUS|[1-9][0-9]{7}|[A-Za-z0-9_-]{16,40})$/.test(value.replace(/^#/,''))?value.replace(/^#/,''):null;
  const palette=['gold','ruby','ice','violet','emerald'];
- const frames=[...palette,'ember','lunar','sakura','cyber','abyss','robot-gold','robot-silver','pulse','robot-duo'],plates=frames.filter(v=>v!=='pulse'&&v!=='robot-duo');
+ const frames=[...palette,'ember','lunar','sakura','cyber','abyss','robot-gold','robot-silver','pulse','robot-duo'],plates=frames.filter(v=>v!=='pulse');
  const fonts=['fredoka','cinzel','space-mono','bungee','pacifico','chelaone','orbitron'];
  const cosmetics=input=>({font:fonts.includes(input?.font)?input.font:'default',tag:['doctor','system'].includes(input?.tag)||(typeof input?.tag==='string'&&input.tag.startsWith('custom:')&&input.tag.slice(7).trim().length>0&&input.tag.slice(7).length<=24&&!/[\u0000-\u001f\u007f]/.test(input.tag))?input.tag:'none',nameStyle:palette.includes(input?.nameStyle)?input.nameStyle:'plain',frame:frames.includes(input?.frame)?input.frame:'none',plate:plates.includes(input?.plate)?input.plate:'none'});
  function decorate(node,profile){
