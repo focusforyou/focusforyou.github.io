@@ -5,6 +5,7 @@ test('animated crop retains frames, timing, repeat count, transparent pixels and
  assert.equal(meta.frames,3);assert.equal(meta.width,2);assert.equal(meta.height,2);assert.equal(W.sourceInfo(result).repeat,2);
  assert.deepEqual(frames.map(f=>f.delay),[100,200,300]);assert.deepEqual([...frames[0].patch.slice(0,4)],[255,0,0,255]);assert.deepEqual([...frames[1].patch.slice(0,4)],[0,0,255,255]);assert.equal(frames[2].patch[3],0);
  assert.ok(result.length<=134970);assert.ok(M.valid('data:image/gif;base64,'+Buffer.from(result).toString('base64'),'avatar'));
+ const again=C.decompressFrames(C.parseGIF(W.convert(result,{x:0,y:0,width:2,height:2})),true);assert.equal(again[2].patch[3],0,'opaque-to-transparent transitions must not leave a black background');
 });
 test('long GIF is sampled within decode budget while keeping total animation duration',()=>{
  const input=fixture(150,16,16),result=W.convert(input,{x:0,y:0,width:16,height:16}),frames=C.decompressFrames(C.parseGIF(result),true);

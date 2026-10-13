@@ -35,7 +35,9 @@ if(typeof importScripts==='function')importScripts('vendor/gif-codec.js','gif-me
    const canvas=new Uint8Array(info.width*info.height*4),encoder=codec.GIFEncoder();for(let i=0;i<canvas.length;i+=4)canvas.set(bg,i);let previous=null,restore=null,pending=null,delay=0,overflow=false;
    // Full composited frames permit correct disposal even when frames are sampled.
    const write=()=>{if(!pending)return;const palette=codec.quantize(pending,[96,64,48,32,24][attempt]-1),index=codec.applyPalette(pending,palette),transparentIndex=0;palette.unshift([0,0,0]);let transparent=false;for(let i=0;i<index.length;i++){index[i]++;if(pending[i*4+3]<128){index[i]=transparentIndex;transparent=true}}
-    encoder.writeFrame(index,w,h,{palette,delay,repeat:info.repeat,transparent,transparentIndex,dispose:2});overflow=encoder.bytesView().length>134970;
+    // Reserve transparent index zero on every frame so disposal also clears to
+    // transparency after an opaque frame; no black trail on the next frame.
+    encoder.writeFrame(index,w,h,{palette,delay,repeat:info.repeat,transparent:true,transparentIndex,dispose:2});overflow=encoder.bytesView().length>134970;
    };
    for(let n=0;n<frames.length;n++){
     if(previous?.disposalType===2){const d=previous.dims;for(let y=d.top;y<d.top+d.height;y++)for(let x=d.left;x<d.left+d.width;x++)canvas.set(bg,4*(y*info.width+x))}
