@@ -5,7 +5,7 @@ import {initializeAppCheck,ReCaptchaEnterpriseProvider} from 'https://www.gstati
 import {firebaseConfig,googleClientId,appCheckSiteKey} from './firebase-config.js';
 import {eraseAccount} from './account-delete.js?v=features2';
 import {initCosmeticStore} from './cosmetic-store.js?v=features2';
-import {initSocial} from './social.js?v=features2';
+import {initSocial} from './social.js?v=profile-save1';
 import {initRoomActivities} from './room-activities.js?v=features2';
 import {initPush} from './push-client.js?v=features2';
 
@@ -16,7 +16,7 @@ if(appCheckSiteKey)initializeAppCheck(app,{provider:new ReCaptchaEnterpriseProvi
 const by=id=>document.getElementById(id),auth=getAuth(app),db=getFirestore();auth.languageCode='tr';
 const persistenceReady=setPersistence(auth,browserLocalPersistence);persistenceReady.catch(()=>message('Oturum bu tarayıcıda kalıcı saklanamadı. Tarayıcının site verileri iznini kontrol et.'));
 let uid='',cache={days:{},dirty:{}},base=null,devices=new Map(),devicesLoaded=false,unsub=[],generation=0,syncing=false,ready=false,observed={},avatar='',profile={uid:'',name:'',photo:''};
-let photoDraft=false,nameDraft=false;
+let photoDraft=false,nameDraft=false,avatarRequest=0;
 let socialReadyUid='',loginIntent=false,loginPendingUid='';
 let onlineBanned=false;
 let deleting=false,deletionLocked=false,nativeDeleteUid='';
@@ -39,6 +39,7 @@ function renderProfile(){
  if(!nameDraft&&document.activeElement!==by('profileName'))by('profileName').value=profile.name;
  const shownPhoto=photoDraft?avatar:profile.photo;by('profileAvatar').hidden=!shownPhoto;
  if(shownPhoto)by('profileAvatar').src=shownPhoto;else by('profileAvatar').removeAttribute('src');
+ window.FocusProfileEditor?.hydrate?.(window.FocusSocial?.getProfile?.(profile.uid));
  window.dispatchEvent(new Event('focus-profile'));
 }
 function settleAccountUI(){
@@ -84,7 +85,7 @@ async function bind(user){
  const previous=localStorage.getItem('focus_current_uid')||'',next=user?.emailVerified?user.uid:'';
  if(previous&&previous!==next){try{const guest=JSON.parse(localStorage.getItem('focus_guest_backup')||'null');if(guest){Study.applyDays(guest.days);window.FocusData?.apply(guest.fields)}}catch(e){}}
  if(next)localStorage.setItem('focus_current_uid',next);else localStorage.removeItem('focus_current_uid');
- generation++;const revision=generation;for(const stop of unsub)stop();unsub=[];ready=false;base=null;devices=new Map();devicesLoaded=false;uid='';cache={days:{},dirty:{}};observed={};syncing=false;photoDraft=false;nameDraft=false;
+ generation++;avatarRequest++;window.FocusAvatarCrop?.cancel?.();const revision=generation;for(const stop of unsub)stop();unsub=[];ready=false;base=null;devices=new Map();devicesLoaded=false;uid='';cache={days:{},dirty:{}};observed={};syncing=false;photoDraft=false;nameDraft=false;
  socialReadyUid='';if(user&&(loginIntent||window.FocusAccountUI?.mode==='login'))loginPendingUid=user.uid;if(!user){loginPendingUid='';loginIntent=false}
  let cachedName='';try{if(user&&(localStorage.getItem('focus_profile_uid')||previous)===user.uid)cachedName=localStorage.getItem('focus_profile_label')||''}catch(e){}
  profile=CloudModel.profile({uid:user?.uid,name:cachedName&&cachedName.length<=30?cachedName:user?.displayName||'Odak arkadaşı',photo:''});avatar=profile.photo;renderProfile();
@@ -135,25 +136,23 @@ by('emailRegister').onclick=()=>busy(async()=>{const c=credentials();if(c.passwo
 by('resetPassword').onclick=()=>busy(async()=>{const email=by('loginEmail').value.trim();if(!email){message('Önce e-posta adresini yaz.');return}await sendPasswordResetEmail(auth,email);message('Hesap varsa şifre sıfırlama e-postası gönderildi. Gelen kutunu kontrol et.')});
 by('verifyAccountButton').onclick=()=>busy(async()=>{const user=auth.currentUser;if(!user)return;const revision=generation;await reload(user);if(auth.currentUser?.uid!==user.uid||revision!==generation)throw Error('account-changed');await getIdToken(user,true);if(auth.currentUser?.uid!==user.uid||revision!==generation)throw Error('account-changed');await bind(user)});
 by('resendVerification').onclick=()=>busy(async()=>{if(auth.currentUser&&!auth.currentUser.emailVerified){await sendEmailVerification(auth.currentUser);message('Doğrulama e-postası tekrar gönderildi.')}});
-by('logoutAccount').onclick=()=>busy(async()=>{if(Study.liveSession?.().running){message('Çıkış yapmadan önce sayacı duraklat.');return}await sync();saveCache();await window.FocusPush?.unregister();await window.FocusSocial?.pauseRoom();window.FocusTemporaryRoom?.leaveNow();window.FocusSpotify?.disconnect();await signOut(auth);window.FocusAndroid?.clearGoogleSession?.()});
+by('logoutAccount').onclick=()=>busy(async()=>{if(window.FocusProfileEditor?.warn?.())return;if(Study.liveSession?.().running){message('Çıkış yapmadan önce sayacı duraklat.');return}await sync();saveCache();await window.FocusPush?.unregister();await window.FocusSocial?.pauseRoom();window.FocusTemporaryRoom?.leaveNow();window.FocusSpotify?.disconnect();await signOut(auth);window.FocusAndroid?.clearGoogleSession?.()});
 by('profilePhoto').onchange=async e=>{
- const file=e.target.files[0];if(!file)return;if(!file.type.startsWith('image/')||file.size>20*1024*1024){message('20 MB’tan küçük bir fotoğraf seç.');return}const owner=uid,revision=generation;let bitmap;
- try{if(file.type==='image/gif'||/\.gif$/i.test(file.name||'')){const output=await window.FocusGifMedia.load(file,'avatar');if(owner!==uid||revision!==generation)return;avatar=output;photoDraft=true;by('profileAvatar').src=avatar;by('profileAvatar').hidden=false;window.FocusProfileStudio?.refresh?.();message('Animasyonlu avatar hazır. Değişiklikleri kaydet’e bas.');return}bitmap=await createImageBitmap(file);if(owner!==uid||revision!==generation)return;const canvas=document.createElement('canvas');canvas.width=canvas.height=128;const ctx=canvas.getContext('2d'),size=Math.min(bitmap.width,bitmap.height);ctx.fillStyle='#fff';ctx.fillRect(0,0,128,128);ctx.drawImage(bitmap,(bitmap.width-size)/2,(bitmap.height-size)/2,size,size,0,0,128,128);avatar=canvas.toDataURL('image/jpeg',.8);photoDraft=true;if(!CloudModel.photo(avatar))throw Error();by('profileAvatar').src=avatar;by('profileAvatar').hidden=false;window.FocusProfileStudio?.refresh?.();message('Fotoğraf hazır. Değişiklikleri kaydet’e bas.')}catch(e){if(owner===uid&&revision===generation)message((file.type==='image/gif'||/\.gif$/i.test(file.name||''))?window.FocusGifMedia.message(e):'Fotoğraf açılamadı. JPEG veya PNG ile tekrar dene.')}finally{bitmap?.close();if(owner===uid&&revision===generation)e.target.value=''}
+ const file=e.target.files[0];e.target.value='';if(!file)return;const owner=uid,revision=generation,request=++avatarRequest;if(!owner){message('Önce hesabının yüklenmesini bekle.');return}
+ try{const output=await window.FocusAvatarCrop.open(file);if(!output||owner!==uid||revision!==generation||request!==avatarRequest)return;if(!CloudModel.photo(output))throw Error('invalid-photo');avatar=output;photoDraft=true;by('profileAvatar').src=avatar;by('profileAvatar').hidden=false;window.FocusProfileStudio?.refresh?.();message('Fotoğraf hazır. Alttaki Kaydet düğmesiyle profilini güncelle.')}catch(error){if(owner===uid&&revision===generation&&request===avatarRequest)message(error.message||'Fotoğraf açılamadı. Başka bir görsel dene.')}
 };
 by('saveProfile').onclick=()=>busy(async()=>{
  if(!uid||!ready){message('Önce bulut kayıtlarının bağlanmasını bekle.');return}
  const name=by('profileName').value.trim();if(!name||name.length>30){message('1–30 karakterlik bir görünen ad yaz.');return}
- const owner=uid,revision=generation,next={uid:owner,name,photo:CloudModel.photo(avatar)},ref=doc(db,'users',owner,'meta','main'),assertCurrent=()=>{if(owner!==uid||revision!==generation||auth.currentUser?.uid!==owner||deleting||deletionLocked||onlineBanned)throw Error('account-changed')};
- await runTransaction(db,async tx=>{assertCurrent();const snap=await tx.get(ref);assertCurrent();if(!snap.exists())throw Error();tx.update(ref,{profile:next})});assertCurrent();profile=next;avatar=next.photo;
- if(!window.FocusSocial.saveIdentity)throw Error('social-profile-not-ready');await window.FocusSocial.saveIdentity();assertCurrent();photoDraft=false;nameDraft=false;renderProfile();message('Profilin kaydedildi.');
+ const owner=uid,revision=generation,next={uid:owner,name,photo:CloudModel.photo(avatar)},assertCurrent=()=>{if(owner!==uid||revision!==generation||auth.currentUser?.uid!==owner||deleting||deletionLocked||onlineBanned)throw Error('account-changed')};
+ avatarRequest++;window.FocusProfileStudio?.beginSave?.();window.FocusProfileEditor?.saving?.(true);
+ try{if(!window.FocusSocial.saveIdentity)throw Error('social-profile-not-ready');await window.FocusSocial.saveIdentity(next);assertCurrent();profile=next;avatar=next.photo;photoDraft=false;nameDraft=false;window.FocusProfileStudio?.committed?.();window.FocusExtras?.profileSaved?.();renderProfile();window.FocusProfileEditor?.committed?.();message('Profilin ve görünümün kaydedildi.')}finally{window.FocusProfileEditor?.saving?.(false)}
  const onboarding=window.FocusAccountUI?.mode==='onboarding';by('accountSheet').close();if(onboarding||loginPendingUid===owner){if(window.location)window.location.hash='calisma';loginPendingUid='';loginIntent=false}
 });
-by('removeProfilePhoto').onclick=()=>busy(async()=>{
+by('removeProfilePhoto').onclick=()=>{
  if(!uid||!ready){message('Önce bulut kayıtlarının bağlanmasını bekle.');return}
- const owner=uid,revision=generation,ref=doc(db,'users',owner,'meta','main'),assertCurrent=()=>{if(owner!==uid||revision!==generation||auth.currentUser?.uid!==owner||deleting||deletionLocked||onlineBanned)throw Error('account-changed')};
- const next=await runTransaction(db,async tx=>{assertCurrent();const snap=await tx.get(ref);assertCurrent();if(!snap.exists())throw Error();const next={...CloudModel.profile({...snap.data().profile,uid:owner}),photo:''};tx.update(ref,{profile:next});return next});
- assertCurrent();profile=next;avatar='';photoDraft=false;if(!window.FocusSocial.needsIdentity?.()){await window.FocusSocial.saveIdentity();assertCurrent()}renderProfile();message('Profil fotoğrafın kaldırıldı. Odadaki katılımcıların daha önce aldığı kopyalar silinmez.');
-});
+ avatarRequest++;window.FocusAvatarCrop?.cancel?.();avatar='';photoDraft=true;by('profileAvatar').hidden=true;by('profileAvatar').removeAttribute('src');window.FocusProfileStudio?.refresh?.();message('Fotoğraf kaldırılacak. Değişikliği Kaydet ile onayla.');
+};
 by('exportAccount').onclick=()=>busy(async()=>{
  if(onlineBanned&&uid){const owner=uid,revision=generation;const [meta,rows]=await Promise.all([getDocFromServer(doc(db,'users',uid,'meta','main')),getDocsFromServer(collection(db,'users',uid,'devices'))]);if(owner!==uid||revision!==generation)return;base=meta.exists()?meta.data():{};devices=new Map(rows.docs.map(d=>[d.id,d.data()]));devicesLoaded=true;profile=CloudModel.profile({...base.profile,uid});}
  if(!uid||(!ready&&!onlineBanned)||!base||!devicesLoaded){message('Verilerini indirmek için önce bulut kayıtlarının yüklenmesini bekle.');return}
@@ -205,7 +204,7 @@ if(by('deleteAccount'))by('deleteAccount').onclick=()=>busy(async()=>{
  }
  by('deletePassword').value='';await finishDeletion(user);
 });
-window.FocusAccount={profile:()=>({...profile}),record:(date,seconds)=>{if(!uid||deleting||deletionLocked||!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(seconds)||seconds<=0)return;cache.days[date]=Math.min(86400,(cache.days[date]||0)+seconds)},sync};
+window.FocusAccount={profile:()=>({...profile}),discardProfileDraft(){avatarRequest++;window.FocusAvatarCrop?.cancel?.();avatar=profile.photo;photoDraft=false;nameDraft=false;renderProfile()},record:(date,seconds)=>{if(!uid||deleting||deletionLocked||!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(seconds)||seconds<=0)return;cache.days[date]=Math.min(86400,(cache.days[date]||0)+seconds)},sync};
 by('profileName').oninput=()=>{nameDraft=true};
 initCosmeticStore({db,auth});initSocial({db,auth});initRoomActivities({db,auth});initPush({auth});
 onAuthStateChanged(auth,user=>{const pending=bind(user),revision=generation;pending.catch(e=>{if(revision===generation&&auth.currentUser?.uid===user?.uid)failure(e)})});
@@ -217,3 +216,4 @@ addEventListener('pagehide',()=>{watchChanges();saveCache()});
 document.addEventListener('visibilitychange',()=>{watchChanges();saveCache();if(!document.hidden)sync()});
 
 addEventListener('focus-moderation',event=>{const was=onlineBanned;onlineBanned=!!event.detail.banned;if(onlineBanned){ready=false;message('Çevrimiçi özelliklerin yasaklandı. Kişisel sayaç ve hesap silme açık.')}else if(was&&auth.currentUser)void bind(auth.currentUser).catch(failure)});
+

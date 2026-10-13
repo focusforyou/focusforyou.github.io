@@ -6,9 +6,10 @@ const ProfileModel=(()=>{
   ticket(){return {uid,revision}},
   set(input,ticket){if(!uid||ticket?.uid!==uid||ticket?.revision!==revision)return false;value=banner(input);dirty=true;revision++;return true},
   value(fallback=''){return dirty?value:banner(fallback)||value},
-  saved(){dirty=false},
+  saved(){dirty=false;revision++},
   get uid(){return uid}
  }}
  return {banner,draft};
 })();
 if(typeof module!=='undefined')module.exports=ProfileModel;
+

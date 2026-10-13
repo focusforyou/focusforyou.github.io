@@ -1,0 +1,6 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),M=require('../profile-edit.js');
+test('unchanged profile is clean and reverting restores the saved identity',()=>{const d=M.draft();d.load('a',{name:'Efe',photo:'old'});d.set({name:'Efe',photo:'new'});assert.equal(d.dirty,true);assert.deepEqual(d.revert(),{name:'Efe',photo:'old'});assert.equal(d.dirty,false)});
+test('cloud hydration updates untouched fields while preserving each edited field',()=>{const d=M.draft();d.load('a',{name:'Efe',font:'plain',exam:'TUS'});d.set({name:'Efe',font:'robot',exam:'TUS'});assert.deepEqual(d.load('a',{name:'Efe 2',font:'plain',exam:'YKS'}),{name:'Efe 2',font:'robot',exam:'YKS'});assert.deepEqual(d.revert(),{name:'Efe 2',font:'plain',exam:'YKS'})});
+test('account switch discards the previous users unsaved values',()=>{const d=M.draft();d.load('a',{name:'Efe'});d.set({name:'draft'});assert.deepEqual(d.load('b',{name:'Friend'}),{name:'Friend'});assert.equal(d.dirty,false)});
+test('only a successful commit clears pending changes and returning to original is clean',()=>{const d=M.draft();d.load('a',{name:'Efe',banner:''});d.set({name:'Efe',banner:'new'});assert.equal(d.dirty,true);d.commit({name:'Efe',banner:'new'});assert.equal(d.dirty,false);d.set({name:'Other',banner:'new'});d.set({name:'Efe',banner:'new'});assert.equal(d.dirty,false)});
+

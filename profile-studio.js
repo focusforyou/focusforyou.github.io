@@ -5,8 +5,8 @@ window.FocusProfileStudio=(()=>{
  const button=(text,action,cls='pill')=>{const e=element('button',text,cls);e.type='button';e.onclick=action;return e};
  function image(node,src){if(node.hidden!==!src)node.hidden=!src;if(src){if(node.getAttribute('src')!==src)node.src=src}else if(node.hasAttribute('src'))node.removeAttribute('src')}
  function member(p,self){if(!ready)return;image(by('memberBannerImage'),ProfileModel.banner(p.banner));by('editOwnProfile').hidden=!self}
- function profile(p){if(draft.uid!==(p?.uid||''))cosmeticDraft=null;publicProfile=p||{};draft.load(p);if(ready){if(cosmeticDraft)for(const [id,value]of Object.entries(cosmeticDraft)){const option=[...by(id).options].find(o=>o.value===value);if(option&&!option.disabled)by(id).value=value}refresh();cosmetics()}}
- function refresh(){if(!ready)return;const owner=window.FocusAccount?.profile?.()?.uid||'';if(owner!==draft.uid){draft.load({uid:owner});publicProfile={};cosmeticDraft=null}const name=by('profileName').value.trim()||publicProfile.name||'Odak arkadaşı',photo=by('profileAvatar').hidden?'':by('profileAvatar').getAttribute('src')||'';
+ function profile(p){if(draft.uid!==(p?.uid||''))cosmeticDraft=null;publicProfile=p||{};draft.load(p);if(ready){if(cosmeticDraft)for(const [id,value]of Object.entries(cosmeticDraft)){const option=[...by(id).options].find(o=>o.value===value);if(option&&!option.disabled)by(id).value=value}window.FocusProfileEditor?.hydrate?.(p);refresh();cosmetics()}}
+ function refresh(){if(!ready)return;window.FocusProfileEditor?.sync?.();const owner=window.FocusAccount?.profile?.()?.uid||'';if(owner!==draft.uid){draft.load({uid:owner});publicProfile={};cosmeticDraft=null}const name=by('profileName').value.trim()||publicProfile.name||'Odak arkadaşı',photo=by('profileAvatar').hidden?'':by('profileAvatar').getAttribute('src')||'';
   const key=JSON.stringify([owner,name,photo,draft.value(publicProfile.banner),...['nameFont','nameStyle','avatarFrame','namePlate','profileTag','socialUsername','examCategory','showcaseBio'].map(id=>by(id)?.value)]);if(key===previewKey)return;previewKey=key;
   image(by('studioPreviewAvatar'),photo);by('studioPreviewFallback').hidden=!!photo;by('studioPreviewFallback').textContent=name.slice(0,1).toUpperCase();image(by('studioBannerImage'),draft.value(publicProfile.banner));
   const cosmetics={font:by('nameFont').value,nameStyle:by('nameStyle').value,frame:by('avatarFrame').value,plate:by('namePlate').value,tag:by('profileTag').value};by('studioPreviewName').textContent=name;SocialModel.decorate(by('studioPreviewName'),{name,cosmetics});
@@ -44,9 +44,10 @@ window.FocusProfileStudio=(()=>{
   }
   photoEditor(previewCover,'Banner',bannerLabel,remove);photoEditor(face,'Avatar',by('profilePhoto').parentElement,by('removeProfilePhoto'));
 
-  controls.addEventListener('input',refresh);controls.addEventListener('change',refresh);addEventListener('focus-profile',refresh);addEventListener('focus-social-ready',()=>{const uid=window.FocusSocial?.uid?.();if(uid)profile(window.FocusSocial.getProfile(uid))});addEventListener('focus-identity-ready',()=>{draft.saved();cosmeticDraft=null;refresh()});
+  controls.addEventListener('input',refresh);controls.addEventListener('change',refresh);addEventListener('focus-profile',refresh);addEventListener('focus-social-ready',()=>{const uid=window.FocusSocial?.uid?.();if(uid)profile(window.FocusSocial.getProfile(uid))});addEventListener('focus-identity-ready',()=>{if(window.FocusProfileEditor?.savingState)return;draft.saved();cosmeticDraft=null;refresh()});
   selectTab('profile');cosmetics();const uid=window.FocusSocial?.uid?.();if(uid)profile(window.FocusSocial.getProfile(uid));else refresh();
  }
  addEventListener('DOMContentLoaded',init);
- return {profile,member,refresh,cosmetics,banner:fallback=>draft.value(fallback),mode:value=>{if(value==='onboarding'||value==='profile')selectTab('profile')}};
+ return {profile,member,refresh,cosmetics,beginSave(){savingBanner++},committed(){publicProfile={...publicProfile,banner:draft.value(publicProfile.banner)};draft.saved();draft.load(publicProfile);cosmeticDraft=null;previewKey=''},discard(){savingBanner++;draft.saved();draft.load(publicProfile);cosmeticDraft=null;previewKey=''},banner:fallback=>draft.value(fallback),mode:value=>{if(value==='onboarding'||value==='profile')selectTab('profile');window.FocusProfileEditor?.mode?.()}};
 })();
+
