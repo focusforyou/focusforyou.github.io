@@ -67,6 +67,29 @@ public class MainActivity extends Activity {
     private static final String GOOGLE_CLIENT="718275780283-9clat2fbif7idmrh7ddm06vlg1m2rmlo.apps.googleusercontent.com";
     private void googleResult(String token,String error){runOnUiThread(()->{signingIn=false;signInCancellation=null;if(trustedPage())web.evaluateJavascript("window.FocusGoogleResult?.("+JSONObject.quote(token)+","+JSONObject.quote(error)+")",null);});}
     private boolean trustedPage(){if(web==null||web.getUrl()==null)return false;Uri u=Uri.parse(web.getUrl());return "https".equals(u.getScheme())&&"focusforyou.github.io".equals(u.getHost());}
+    private static final String SPOTIFY_PREFS="spotify_oauth";
+    private android.content.SharedPreferences spotifyPrefs(){return getSharedPreferences(SPOTIFY_PREFS,MODE_PRIVATE);}
+    private void clearSpotifyAuth(){spotifyPrefs().edit().clear().apply();}
+    private void deliverSpotify(){
+        if(!trustedPage())return;
+        android.content.SharedPreferences prefs=spotifyPrefs();
+        long created=prefs.getLong("created",0),now=System.currentTimeMillis();
+        if(created<=0||now<created||now-created>SpotifyAuth.MAX_AGE){clearSpotifyAuth();return;}
+        String result=prefs.getString("result",null);
+        if(result!=null)web.evaluateJavascript("window.FocusSpotifyNativeResult?.("+result+")",null);
+    }
+    private boolean spotifyIntent(Intent intent){
+        if(intent==null||intent.getData()==null)return false;
+        android.content.SharedPreferences prefs=spotifyPrefs();
+        java.util.Map<String,String> callback=SpotifyAuth.callback(intent.getData().toString(),prefs.getString("state",""),prefs.getLong("created",0),System.currentTimeMillis());
+        if(callback==null)return false;
+        intent.setData(null);
+        JSONObject result=new JSONObject();
+        try{result.put("type","focus-spotify-callback");result.put("state",callback.get("state"));if(callback.containsKey("code"))result.put("code",callback.get("code"));else result.put("error",callback.get("error"));}catch(Exception ignored){return false;}
+        prefs.edit().remove("state").putString("result",result.toString()).apply();
+        if(web!=null&&trustedPage())web.evaluateJavascript("window.FocusSpotify?.nativeReady?.()",null);
+        return true;
+    }
     private void nativeTick(){if(trustedPage())web.evaluateJavascript("window.FocusNative?.heartbeat()",null);}
     private void nativeToggle(){if(trustedPage())web.evaluateJavascript("window.FocusNative?.toggle()",null);}
     private void updatePushForegroundRoom(){FocusPush.setForegroundRoom(resumed&&trustedPage()?sessionRoom:"");}
@@ -97,6 +120,19 @@ public class MainActivity extends Activity {
         try{startActivityForResult(pick,101);}catch(Exception ignored){if(fileCallback!=null)fileCallback.onReceiveValue(null);fileCallback=null;}
     }
     public class BackupBridge {
+        @JavascriptInterface public void spotifyConnect(String url){runOnUiThread(()->{
+            if(!trustedPage()||!resumed||url==null||url.length()>8192)return;
+            String state=SpotifyAuth.authorizeState(url);if(state==null)return;
+            spotifyPrefs().edit().clear().putString("state",state).putLong("created",System.currentTimeMillis()).apply();
+            try{Intent browser=new Intent(Intent.ACTION_VIEW,Uri.parse(url));browser.addCategory(Intent.CATEGORY_BROWSABLE);startActivity(browser);}catch(Exception ignored){clearSpotifyAuth();web.evaluateJavascript("window.FocusSpotifyNativeLaunchError?.()",null);}
+        });}
+        @JavascriptInterface public void spotifyReady(){runOnUiThread(MainActivity.this::deliverSpotify);}
+        @JavascriptInterface public void spotifyCancel(){runOnUiThread(()->{if(trustedPage())clearSpotifyAuth();});}
+        @JavascriptInterface public void spotifyAck(String state){runOnUiThread(()->{
+            if(!trustedPage()||state==null)return;
+            try{JSONObject result=new JSONObject(spotifyPrefs().getString("result","{}"));if(state.equals(result.optString("state")))clearSpotifyAuth();}catch(Exception ignored){}
+        });}
+
         @JavascriptInterface public void scheduleStudyReminder(String key,long when,String title){runOnUiThread(()->{
             if(!trustedPage())return;
             if(resumed&&android.os.Build.VERSION.SDK_INT>=33&&checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)!=android.content.pm.PackageManager.PERMISSION_GRANTED&&!notificationAsked){notificationAsked=true;requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS},202);}
@@ -245,12 +281,14 @@ public class MainActivity extends Activity {
                     .setNegativeButton("Kapat",null).show();
             }
         });
+        boolean spotifyReturn=spotifyIntent(getIntent());
         String pushDestination=FocusPush.destination(getIntent());
         if(getIntent()!=null)getIntent().removeExtra("roomId");
-        if(pushDestination!=null)web.loadUrl(pushDestination);
+        if(spotifyReturn)web.loadUrl(HOME+"#calisma");
+        else if(pushDestination!=null)web.loadUrl(pushDestination);
         else if (saved==null || web.restoreState(saved)==null) web.loadUrl(HOME);
     }
-    @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);String destination=FocusPush.destination(intent);if(intent!=null)intent.removeExtra("roomId");if(destination!=null&&web!=null)web.loadUrl(destination);}
+    @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);if(spotifyIntent(intent))return;String destination=FocusPush.destination(intent);if(intent!=null)intent.removeExtra("roomId");if(destination!=null&&web!=null)web.loadUrl(destination);}
     @Override public void onRequestPermissionsResult(int request,String[] permissions,int[] results){
         super.onRequestPermissionsResult(request,permissions,results);
         if(request==202&&results.length>0&&results[0]==android.content.pm.PackageManager.PERMISSION_GRANTED&&trustedPage())FocusPush.requestToken(this,this::pushResult);

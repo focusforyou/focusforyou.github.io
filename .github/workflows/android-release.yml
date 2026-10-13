@@ -26,7 +26,7 @@ jobs:
         env:
           FOCUS_VERSION_CODE: ${{ github.run_number }}
           FOCUS_VERSION_NAME: 1.${{ github.run_number }}
-        run: gradle --no-daemon assembleRelease lintRelease
+        run: gradle --no-daemon testReleaseUnitTest assembleRelease lintRelease
       - name: Sign APK
         id: signing
         env:
@@ -61,5 +61,7 @@ jobs:
           path: |
             android/app/build/outputs/apk/release/app-release-unsigned.apk
             android/app/build/reports/lint-results-release.html
+            android/app/build/reports/tests/testReleaseUnitTest/
           if-no-files-found: ignore
+
 

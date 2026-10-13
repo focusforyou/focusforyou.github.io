@@ -11,6 +11,7 @@ def pushConfig = [
     FIREBASE_SENDER_ID: System.getenv('FOCUS_FIREBASE_SENDER_ID') ?: firebaseConfig.project_info?.project_number ?: ''
 ]
 dependencies {
+ testImplementation 'junit:junit:4.13.2'
  implementation platform('com.google.firebase:firebase-bom:34.19.0')
  implementation 'com.google.firebase:firebase-messaging'
  implementation 'androidx.core:core:1.15.0'

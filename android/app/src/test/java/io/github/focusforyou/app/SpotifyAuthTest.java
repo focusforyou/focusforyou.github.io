@@ -1,0 +1,10 @@
+package io.github.focusforyou.app;
+import org.junit.Test;
+import static org.junit.Assert.*;
+public class SpotifyAuthTest {
+ private static final String STATE="android_12345678901234567890";
+ private String authorize(){return "https://accounts.spotify.com/authorize?client_id="+SpotifyAuth.CLIENT+"&redirect_uri=https%3A%2F%2Ffocusforyou.github.io%2Fspotify-callback.html&response_type=code&code_challenge_method=S256&scope=user-read-playback-state+user-modify-playback-state&state="+STATE+"&code_challenge=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQ";}
+ @Test public void validAuthorizationOnly(){assertEquals(STATE,SpotifyAuth.authorizeState(authorize()));assertNull(SpotifyAuth.authorizeState(authorize().replace("accounts.spotify.com","evil.test")));assertNull(SpotifyAuth.authorizeState(authorize().replace(SpotifyAuth.CLIENT,"other")));assertNull(SpotifyAuth.authorizeState(authorize().replace("S256","plain")));assertNull(SpotifyAuth.authorizeState(authorize()+"&state=duplicate"));assertNull(SpotifyAuth.authorizeState(authorize().replace("https://","http://")));assertNull(SpotifyAuth.authorizeState(authorize()+"#fragment"));}
+ @Test public void callbackMustMatchStateAgeAndExactEndpoint(){String url="focusforyou://spotify-callback?state="+STATE+"&code=code";assertEquals("code",SpotifyAuth.callback(url,STATE,1000,1001).get("code"));assertNull(SpotifyAuth.callback(url,"other",1000,1001));assertNull(SpotifyAuth.callback(url,STATE,1000,601001));assertNull(SpotifyAuth.callback(url,STATE,1000,999));assertNull(SpotifyAuth.callback(url.replace("spotify-callback","wrong"),STATE,1000,1001));assertNull(SpotifyAuth.callback(url+"&code=duplicate",STATE,1000,1001));assertNull(SpotifyAuth.callback(url+"&error=denied",STATE,1000,1001));assertNull(SpotifyAuth.callback(url.replace("code=code","code="),STATE,1000,1001));}
+ @Test public void cancelIsAcceptedButUnsolicitedLinksAreNot(){String url="focusforyou://spotify-callback?state="+STATE+"&error=access_denied";assertEquals("access_denied",SpotifyAuth.callback(url,STATE,1000,1001).get("error"));assertNull(SpotifyAuth.callback(url,"",1000,1001));assertNull(SpotifyAuth.callback(url,STATE,0,1001));}
+}
