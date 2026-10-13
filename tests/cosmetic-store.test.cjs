@@ -13,7 +13,7 @@ function fixture(){
  return {api,ctx,records,events,get transactions(){return transactions},async login(uid='buyer',admin=false){auth.currentUser={uid,emailVerified:true,email:admin?'efeozbilgin550@gmail.com':uid+'@example.com'};await api.bind(auth.currentUser)},advance:ms=>clock+=ms,setSession:v=>session=v,async tick(){for(const fn of intervals)fn();for(let i=0;i<20;i++)await Promise.resolve()}};
 }
 test('catalog has explicit accessible prices and animated theme items and normalized inventory never grants free ownership',()=>{
- assert.equal(model.catalog().length,35);for(const item of model.catalog())assert.ok(item.cost>=18000&&item.cost<=180000);assert.equal(model.find('frame:robot-gold').cost,180000);assert.equal(model.find('font:orbitron').cost,18000);
+ assert.equal(model.catalog().length,38);for(const item of model.catalog())assert.ok(item.cost>=18000&&item.cost<=180000);assert.equal(model.find('frame:robot-gold').cost,180000);assert.equal(model.find('font:orbitron').cost,18000);
  assert.deepEqual(model.normalize(),{fonts:[],nameStyles:[],frames:[],plates:[],tags:[]});assert.equal(model.owned({},'frame:gold'),false);
  assert.equal(model.validTag('custom:Merhaba'),true);assert.equal(model.validTag('custom:\nFake'),false);assert.equal(model.validTag('custom:'+'x'.repeat(25)),false);
  assert.equal(model.balance({earnedSeconds:7200000,spentSeconds:3600000}),3600000);
@@ -68,4 +68,4 @@ test('failed wallet writes expose a recoverable sync error and a successful retr
  f.ctx.runTransaction=original;f.advance(30000);await f.tick();assert.equal(f.api.snapshot().error,'');assert.equal(f.records.get('wallets/buyer').running,true);
 });
 
-test('pending artwork is hidden and cannot be bought or gifted through the store API',async()=>{const f=fixture();await f.login('admin',true);f.records.set('usernames/friend',{uid:'friendUid'});for(const id of ['frame:robot-gold','frame:robot-silver','frame:robot-duo']){assert.equal(model.catalog().some(item=>item.id===id),false);await assert.rejects(f.api.purchase(id),/item-not-ready/);await assert.rejects(f.api.grant('friend',id),/item-not-ready/)}assert.equal(f.records.has('entitlements/friendUid'),false)});
+test('finished helmet frames are listed and giftable without granting them automatically',async()=>{const f=fixture();await f.login('admin',true);f.records.set('usernames/friend',{uid:'friendUid'});for(const id of ['frame:robot-gold','frame:robot-silver','frame:robot-duo']){assert.equal(model.catalog().some(item=>item.id===id),true);assert.equal(model.owned({},id),false);await f.api.grant('friend',id)}assert.deepEqual(Array.from(f.records.get('entitlements/friendUid').frames),['robot-gold','robot-silver','robot-duo'])});
