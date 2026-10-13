@@ -18,6 +18,9 @@ test('Native alert works without browser AudioContext and rejects unknown sounds
  assert.equal(app.context.FocusSound.play('alarm'),true);assert.equal(app.nativeCalls[0],'alarm');
  assert.equal(app.context.FocusSound.play('anything'),false);
 });
+test('Phase tones fall back to the supported alarm on old APKs and use distinct tones on new APKs',()=>{
+ const app=fixture(true);assert.equal(app.context.FocusSound.play('focus'),true);assert.equal(app.nativeCalls[0],'alarm');app.advance();app.context.FocusAndroid.scheduleStudyReminder=()=>{};assert.equal(app.context.FocusSound.play('break'),true);assert.equal(app.nativeCalls[1],'break');
+});
 test('Pomodoro alerts both phase transitions once per catch-up and stays silent while paused',()=>{
  let now=0;const alerts=[];
  const source=fs.readFileSync('index.html','utf8').split('function syncTimer(){')[1].split("let timerVisual=")[0];

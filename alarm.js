@@ -15,7 +15,7 @@ window.FocusSound=(()=>{
  function play(kind='alarm'){
   if(!['alarm','nudge','focus','break'].includes(kind)||kind==='nudge'&&window.FocusExtras?.quiet?.())return false;
   const now=Date.now();if(lastKind===kind&&now-lastPlayed<1000)return false;
-  if(window.FocusAndroid?.sound){try{window.FocusAndroid.sound(kind);lastKind=kind;lastPlayed=now;return true}catch(e){}}
+  if(window.FocusAndroid?.sound){try{const nativeKind=['focus','break'].includes(kind)&&!window.FocusAndroid.scheduleStudyReminder?'alarm':kind;window.FocusAndroid.sound(nativeKind);lastKind=kind;lastPlayed=now;return true}catch(e){}}
   // A user gesture unlocks audio; never create an autoplay context from a timer.
   if(!context||context.state!=='running')return false;
   try{
