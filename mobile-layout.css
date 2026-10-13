@@ -1,0 +1,36 @@
+/* Keep mobile controls in the visible viewport, including Android WebView resizes. */
+@media(max-width:899px){
+ body{--nav-height:calc(70px + env(safe-area-inset-bottom,0px));padding-bottom:calc(var(--nav-height) + 110px)}
+ main,main>section,.settings-page,.settings-page>.grid,.settings-card{min-width:0;max-width:100%;box-sizing:border-box}
+ .settings-page>.grid{grid-template-columns:minmax(0,1fr)}
+ .settings-card input,.settings-card select{min-width:0;max-width:100%;box-sizing:border-box;font-size:16px}
+ .mobile-nav{display:grid;position:fixed;left:0;right:0;width:auto;bottom:var(--mobile-viewport-bottom,0px);z-index:20;box-sizing:border-box;height:var(--nav-height);min-height:70px;transform:none}
+ .mini-timer{box-sizing:border-box;left:10px;right:10px;width:auto;max-width:calc(100% - 20px);bottom:calc(var(--nav-height) + 8px + var(--mobile-viewport-bottom,0px));z-index:19}
+ #miniToggle{flex:0 0 44px;margin-left:8px}
+ .mini-description{min-width:0}.mini-description small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .friends-toggle{bottom:calc(var(--nav-height) + 98px + var(--mobile-viewport-bottom,0px))}
+ .studio-preview-card{min-height:360px}
+ .studio-preview .profile-cover{height:145px}
+ .studio-preview-face{height:70px}
+ .studio-preview-body{padding:12px 18px 24px;min-height:145px;box-sizing:border-box}
+ .studio-preview-body h3{line-height:1.4}
+ .studio-preview-body p{font-size:14px;line-height:1.65;margin-top:16px}
+ #cosmeticShop{box-sizing:border-box;width:calc(100vw - 16px);max-width:calc(100vw - 16px);max-height:94dvh;overflow:auto;border-radius:20px}
+ #cosmeticShop>.sheet-close,#cosmeticShop>form{position:sticky;top:0;z-index:4;background:inherit}
+ #cosmeticShop .shop-content{padding:18px;min-width:0}
+ #cosmeticShop h2{font-size:26px}
+ #cosmeticShop .shop-content>p{font-size:13px;line-height:1.6}
+ #cosmeticShop .shop-wallet{padding:16px}.shop-wallet small{display:block;overflow-wrap:anywhere;line-height:1.5}
+ #cosmeticShop .shop-items{grid-template-columns:minmax(0,1fr);gap:14px}
+ #cosmeticShop .cosmetic-item{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:18px;gap:10px;min-width:0}
+ #cosmeticShop .cosmetic-preview{grid-column:1/-1;height:96px;min-width:0;max-width:100%;font-size:24px}
+ #cosmeticShop .cosmetic-item h4{grid-column:1/-1;font-size:15px;line-height:1.5;overflow-wrap:anywhere;margin-bottom:4px}
+ #cosmeticShop .cosmetic-item .pill{width:100%;box-sizing:border-box;min-height:44px;padding:10px 8px;margin:0;font-size:13px;white-space:normal}
+ #cosmeticShop .cosmetic-item .gift-item-form{grid-column:1/-1;min-width:0;width:100%}
+ #cosmeticShop .gift-item-form[hidden]{display:none!important}
+ #cosmeticShop .cosmetic-avatar{width:58px;height:58px}
+ #cosmeticShop .cosmetic-preview>strong{max-width:100%;box-sizing:border-box;min-width:0}
+ #cosmeticShop .cosmetic-try-on{position:relative;top:auto;min-width:0}
+ #cosmeticShop .try-on-identity{flex-wrap:wrap;min-width:0}
+}
+
