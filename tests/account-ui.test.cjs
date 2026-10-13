@@ -16,3 +16,4 @@ test('a fresh guest opens login and invalid oversized presentation data is ignor
 });
 
 test('cached label without a valid identity key does not show a stale profile',()=>{for(const uid of ['', 'bad uid', 'x'.repeat(129)])assert.equal(fixture('Efe',uid).node('openAccount').textContent,'Giriş yap')});
+

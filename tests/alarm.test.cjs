@@ -18,14 +18,15 @@ test('Native alert works without browser AudioContext and rejects unknown sounds
  assert.equal(app.context.FocusSound.play('alarm'),true);assert.equal(app.nativeCalls[0],'alarm');
  assert.equal(app.context.FocusSound.play('anything'),false);
 });
-test('Pomodoro completion alerts focus once per catch-up and never on pause/reset or break completion',()=>{
- let now=0,alarms=0;
+test('Pomodoro alerts both phase transitions once per catch-up and stays silent while paused',()=>{
+ let now=0;const alerts=[];
  const source=fs.readFileSync('index.html','utf8').split('function syncTimer(){')[1].split("let timerVisual=")[0];
- const context={Date:{now:()=>now},run:1,lastT:0,left:1500,mode:'f',focusDuration:1500,breakDuration:300,sess:0,F:{f:0},grown:false,dead:false,lastS:0,consumeTasks(){},Study:{record(){}},persistTimer(){},FocusSound:{play:()=>alarms++}};context.window=context;
+ const context={Date:{now:()=>now},run:1,lastT:0,left:1500,mode:'f',focusDuration:1500,breakDuration:300,sess:0,F:{f:0},grown:false,dead:false,lastS:0,consumeTasks(){},Study:{record(){}},persistTimer(){},FocusSound:{play:kind=>alerts.push(kind)}};context.window=context;
  vm.runInNewContext('function syncTimer(){'+source,context);
- now=1500000;context.syncTimer();assert.equal(alarms,1);assert.equal(context.mode,'b');
- context.syncTimer();assert.equal(alarms,1);
- now+=300000;context.syncTimer();assert.equal(alarms,1);assert.equal(context.mode,'f');
- now+=3600000;context.syncTimer();assert.equal(alarms,2); // Two elapsed focus rounds coalesce to one audible alert.
- context.run=0;now+=3600000;context.syncTimer();assert.equal(alarms,2);
+ now=1500000;context.syncTimer();assert.deepEqual(alerts,['break']);assert.equal(context.mode,'b');
+ context.syncTimer();assert.deepEqual(alerts,['break']);
+ now+=300000;context.syncTimer();assert.deepEqual(alerts,['break','focus']);assert.equal(context.mode,'f');
+ now+=3600000;context.syncTimer();assert.deepEqual(alerts,['break','focus','focus']); // Catch-up only announces the final phase.
+ context.run=0;now+=3600000;context.syncTimer();assert.deepEqual(alerts,['break','focus','focus']);
 });
+

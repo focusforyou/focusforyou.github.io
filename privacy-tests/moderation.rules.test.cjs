@@ -62,3 +62,4 @@ test('moderation enforces global admin, room leader, kick renewal, room bans, ap
  await assertSucceeds(deleteDoc(doc(b,'rooms',rid,'members',uidB)));await assertSucceeds(deleteDoc(doc(b,'users',uidB,'rooms',rid)));await assertSucceeds(deleteDoc(meta));
  await assertFails(updateDoc(doc(b,'publicProfiles',uidB),{name:'Revive after ban removed'}));
 });
+

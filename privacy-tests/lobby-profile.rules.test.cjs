@@ -47,3 +47,4 @@ test('public cloud profiles accept Other and synchronize owned cosmetics securel
  await assertFails(updateDoc(doc(a,'publicProfiles','profileA'),{cosmetics:{...equipped,tag:'doctor'}}));
  await assertFails(setDoc(doc(a,'entitlements','profileA'),{nameStyles:['gold'],frames:['gold'],plates:['gold']}));
 });
+

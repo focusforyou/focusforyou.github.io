@@ -34,7 +34,7 @@
   const store=window.FocusCosmeticStore,state=store?.snapshot?.()||{};
   text(by('shopBalance'),state.loading?'Yükleniyor…':state.error?'Senkronizasyon bekleniyor':hours(state.balance||0));text(by('shopEarned'),state.error?'Çalışma bakiyesi buluta kaydedilemedi. Bağlantı ve hesabın e-posta doğrulamasını kontrol et; otomatik yeniden denenecek.':'Kazanılan '+hours(state.earnedSeconds||0)+' · Harcanan '+hours(state.spentSeconds||0));by('cosmeticAdmin').hidden=!state.admin;
   if(adminState!==!!state.admin||owner!==(state.uid||'')){adminState=!!state.admin;owner=state.uid||'';lastUsername='';clearTryOn();build(state)}
-  for(const item of model.catalog()){const record=cards.get(item.id),owned=store?.owned?.(item.id);text(record.buy,owned?'Envanterinde':'1.000 saat · Satın al');record.buy.disabled=record.busy||!!owned||!state.uid||state.banned||state.balance<item.cost;if(record.send)record.send.disabled=record.busy||!state.admin||state.banned;}
+  for(const item of model.catalog()){const record=cards.get(item.id),owned=store?.owned?.(item.id);text(record.buy,owned?'Envanterinde':(item.cost/3600).toLocaleString('tr-TR')+' saat · Satın al');record.buy.disabled=record.busy||!!owned||!state.uid||state.banned||state.balance<item.cost;if(record.send)record.send.disabled=record.busy||!state.admin||state.banned;}
  }
  async function act(fn,record,status,success){if(record?.busy)return;if(record)record.busy=true;render();text(status,'Gönderiliyor…');try{await fn();text(status,success)}catch(e){text(status,error(e))}finally{if(record)record.busy=false;render()}}
  by('openCosmeticShop').onclick=()=>{render();modal.showModal()};by('closeCosmeticShop').onclick=()=>modal.close();

@@ -95,3 +95,5 @@ test('only active room moderators pin existing messages, members read pins, and 
  await env.withSecurityRulesDisabled(async ctx=>{await updateDoc(doc(ctx.firestore(),'rooms',rid),{deleting:true})});
  await assertFails(updateDoc(doc(admin,'rooms',rid,'messages',id),{pinned:true}));
 });
+
+test('GIF avatar/banner remain owner only and cap GIF separately from JPEG',async()=>{const uid='gifRuleUser',a=account(uid),b=account('gifRuleSpy');await setup('78341256',[uid]);const profile=doc(a,'publicProfiles',uid),gif='data:image/gif;base64,R0lGODlhAQABAIAAAAUEBA==';await assertSucceeds(updateDoc(profile,{photo:gif,banner:gif}));await assertFails(updateDoc(doc(b,'publicProfiles',uid),{photo:gif}));await assertFails(updateDoc(profile,{banner:'data:image/gif;base64,R0lGODlh'+'a'.repeat(180000)}));await assertFails(updateDoc(profile,{banner:'data:image/gif;base64,YWJjZA=='}));await assertFails(updateDoc(profile,{photo:'data:image/jpeg;base64,'+'a'.repeat(40000)}))});

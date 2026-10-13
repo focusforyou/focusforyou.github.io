@@ -36,3 +36,4 @@ test('device writes reject malformed IDs, oversized fields and forged field time
  }
  await assertFails(setDoc(doc(db,'users',uid,'meta','main'),{days:{},fields:{tasks:'x'.repeat(65537)},profile:{uid,name:'limits',photo:''}}));
 });
+

@@ -1,4 +1,6 @@
 /* Bundled SIL Open Font License fonts: no third-party request on selection. */
+@font-face{font-family:FocusOrbitron;src:url('fonts/orbitron.ttf') format('truetype');font-weight:400 900;font-display:swap}
+.font-orbitron{font-family:FocusOrbitron,monospace!important;letter-spacing:.035em}
 @font-face{font-family:FocusFredoka;src:url('fonts/fredoka.ttf') format('truetype');font-weight:300 700;font-display:swap}
 @font-face{font-family:FocusCinzel;src:url('fonts/cinzel.ttf') format('truetype');font-weight:400 900;font-display:swap}
 @font-face{font-family:FocusSpaceMono;src:url('fonts/space-mono.ttf') format('truetype');font-weight:400;font-display:swap}

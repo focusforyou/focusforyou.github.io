@@ -12,7 +12,7 @@ function combine(base,devices){
  for(const key of keys){const value=fieldValue(key,device[key]?.value);if(value!==undefined&&time(device[key].at)>=(latest[key]||0)){fields[key]=value;latest[key]=time(device[key].at)}}}
  return {days:total,fields};
 }
-function photo(value){if(typeof value!=='string')return '';if(value.length<=40000&&/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(value))return value;try{const url=new URL(value);return value.length<1500&&url.protocol==='https:'&&/^lh\d+\.googleusercontent\.com$/.test(url.hostname)?value:''}catch(e){return ''}}
+function photo(value){if(typeof value!=='string')return '';if(typeof FocusGifMedia!=='undefined'&&FocusGifMedia.valid(value,'avatar'))return value;if(value.length<=40000&&/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(value))return value;try{const url=new URL(value);return value.length<1500&&url.protocol==='https:'&&/^lh\d+\.googleusercontent\.com$/.test(url.hostname)?value:''}catch(e){return ''}}
 function profile(input){return {uid:typeof input?.uid==='string'&&/^[A-Za-z0-9_-]{1,128}$/.test(input.uid)?input.uid:'',name:typeof input?.name==='string'?input.name.trim().slice(0,30):'',photo:photo(input?.photo)}}
 return {days,combine,photo,profile,keys};
 })();

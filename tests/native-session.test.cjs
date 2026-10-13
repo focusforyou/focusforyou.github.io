@@ -32,3 +32,4 @@ test('Android bridge validates all supported room identifiers',()=>{
  for(const room of ['01234567','123456','malicious\nroom'])assert.equal(valid.test(room),false);
 });
 
+

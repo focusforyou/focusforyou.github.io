@@ -13,3 +13,4 @@ test('permission is requested only after user gesture; reduced motion stays stil
 
 test('Android bridge starts automatically without orientation API and detaches when hidden',()=>{const calls=[],f=fixture();f.ctx.FocusAndroid={motion:on=>calls.push(on)};delete f.ctx.DeviceOrientationEvent;vm.runInContext(fs.readFileSync('motion.js','utf8'),f.ctx);assert(f.ctx.FocusMotion.active);assert.equal(calls.at(-1),true);f.ctx.FocusMotion.receive(10,20,0);f.ctx.FocusMotion.receive(30,40,0);assert(f.points.at(-1).some(n=>n!==0));f.ctx.document.hidden=true;f.visibility.visibilitychange();assert.equal(calls.at(-1),false);assert(!f.ctx.FocusMotion.active)});
 
+

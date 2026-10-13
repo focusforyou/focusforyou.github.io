@@ -30,3 +30,4 @@ test('unique handles, reserved admin cosmetics, password rooms, friends, invitat
  const blockedJoin=writeBatch(c);blockedJoin.set(doc(c,'users','socialC','rooms',blockedRoom),{name:'Shared name'});blockedJoin.set(doc(c,'rooms',blockedRoom,'members','socialC'),{uid:'socialC',joinedAt:serverTimestamp(),presenceAt:serverTimestamp(),online:true,timer});await assertFails(blockedJoin.commit());
  await assertSucceeds(updateDoc(room,{ownerUid:'socialC'}));
 });
+

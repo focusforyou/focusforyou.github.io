@@ -97,6 +97,13 @@ public class MainActivity extends Activity {
         try{startActivityForResult(pick,101);}catch(Exception ignored){if(fileCallback!=null)fileCallback.onReceiveValue(null);fileCallback=null;}
     }
     public class BackupBridge {
+        @JavascriptInterface public void scheduleStudyReminder(String key,long when,String title){runOnUiThread(()->{
+            if(!trustedPage())return;
+            if(resumed&&android.os.Build.VERSION.SDK_INT>=33&&checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)!=android.content.pm.PackageManager.PERMISSION_GRANTED&&!notificationAsked){notificationAsked=true;requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS},202);}
+            FocusReminder.schedule(MainActivity.this,key,when,title);
+        });}
+        @JavascriptInterface public void cancelStudyReminder(String key){runOnUiThread(()->{if(trustedPage())FocusReminder.cancel(MainActivity.this,key);});}
+        @JavascriptInterface public void clearStudyReminders(){runOnUiThread(()->{if(trustedPage())FocusReminder.clear(MainActivity.this);});}
         @JavascriptInterface public void pushToken(){runOnUiThread(()->{
             if(!trustedPage()||!resumed)return;
             if(!FocusPush.initialize(MainActivity.this)){pushResult("");return;}
@@ -107,7 +114,7 @@ public class MainActivity extends Activity {
             FocusPush.requestToken(MainActivity.this,MainActivity.this::pushResult);
         });}
         @JavascriptInterface public void sound(String kind){
-            if(!"alarm".equals(kind)&&!"nudge".equals(kind))return;
+            if(!"alarm".equals(kind)&&!"nudge".equals(kind)&&!"focus".equals(kind)&&!"break".equals(kind))return;
             runOnUiThread(()->{if(trustedPage())FocusSound.play(kind);});
         }
         @JavascriptInterface public void motion(boolean enabled){runOnUiThread(()->{if(!trustedPage())return;motionRequested=enabled;updateMotion();});}

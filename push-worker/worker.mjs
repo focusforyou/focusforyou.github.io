@@ -51,7 +51,8 @@ export function createWorker({fetch:remote=globalThis.fetch,crypto=globalThis.cr
   if(Number.isFinite(recipient.quietUntil)&&recipient.quietUntil>now())return {ok:true};
   const task=(async()=>{if(await env.PUSH_KV.get(tombstone(target)))return {ok:true};const rows=await devices(env,target),valid=[];for(const [id,row]of Object.entries(rows).slice(0,MAX_DEVICES)){if(!DEVICE.test(id)||typeof row.token!=='string'||row.hash!==await hash(row.token))continue;const owner=await env.PUSH_KV.get('token:'+row.hash,'json');if(owner?.uid===target&&owner.deviceId===id)valid.push(row.token)}
    if(valid.length){const token=await accessToken(env);await allowed(env,auth);if(await env.PUSH_KV.get(tombstone(target)))return {ok:true};
-    // Recheck after OAuth/network delay: the nudge rule gates the recipient,
+    // Recheck after OAuth/network delay: reading this receipt also enforces the recipient's current block/mute controls.
+    // The nudge rule gates the recipient,
     // while self member reads require explicit sender sanction verification.
     const [current,currentSender,currentBan,currentKick,currentRecipient]=await Promise.all([document(env,auth.token,['rooms',rid,'nudges',target]),document(env,auth.token,['rooms',rid,'members',auth.uid]),document(env,auth.token,['rooms',rid,'bans',auth.uid]),document(env,auth.token,['rooms',rid,'kicks',auth.uid]),document(env,auth.token,['rooms',rid,'members',target])]);
     if(!current||current.from!==auth.uid||current.to!==target||current.at!==at||now()-at>RECENT_MS)fail(409,'nudge-changed');

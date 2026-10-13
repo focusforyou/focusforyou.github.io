@@ -86,3 +86,5 @@ test('an expired quiet setting observed after OAuth permits delivery, but missin
   const response=await f.call('/send',{roomId:ROOM,targetUid:'bob'});assert.equal(response.status,changed==='removed'?403:200);assert.equal(f.sent.length,changed==='removed'?0:1);
  }
 });
+
+test('recipient block or mute enabled during OAuth makes the authoritative receipt unreadable and fails closed',async()=>{for(const reason of ['block','mute']){const f=await fixture();f.populate();await f.register('bob');f.onOAuth=async()=>{f.denied.add('rooms/'+ROOM+'/nudges/bob')};assert.equal((await f.call('/send',{roomId:ROOM,targetUid:'bob'})).status,403,reason);assert.equal(f.sent.length,0)}});

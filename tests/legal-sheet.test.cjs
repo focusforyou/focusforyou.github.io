@@ -7,3 +7,4 @@ test('legal links open inside the page without navigating away from a joined roo
  let prevented=false;handlers[0]({ctrlKey:true,preventDefault(){prevented=true}});assert.equal(prevented,false);
 });
 
+

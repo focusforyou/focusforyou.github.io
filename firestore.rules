@@ -23,13 +23,15 @@ service cloud.firestore {
   // can consume separate access calls. Ordinary allowed targets need no profile
   // lookup; protected admins use one profile get only when a sanction applies.
   // Deletion locks and membership remain mandatory for every recipient.
+  function contactAllowed(from,to) { let c=get(/databases/$(database)/documents/users/$(to)/controls/$(from)); return c == null || c.data.blocked == false; }
+  function nudgeAllowed(from,to) { let c=get(/databases/$(database)/documents/users/$(to)/controls/$(from)); return c == null || (c.data.blocked == false && c.data.muted == false); }
   function nudgeTarget(rid,uid) {
    let targetMember = get(/databases/$(database)/documents/rooms/$(rid)/members/$(uid)).data;
+   let targetKick = get(/databases/$(database)/documents/rooms/$(rid)/kicks/$(uid));
    return targetMember is map && unlocked(uid)
     && ((!exists(/databases/$(database)/documents/appBans/$(uid))
      && !exists(/databases/$(database)/documents/rooms/$(rid)/bans/$(uid))
-     && (!exists(/databases/$(database)/documents/rooms/$(rid)/kicks/$(uid))
-      || targetMember.joinedAt > get(/databases/$(database)/documents/rooms/$(rid)/kicks/$(uid)).data.at))
+     && (targetKick == null || targetMember.joinedAt > targetKick.data.at))
      || get(/databases/$(database)/documents/publicProfiles/$(uid)).data.username == 'efe');
   }
   function nudgeHeartbeat(rid) {
@@ -117,23 +119,20 @@ service cloud.firestore {
   }
   function validCosmetics(c,uid) {
    return c is map && c.keys().hasOnly(['tag','nameStyle','frame','plate','font'])
-    && c.get('font','default') in ['default','fredoka','cinzel','space-mono','bungee','pacifico','chelaone']
+    && c.get('font','default') in ['default','fredoka','cinzel','space-mono','bungee','pacifico','chelaone','orbitron']
     && c.tag is string && (c.tag in ['none','doctor'] || c.tag.matches('custom:.{1,24}'))
-    && c.nameStyle in ['plain','gold','ruby','ice','violet','emerald'] && c.frame in ['none','gold','ruby','ice','violet','emerald'] && c.plate in ['none','gold','ruby','ice','violet','emerald']
+    && c.nameStyle in ['plain','gold','ruby','ice','violet','emerald'] && c.frame in ['none','gold','ruby','ice','violet','emerald','ember','lunar','sakura','cyber','abyss','robot-gold','robot-silver','pulse','robot-duo'] && c.plate in ['none','gold','ruby','ice','violet','emerald','ember','lunar','sakura','cyber','abyss','robot-gold','robot-silver']
     && (admin() || ((c.tag == 'none' || (c.tag != 'doctor' && ownedStyle(uid,'tags',c.tag,'none')))
      && ownedStyle(uid,'fonts',c.get('font','default'),'default') && ownedStyle(uid,'nameStyles',c.nameStyle,'plain') && ownedStyle(uid,'frames',c.frame,'none') && ownedStyle(uid,'plates',c.plate,'none')));
   }
-  function itemInfo(id) {
-   return {'font:bungee':['fonts','bungee'],'font:pacifico':['fonts','pacifico'],'font:chelaone':['fonts','chelaone'],'font:fredoka':['fonts','fredoka'],'font:cinzel':['fonts','cinzel'],'font:space-mono':['fonts','space-mono'],'name:gold':['nameStyles','gold'],'name:ruby':['nameStyles','ruby'],'name:ice':['nameStyles','ice'],'name:violet':['nameStyles','violet'],'name:emerald':['nameStyles','emerald'],
-    'frame:gold':['frames','gold'],'frame:ruby':['frames','ruby'],'frame:ice':['frames','ice'],'frame:violet':['frames','violet'],'frame:emerald':['frames','emerald'],
-    'plate:gold':['plates','gold'],'plate:ruby':['plates','ruby'],'plate:ice':['plates','ice'],'plate:violet':['plates','violet'],'plate:emerald':['plates','emerald']}.get(id,['','']);
-  }
+  function itemInfo(id) { let value={'name:gold':'gold','name:ruby':'ruby','name:ice':'ice','name:violet':'violet','name:emerald':'emerald','frame:gold':'gold','frame:ruby':'ruby','frame:ice':'ice','frame:violet':'violet','frame:emerald':'emerald','plate:gold':'gold','plate:ruby':'ruby','plate:ice':'ice','plate:violet':'violet','plate:emerald':'emerald','font:fredoka':'fredoka','font:cinzel':'cinzel','font:space-mono':'space-mono','font:bungee':'bungee','font:pacifico':'pacifico','font:chelaone':'chelaone','font:orbitron':'orbitron','frame:ember':'ember','plate:ember':'ember','frame:lunar':'lunar','plate:lunar':'lunar','frame:sakura':'sakura','plate:sakura':'sakura','frame:cyber':'cyber','plate:cyber':'cyber','frame:abyss':'abyss','plate:abyss':'abyss','frame:robot-gold':'robot-gold','plate:robot-gold':'robot-gold','frame:robot-silver':'robot-silver','plate:robot-silver':'robot-silver','frame:pulse':'pulse','frame:robot-duo':'robot-duo'}.get(id,''); return [value == '' ? '' : (id.matches('font:.*') ? 'fonts' : id.matches('name:.*') ? 'nameStyles' : id.matches('frame:.*') ? 'frames' : 'plates'),value]; }
+  function itemCost(id) { return id in ['name:gold','name:ruby','name:ice','name:violet','name:emerald'] ? 36000 : id in ['frame:gold','frame:ruby','frame:ice','frame:violet','frame:emerald'] ? 72000 : id in ['plate:gold','plate:ruby','plate:ice','plate:violet','plate:emerald'] ? 54000 : id in ['font:fredoka','font:cinzel','font:space-mono','font:bungee','font:pacifico','font:chelaone','font:orbitron'] ? 18000 : id in ['frame:ember','frame:lunar','frame:sakura','frame:cyber','frame:abyss'] ? 108000 : id in ['plate:ember','plate:lunar','plate:sakura','plate:cyber','plate:abyss','plate:robot-gold','plate:robot-silver'] ? 90000 : id in ['frame:robot-gold','frame:robot-silver','frame:pulse','frame:robot-duo'] ? 180000 : 0; }
   function validOwned(e) {
    return e is map && e.keys().hasOnly(['nameStyles','frames','plates','tags','fonts'])
-    && e.get('fonts',[]) is list && e.get('fonts',[]).size() <= 6 && e.get('fonts',[]).hasOnly(['fredoka','cinzel','space-mono','bungee','pacifico','chelaone'])
+    && e.get('fonts',[]) is list && e.get('fonts',[]).size() <= 7 && e.get('fonts',[]).hasOnly(['fredoka','cinzel','space-mono','bungee','pacifico','chelaone','orbitron'])
     && e.get('nameStyles',[]) is list && e.get('nameStyles',[]).size() <= 6 && e.get('nameStyles',[]).hasOnly(['plain','gold','ruby','ice','violet','emerald'])
-    && e.get('frames',[]) is list && e.get('frames',[]).size() <= 6 && e.get('frames',[]).hasOnly(['none','gold','ruby','ice','violet','emerald'])
-    && e.get('plates',[]) is list && e.get('plates',[]).size() <= 6 && e.get('plates',[]).hasOnly(['none','gold','ruby','ice','violet','emerald'])
+    && e.get('frames',[]) is list && e.get('frames',[]).size() <= 15 && e.get('frames',[]).hasOnly(['none','gold','ruby','ice','violet','emerald','ember','lunar','sakura','cyber','abyss','robot-gold','robot-silver','pulse','robot-duo'])
+    && e.get('plates',[]) is list && e.get('plates',[]).size() <= 13 && e.get('plates',[]).hasOnly(['none','gold','ruby','ice','violet','emerald','ember','lunar','sakura','cyber','abyss','robot-gold','robot-silver'])
     && e.get('tags',[]) is list && e.get('tags',[]).size() <= 30;
   }
   function itemGrant(before,after,key,info) {
@@ -156,25 +155,24 @@ service cloud.firestore {
     && w.earnedSeconds is int && w.earnedSeconds >= 0 && w.earnedSeconds <= 3153600000
     && w.spentSeconds is int && w.spentSeconds >= 0 && w.spentSeconds <= w.earnedSeconds
     && w.running is bool && w.checkpoint is timestamp && w.checkpoint <= request.time
-    && w.lastPurchase is string && (w.lastPurchase == '' || itemInfo(w.lastPurchase)[0] != '');
+    && w.lastPurchase is string && (w.lastPurchase == '' || itemCost(w.lastPurchase) > 0);
   }
   function paidGrant(uid,before,after) {
    let oldWallet = get(/databases/$(database)/documents/wallets/$(uid)).data;
    let nextWallet = getAfter(/databases/$(database)/documents/wallets/$(uid)).data;
-   return nextWallet.spentSeconds == oldWallet.spentSeconds + 3600000
+   return nextWallet.spentSeconds == oldWallet.spentSeconds + itemCost(nextWallet.lastPurchase)
     && nextWallet.earnedSeconds == oldWallet.earnedSeconds && nextWallet.running == oldWallet.running && nextWallet.checkpoint == oldWallet.checkpoint
     && purchaseGrant(before,after,nextWallet.lastPurchase);
   }
+  function validImage(value) { return value is string && (value == '' || (value.size() <= 40000 && value.matches('data:image/jpeg;base64,[A-Za-z0-9+/]+={0,2}')) || (value.size() <= 180000 && value.matches('data:image/gif;base64,R0lGOD(dh|lh)[A-Za-z0-9+/]+={0,2}'))); }
   function validPublic(p,uid) {
    return p.keys().hasOnly(['uid','username','name','photo','exam','cosmetics','showcase','banner'])
     && p.uid == uid && p.username is string && p.username.matches('[a-z0-9_]{3,24}')
     && availableHandle(p.username)
     && getAfter(/databases/$(database)/documents/usernames/$(p.username)).data.uid == uid
     && p.name is string && p.name.size() >= 1 && p.name.size() <= 30
-    && p.photo is string && p.photo.size() <= 40000
-    && (p.photo == '' || p.photo.matches('data:image/jpeg;base64,[A-Za-z0-9+/]+={0,2}')
-     || (p.photo.size() < 1500 && p.photo.matches('https://lh[0-9]+[.]googleusercontent[.]com/.*')))
-    && (!('banner' in p) || (p.banner is string && p.banner.size() <= 40000 && (p.banner == '' || p.banner.matches('data:image/jpeg;base64,[A-Za-z0-9+/]+={0,2}'))))
+    && (validImage(p.photo) || (p.photo is string && p.photo.size() < 1500 && p.photo.matches('https://lh[0-9]+[.]googleusercontent[.]com/.*')))
+    && (!('banner' in p) || validImage(p.banner))
     && p.exam in ['', 'YKS','LGS','TUS','OTHER'] && validCosmetics(p.cosmetics,uid)
     && (!('showcase' in p) || showcaseValid(p.showcase));
   }
@@ -209,15 +207,21 @@ service cloud.firestore {
      && request.resource.data.earnedSeconds - resource.data.earnedSeconds <= (resource.data.running ? (request.time.toMillis() - resource.data.checkpoint.toMillis()) / 1000 : 0)
      && request.resource.data.earnedSeconds - resource.data.earnedSeconds <= 60)
     || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['spentSeconds','lastPurchase'])
-     && request.resource.data.spentSeconds == resource.data.spentSeconds + 3600000
+     && request.resource.data.spentSeconds == resource.data.spentSeconds + itemCost(request.resource.data.lastPurchase)
      && purchaseGrant(previousOwned(uid),getAfter(/databases/$(database)/documents/entitlements/$(uid)).data,request.resource.data.lastPurchase)));
    allow delete: if self(uid) && locked(uid);
+  }
+  match /users/{uid}/controls/{target} {
+   allow read: if self(uid);
+   allow create, update: if self(uid) && active() && target != uid && target.size() <= 128
+    && request.resource.data.keys().hasOnly(['blocked','muted']) && request.resource.data.blocked is bool && request.resource.data.muted is bool;
+   allow delete: if self(uid);
   }
   match /friendships/{id} {
    allow get: if request.auth != null && (id.matches(request.auth.uid + '_.*') || id.matches('.*_' + request.auth.uid));
    allow list: if request.auth != null && request.auth.uid in resource.data.uids;
    allow create: if active() && request.resource.data.keys().hasOnly(['uids','from','to','state'])
-    && request.resource.data.from == request.auth.uid && request.resource.data.to != request.auth.uid
+    && request.resource.data.from == request.auth.uid && request.resource.data.to != request.auth.uid && contactAllowed(request.auth.uid,request.resource.data.to)
     && request.resource.data.to is string && request.resource.data.uids is list && request.resource.data.uids.size() == 2
     && request.resource.data.uids.hasAll([request.resource.data.from,request.resource.data.to])
     && (id == request.resource.data.from + '_' + request.resource.data.to || id == request.resource.data.to + '_' + request.resource.data.from)
@@ -226,7 +230,7 @@ service cloud.firestore {
     && !exists(/databases/$(database)/documents/appBans/$(request.resource.data.to))
     && exists(/databases/$(database)/documents/publicProfiles/$(request.auth.uid))
     && request.resource.data.state == 'pending';
-   allow update: if active() && resource.data.to == request.auth.uid && resource.data.state == 'pending'
+   allow update: if active() && contactAllowed(request.auth.uid,resource.data.from) && resource.data.to == request.auth.uid && resource.data.state == 'pending'
     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['state']) && request.resource.data.state == 'accepted';
    allow delete: if request.auth != null && request.auth.uid in resource.data.uids;
   }
@@ -235,7 +239,7 @@ service cloud.firestore {
    allow list: if request.auth != null && (resource.data.to == request.auth.uid || resource.data.from == request.auth.uid);
    allow create, update: if active() && request.resource.data.keys().hasOnly(['from','to','roomId'])
     && request.resource.data.from == request.auth.uid && request.resource.data.to is string
-    && id == request.resource.data.roomId + '_' + request.resource.data.to && roomManager(request.resource.data.roomId) && roomOpen(request.resource.data.roomId)
+    && contactAllowed(request.auth.uid,request.resource.data.to) && id == request.resource.data.roomId + '_' + request.resource.data.to && roomManager(request.resource.data.roomId) && roomOpen(request.resource.data.roomId)
     && unlocked(request.resource.data.to)
     && !exists(/databases/$(database)/documents/appBans/$(request.resource.data.to))
     && !exists(/databases/$(database)/documents/rooms/$(request.resource.data.roomId)/bans/$(request.resource.data.to))
@@ -304,10 +308,75 @@ service cloud.firestore {
      || (((moderator(rid) && sanctionable(rid,uid)) || (leader(rid) && locked(request.auth.uid)))
        && (!immune(uid) || !existsAfter(/databases/$(database)/documents/rooms/$(rid))));
    }
+   match /studyGoals/{gid} {
+    allow read: if member(rid) || (leader(rid) && locked(request.auth.uid));
+    allow create, update: if roomManager(rid) && roomOpen(rid) && gid == 'current'
+     && request.resource.data.keys().hasOnly(['title','targetSeconds','ownerUid','startedAt','endsAt','goalId'])
+     && request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 80
+     && request.resource.data.targetSeconds is int && request.resource.data.targetSeconds >= 3600 && request.resource.data.targetSeconds <= 3600000
+     && request.resource.data.ownerUid == request.auth.uid && request.resource.data.startedAt == request.time
+     && request.resource.data.goalId is string && request.resource.data.goalId.matches('[a-f0-9]{20}')
+     && request.resource.data.endsAt is number && request.resource.data.endsAt > request.time.toMillis() && request.resource.data.endsAt <= request.time.toMillis()+604800000;
+    allow update: if request.auth != null && resource.data.ownerUid == request.auth.uid && locked(request.auth.uid)
+     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ownerUid']) && request.resource.data.ownerUid != request.auth.uid
+     && exists(/databases/$(database)/documents/rooms/$(rid)/members/$(request.resource.data.ownerUid));
+    allow delete: if roomManager(rid) || (leader(rid) && locked(request.auth.uid)) || (request.auth != null && resource.data.ownerUid == request.auth.uid && locked(request.auth.uid));
+    match /contributions/{uid} {
+     allow read: if member(rid) || self(uid) || (leader(rid) && locked(request.auth.uid)) || (request.auth != null && locked(request.auth.uid) && get(/databases/$(database)/documents/rooms/$(rid)/studyGoals/$(gid)).data.ownerUid == request.auth.uid);
+     allow create, update: if member(rid) && self(uid) && roomOpen(rid)
+      && request.resource.data.keys().hasOnly(['uid','goalId','seconds','updatedAt']) && request.resource.data.uid == uid
+      && request.resource.data.goalId == get(/databases/$(database)/documents/rooms/$(rid)/studyGoals/$(gid)).data.goalId
+      && get(/databases/$(database)/documents/rooms/$(rid)/studyGoals/$(gid)).data.endsAt > request.time.toMillis()
+      && request.resource.data.updatedAt == request.time && request.resource.data.seconds is int && request.resource.data.seconds >= 0 && request.resource.data.seconds <= 604800
+      && (resource == null || request.resource.data.goalId != resource.data.goalId || request.resource.data.seconds >= resource.data.seconds);
+     allow delete: if self(uid) || roomManager(rid) || (leader(rid) && locked(request.auth.uid)) || (request.auth != null && locked(request.auth.uid) && get(/databases/$(database)/documents/rooms/$(rid)/studyGoals/$(gid)).data.ownerUid == request.auth.uid);
+    }
+   }
+   match /studySessions/{sid} {
+    allow read: if member(rid) || (request.auth != null && resource.data.ownerUid == request.auth.uid) || (leader(rid) && locked(request.auth.uid));
+    allow create: if member(rid) && roomOpen(rid) && sid.matches('[a-f0-9]{20}')
+     && request.resource.data.keys().hasOnly(['title','ownerUid','focus','rest','status','startedAt','createdAt'])
+     && request.resource.data.ownerUid == request.auth.uid && request.resource.data.createdAt == request.time
+     && request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 60
+     && request.resource.data.focus is int && request.resource.data.focus >= 60 && request.resource.data.focus <= 10800
+     && request.resource.data.rest is int && request.resource.data.rest >= 60 && request.resource.data.rest <= 3600
+     && request.resource.data.status == 'ready' && request.resource.data.startedAt == 0;
+    allow update: if member(rid) && roomOpen(rid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','startedAt'])
+     && ((resource.data.ownerUid == request.auth.uid && request.resource.data.status in ['ready','running','closed']
+      && request.resource.data.startedAt is number && request.resource.data.startedAt >= 0 && request.resource.data.startedAt <= request.time.toMillis()+10000)
+      || (roomManager(rid) && request.resource.data.status == 'closed' && request.resource.data.startedAt == resource.data.startedAt));
+    allow delete: if roomManager(rid) || (request.auth != null && resource.data.ownerUid == request.auth.uid) || (leader(rid) && locked(request.auth.uid));
+    match /participants/{uid} {
+     allow read: if member(rid) || self(uid) || (locked(request.auth.uid) && get(/databases/$(database)/documents/rooms/$(rid)/studySessions/$(sid)).data.ownerUid == request.auth.uid) || (leader(rid) && locked(request.auth.uid));
+     allow create, update: if member(rid) && owner(uid) && roomOpen(rid)
+      && get(/databases/$(database)/documents/rooms/$(rid)/studySessions/$(sid)).data.status != 'closed'
+      && request.resource.data.keys().hasOnly(['uid','joinedAt']) && request.resource.data.uid == uid && request.resource.data.joinedAt == request.time;
+     allow delete: if self(uid) || roomManager(rid) || (leader(rid) && locked(request.auth.uid)) || (locked(request.auth.uid) && get(/databases/$(database)/documents/rooms/$(rid)/studySessions/$(sid)).data.ownerUid == request.auth.uid);
+    }
+   }
+   match /studyEvents/{eid} {
+    allow read: if member(rid) || (request.auth != null && resource.data.ownerUid == request.auth.uid) || (leader(rid) && locked(request.auth.uid));
+    allow create: if member(rid) && roomOpen(rid) && eid.matches('[a-f0-9]{20}')
+     && request.resource.data.keys().hasOnly(['title','ownerUid','startsAt','cancelled','createdAt'])
+     && request.resource.data.ownerUid == request.auth.uid && request.resource.data.createdAt == request.time
+     && request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 80
+     && request.resource.data.startsAt is number && request.resource.data.startsAt >= request.time.toMillis()+60000 && request.resource.data.startsAt <= request.time.toMillis()+7776000000
+     && request.resource.data.cancelled == false;
+    allow update: if member(rid) && roomOpen(rid) && (resource.data.ownerUid == request.auth.uid || roomManager(rid))
+     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cancelled']) && request.resource.data.cancelled == true;
+    allow delete: if roomManager(rid) || (request.auth != null && resource.data.ownerUid == request.auth.uid) || (leader(rid) && locked(request.auth.uid));
+    match /attendees/{uid} {
+     allow read: if member(rid) || self(uid) || (locked(request.auth.uid) && get(/databases/$(database)/documents/rooms/$(rid)/studyEvents/$(eid)).data.ownerUid == request.auth.uid) || (leader(rid) && locked(request.auth.uid));
+     allow create, update: if member(rid) && owner(uid) && roomOpen(rid)
+      && get(/databases/$(database)/documents/rooms/$(rid)/studyEvents/$(eid)).data.cancelled == false
+      && request.resource.data.keys().hasOnly(['uid','joinedAt']) && request.resource.data.uid == uid && request.resource.data.joinedAt == request.time;
+     allow delete: if self(uid) || roomManager(rid) || (leader(rid) && locked(request.auth.uid)) || (locked(request.auth.uid) && get(/databases/$(database)/documents/rooms/$(rid)/studyEvents/$(eid)).data.ownerUid == request.auth.uid);
+    }
+   }
    match /messages/{message} {
     // Own-author queries remain available for export and account deletion.
     allow read: if member(rid) || moderator(rid) || (request.auth != null && resource.data.uid == request.auth.uid);
-    allow create: if active() && member(rid) && roomOpen(rid) && request.resource.data.keys().hasOnly(['uid','text','image','time','replyTo','reactions','question','solved','pinned'])
+    allow create: if active() && member(rid) && roomOpen(rid) && request.resource.data.keys().hasOnly(['uid','text','image','time','replyTo','reactions','question','solved','pinned','threadId'])
      && request.resource.data.get('question',false) is bool && request.resource.data.get('solved',false) == false
      && request.resource.data.get('pinned',false) == false
      && request.resource.data.uid == request.auth.uid && message.matches('[A-Z2-9]{20}')
@@ -315,7 +384,10 @@ service cloud.firestore {
      && request.resource.data.image is string && request.resource.data.image.size() <= 450000
      && (request.resource.data.image == '' || request.resource.data.image.matches('data:image/jpeg;base64,[A-Za-z0-9+/]+={0,2}'))
      && (request.resource.data.text.size() > 0 || request.resource.data.image.size() > 0)
-     && (!('replyTo' in request.resource.data) || (request.resource.data.replyTo is map && request.resource.data.replyTo.keys().hasOnly(['id','sender','text']) && request.resource.data.replyTo.id is string && request.resource.data.replyTo.id.matches('[A-Z2-9]{20}') && request.resource.data.replyTo.sender is string && request.resource.data.replyTo.sender.size() <= 50 && request.resource.data.replyTo.text is string && request.resource.data.replyTo.text.size() <= 500))
+     && (!('replyTo' in request.resource.data) || (request.resource.data.replyTo is map && request.resource.data.replyTo.keys().hasOnly(['id','sender','text']) && request.resource.data.replyTo.id is string && request.resource.data.replyTo.id.matches('[A-Z2-9]{20}') && request.resource.data.replyTo.sender is string && request.resource.data.replyTo.sender.size() <= 50 && request.resource.data.replyTo.text is string && request.resource.data.replyTo.text.size() <= 500 && contactAllowed(request.auth.uid,get(/databases/$(database)/documents/rooms/$(rid)/messages/$(request.resource.data.replyTo.id)).data.uid)))
+     && (!('threadId' in request.resource.data) || (request.resource.data.threadId is string && request.resource.data.threadId.matches('[A-Z2-9]{20}')
+      && get(/databases/$(database)/documents/rooms/$(rid)/messages/$(request.resource.data.threadId)).data.get('question',false) == true
+      && contactAllowed(request.auth.uid,get(/databases/$(database)/documents/rooms/$(rid)/messages/$(request.resource.data.threadId)).data.uid)))
      && (!('reactions' in request.resource.data) || (request.resource.data.reactions is map && request.resource.data.reactions.size() == 0));
     allow update: if active() && member(rid) && roomOpen(rid)
      && ((request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pinned'])
@@ -344,18 +416,24 @@ service cloud.firestore {
     // Sender get uses at most ten document access calls (nine paths). Worker checks
     // the sender's own membership and sanctions separately before FCM.
     allow get: if self(uid) || (active() && resource.data.from == request.auth.uid
-     && roomOpen(rid) && nudgeTarget(rid,uid));
+     && roomOpen(rid) && nudgeAllowed(request.auth.uid,uid) && nudgeTarget(rid,uid));
     allow list: if moderator(rid) || (leader(rid) && locked(request.auth.uid));
     // The heartbeat member write independently enforces active() and roomAllowed().
     // Repeating active() here would waste two access calls in this batch operation.
     allow create, update: if verified() && nudgeHeartbeat(rid) && roomOpen(rid) && uid != request.auth.uid
      && request.resource.data.keys().hasOnly(['from','to','at']) && request.resource.data.from == request.auth.uid
      && request.resource.data.to == uid && request.resource.data.at == request.time
-     && nudgeTarget(rid,uid)
+     && nudgeAllowed(request.auth.uid,uid) && nudgeTarget(rid,uid)
      && (resource == null || resource.data.at < request.time - duration.value(10,'s'));
     allow delete: if moderator(rid) || (leader(rid) && locked(request.auth.uid));
    }
   }
+  match /{parent=**}/studyGoals/{id} { allow read: if request.auth != null && resource.data.ownerUid == request.auth.uid; allow delete: if request.auth != null && locked(request.auth.uid) && resource.data.ownerUid == request.auth.uid; }
+  match /{parent=**}/studySessions/{id} { allow read: if request.auth != null && resource.data.ownerUid == request.auth.uid; allow delete: if request.auth != null && locked(request.auth.uid) && resource.data.ownerUid == request.auth.uid; }
+  match /{parent=**}/studyEvents/{id} { allow read: if request.auth != null && resource.data.ownerUid == request.auth.uid; allow delete: if request.auth != null && locked(request.auth.uid) && resource.data.ownerUid == request.auth.uid; }
+  match /{parent=**}/participants/{id} { allow read: if request.auth != null && resource.data.uid == request.auth.uid; allow delete: if request.auth != null && locked(request.auth.uid) && resource.data.uid == request.auth.uid; }
+  match /{parent=**}/attendees/{id} { allow read: if request.auth != null && resource.data.uid == request.auth.uid; allow delete: if request.auth != null && locked(request.auth.uid) && resource.data.uid == request.auth.uid; }
+  match /{parent=**}/contributions/{id} { allow read: if request.auth != null && resource.data.uid == request.auth.uid; allow delete: if request.auth != null && locked(request.auth.uid) && resource.data.uid == request.auth.uid; }
   match /appBans/{uid} {
    allow get: if self(uid) || (admin() && unlocked(request.auth.uid));
    allow list: if admin() && unlocked(request.auth.uid);
@@ -405,7 +483,7 @@ service cloud.firestore {
     && request.resource.data.profile.keys().hasOnly(['uid', 'name', 'photo'])
     && request.resource.data.profile.uid == uid
     && request.resource.data.profile.name is string && request.resource.data.profile.name.size() <= 30
-    && request.resource.data.profile.photo is string && request.resource.data.profile.photo.size() <= 40000;
+    && (validImage(request.resource.data.profile.photo) || (request.resource.data.profile.photo is string && request.resource.data.profile.photo.size()<1500 && request.resource.data.profile.photo.matches('https://lh[0-9]+[.]googleusercontent[.]com/.*')));
   }
   match /users/{uid}/devices/{device} {
    allow read: if owner(uid) || (self(uid) && locked(uid));

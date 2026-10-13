@@ -14,7 +14,7 @@ test('fonts require atomic payment or trusted gift and only the owner can equip 
  const profile=doc(a,'publicProfiles',uid),e=doc(a,'entitlements',uid),w=doc(a,'wallets',uid);
  await assertFails(updateDoc(profile,{cosmetics:{...plain,font:'fredoka'}}));await assertFails(updateDoc(profile,{cosmetics:{...plain,font:'evil'}}));await assertFails(setDoc(e,{...owned(),fonts:['fredoka']}));
  await env.withSecurityRulesDisabled(async ctx=>setDoc(doc(ctx.firestore(),'wallets',uid),wallet(7200000)));
- const buy=(data)=>{const batch=writeBatch(a);batch.update(w,{spentSeconds:3600000,lastPurchase:'font:fredoka'});batch.set(e,data);return batch.commit()};
+ const buy=(data)=>{const batch=writeBatch(a);batch.update(w,{spentSeconds:18000,lastPurchase:'font:fredoka'});batch.set(e,data);return batch.commit()};
  await assertFails(buy({...owned(),fonts:['fredoka','cinzel']}));await assertFails(buy({...owned(),fonts:['fredoka'],nameStyles:['gold']}));await assertSucceeds(buy({...owned(),fonts:['fredoka']}));
  const equipped={...plain,nameStyle:'plain',font:'fredoka'};await assertSucceeds(updateDoc(profile,{cosmetics:equipped}));await assertFails(updateDoc(doc(viewer,'publicProfiles',uid),{cosmetics:equipped}));
  for(const db of [other,viewer])require('node:assert/strict').deepEqual((await assertSucceeds(getDoc(doc(db,'publicProfiles',uid)))).data().cosmetics,equipped);
@@ -36,18 +36,18 @@ test('wallet cannot mint initial credit, advance faster than server time, double
  await assertFails(getDoc(doc(account('storeSpy'),'wallets',uid)));
 });
 
-test('atomic purchase charges exactly one thousand hours for exactly one owned catalog item',async()=>{
+test('atomic purchase charges catalog-specific exact prices for exactly one owned catalog item',async()=>{
  const uid='storeBuyer',a=account(uid),w=doc(a,'wallets',uid),e=doc(a,'entitlements',uid);
  await env.withSecurityRulesDisabled(async ctx=>{await setDoc(doc(ctx.firestore(),'wallets',uid),wallet(7200000))});
  await assertFails(setDoc(e,{...owned(),frames:['ruby']}));
  const buy=(spent,id,data)=>{const batch=writeBatch(a);batch.update(w,{spentSeconds:spent,lastPurchase:id});batch.set(e,data);return batch.commit()};
  await assertFails(buy(1,'frame:ruby',{...owned(),frames:['ruby']}));
- await assertFails(buy(3600000,'frame:ruby',{...owned(),frames:['ruby','gold']}));
- await assertFails(buy(3600000,'frame:ruby',{...owned(),frames:['ruby'],tags:['custom:Free tag']}));
- await assertSucceeds(buy(3600000,'frame:ruby',{...owned(),frames:['ruby']}));
+ await assertFails(buy(72000,'frame:ruby',{...owned(),frames:['ruby','gold']}));
+ await assertFails(buy(72000,'frame:ruby',{...owned(),frames:['ruby'],tags:['custom:Free tag']}));
+ await assertSucceeds(buy(72000,'frame:ruby',{...owned(),frames:['ruby']}));
  await assertFails(updateDoc(w,{spentSeconds:0}));
- await assertFails(buy(7200000,'frame:ruby',{...owned(),frames:['ruby']}));
- await assertSucceeds(buy(7200000,'name:ice',{...owned(),frames:['ruby'],nameStyles:['ice']}));
+ await assertFails(buy(144000,'frame:ruby',{...owned(),frames:['ruby']}));
+ await assertSucceeds(buy(108000,'name:ice',{...owned(),frames:['ruby'],nameStyles:['ice']}));
  await assertFails(buy(10800000,'plate:emerald',{...owned(),frames:['ruby'],nameStyles:['ice'],plates:['emerald']}));
 });
 
@@ -85,7 +85,9 @@ test('playful fonts require ownership and paid purchases remain atomic',async()=
   register.set(doc(a,'usernames','playful_buyer'+i),{uid});register.set(doc(a,'publicProfiles',uid),{uid,username:'playful_buyer'+i,name:'Buyer',photo:'',exam:'',cosmetics:plain});await assertSucceeds(register.commit());
   await assertFails(updateDoc(doc(a,'publicProfiles',uid),{cosmetics:{...plain,font}}));
   await env.withSecurityRulesDisabled(async ctx=>{await setDoc(doc(ctx.firestore(),'wallets',uid),wallet(3600000))});
-  const buy=writeBatch(a);buy.update(doc(a,'wallets',uid),{spentSeconds:3600000,lastPurchase:'font:'+font});buy.set(doc(a,'entitlements',uid),{...owned(),fonts:[font]});await assertSucceeds(buy.commit());
+  const buy=writeBatch(a);buy.update(doc(a,'wallets',uid),{spentSeconds:18000,lastPurchase:'font:'+font});buy.set(doc(a,'entitlements',uid),{...owned(),fonts:[font]});await assertSucceeds(buy.commit());
   await assertSucceeds(updateDoc(doc(a,'publicProfiles',uid),{cosmetics:{...plain,font}}));
  }
 });
+
+test('new theme and animated frames use exact server catalog costs; discounted or overpaid grants fail',async()=>{for(const [i,id] of ['frame:ember','plate:robot-silver','frame:pulse','frame:robot-gold','frame:robot-duo','font:orbitron'].entries()){const uid='themeBuyer'+i,a=account(uid),model=require('../cosmetics.js'),item=model.find(id),w=doc(a,'wallets',uid),e=doc(a,'entitlements',uid);await env.withSecurityRulesDisabled(async c=>setDoc(doc(c.firestore(),'wallets',uid),wallet(1000000)));const buy=spent=>{const batch=writeBatch(a);batch.update(w,{spentSeconds:spent,lastPurchase:id});batch.set(e,model.grant({},id));return batch.commit()};await assertFails(buy(item.cost-1));await assertFails(buy(item.cost+1));await assertSucceeds(buy(item.cost))}});

@@ -9,3 +9,4 @@ test('Study history redraws only when a visible minute or goal changes, while ex
  study.record(40,Date.now());study.render();assert.equal(rebuilds,2);
  study.applyPreferences({focus:25,break:5,goal:180});assert.equal(rebuilds,3);
 });
+

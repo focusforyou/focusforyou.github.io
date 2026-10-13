@@ -103,3 +103,4 @@ test('room deletion barrier is one-way and blocks arrivals, new messages and rea
  await assertSucceeds(deleteDoc(doc(a,'rooms',rid,'members','barrierMember')));
  const batch=writeBatch(a);batch.delete(doc(a,'rooms',rid,'members','barrierLeader'));batch.delete(doc(a,'users','barrierLeader','rooms',rid));batch.delete(room);await assertSucceeds(batch.commit());
 });
+

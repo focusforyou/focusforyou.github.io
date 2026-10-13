@@ -1,9 +1,9 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs');
 const base='android/app/src/main/java/io/github/focusforyou/app/';
-test('Native sound bridge allows only two sound kinds and gates playback on the trusted page',()=>{
+test('Native sound bridge allows only alert and phase sound kinds and gates playback on the trusted page',()=>{
  const source=fs.readFileSync(base+'MainActivity.java','utf8');
  const bridge=source.split('@JavascriptInterface public void sound(String kind){')[1].split('@JavascriptInterface')[0];
- assert(bridge);assert.match(bridge,/!"alarm"\.equals\(kind\)&&!"nudge"\.equals\(kind\)\)return/);
+ assert(bridge);assert.match(bridge,/!"alarm"\.equals\(kind\)&&!"nudge"\.equals\(kind\)&&!"focus"\.equals\(kind\)&&!"break"\.equals\(kind\)\)return/);
  assert.match(bridge,/runOnUiThread\(\(\)->\{if\(trustedPage\(\)\)FocusSound\.play\(kind\)/);
 });
 test('Native foreground completion predicate rings only once for an expired running focus phase',()=>{
@@ -30,3 +30,4 @@ test('Web and service alerts share throttling and audio resources are released o
  assert.match(source,/if\(!started\)\{tone\.release\(\);return/);
  assert.match(source,/catch\(RuntimeException ignored\)\s*\{\s*if\(tone!=null\)tone\.release\(\)/);
 });
+

@@ -44,7 +44,7 @@ function fixture(){
  const snapshot=path=>({id:path.split('/').at(-1),ref:ref(path),exists:()=>records.has(path),data:()=>records.get(path)});
  const select=q=>{
   if(q.kind==='doc')return snapshot(q.path);
-  let paths=[...records.keys()].filter(p=>p.startsWith(q.path+'/')&&p.split('/').length===q.path.split('/').length+1);
+  let paths=[...records.keys()].filter(p=>q.group?p.split('/').at(-2)===q.path:p.startsWith(q.path+'/')&&p.split('/').length===q.path.split('/').length+1);
   for(const c of q.clauses||[]){
    if(c.type==='where')paths=paths.filter(p=>c.op==='array-contains'?records.get(p)[c.field]?.includes(c.value):records.get(p)[c.field]===c.value);
    if(c.type==='order')paths.sort((a,b)=>(records.get(b)[c.field]?.toMillis?.()||0)-(records.get(a)[c.field]?.toMillis?.()||0));
@@ -67,7 +67,7 @@ function fixture(){
   localStorage:{getItem:k=>sessions.get(k)||null,setItem:(k,v)=>sessions.set(k,v),removeItem:k=>sessions.delete(k)},
   document:{hidden:false,getElementById:node,createElement:()=>new Element(),createTextNode:text=>{const n=new Element();n.textContent=text;return n},querySelector:()=>node('chat-note'),addEventListener(){}},
   addEventListener(){},setInterval:f=>intervals.push(f),
-  doc:(_, ...p)=>ref(p.join('/')),collection:(_, ...p)=>ref(p.join('/'),'collection'),query:(base,...clauses)=>({...base,clauses:[...base.clauses,...clauses]}),
+  doc:(_, ...p)=>ref(p.join('/')),collection:(_, ...p)=>ref(p.join('/'),'collection'),collectionGroup:(_,name)=>({...ref(name,'collection'),group:true}),query:(base,...clauses)=>({...base,clauses:[...base.clauses,...clauses]}),
   where:(field,op,value)=>({type:'where',field,op,value}),orderBy:field=>({type:'order',field}),limit:value=>({type:'limit',value}),startAfter:cursor=>({type:'after',cursor}),
   getDoc:async r=>select(r),getDocFromServer:async r=>{if(offline)throw Error('offline');return select(r)},getDocs:async q=>select(q),getDocsFromServer:async q=>{if(offline)throw Error('offline');return select(q)},
   onSnapshot:(q,fn)=>{const s={q,fn,active:true};subscriptions.push(s);queueMicrotask(()=>{if(s.active)fn(select(q))});return ()=>s.active=false},
@@ -499,3 +499,7 @@ test('unchanged room ticks do not rewrite room tools and overlays defer member p
  f.ctx.FocusOverlayOpen=false;await f.tick();assert.notEqual(f.node('roomMembers').textContent,before);
  f.put('rooms/'+OPEN,{name:'Renamed',ownerUid:'alice',locked:false});f.emit();await f.settle();assert.ok(tools>baseline[0]);
 });
+
+ test('blocking hides room messages, removes friendship, persists privately and account switches reset controls',async()=>{const f=fixture();f.put('rooms/'+OPEN,{name:'Room',ownerUid:'alice',locked:false});f.put('friendships/alice_bob',{from:'bob',to:'alice',uids:['alice','bob'],state:'accepted'});f.put('rooms/'+OPEN+'/messages/'+'B'.repeat(20),{uid:'bob',text:'Hidden',image:'',time:{toMillis:()=>1}});await f.login();await f.join(OPEN);await f.ctx.FocusSocial.setContact('bob','blocked',true);await f.settle();assert.equal(f.ctx.FocusSocial.blocked('bob'),true);assert.equal(f.records.get('users/alice/controls/bob').blocked,true);assert.equal(f.records.has('friendships/alice_bob'),false);assert.equal(f.chat.retained.at(-1).includes('B'.repeat(20)),false);await f.login('carol');assert.equal(f.ctx.FocusSocial.blocked('bob'),false)});
+ test('mute and unmute preserve friendship and blocked state independently',async()=>{const f=fixture();f.put('friendships/alice_bob',{from:'bob',to:'alice',uids:['alice','bob'],state:'accepted'});await f.login();await f.ctx.FocusSocial.setContact('bob','muted',true);assert.equal(f.ctx.FocusSocial.muted('bob'),true);assert.equal(f.records.has('friendships/alice_bob'),true);await f.ctx.FocusSocial.setContact('bob','muted',false);assert.equal(f.ctx.FocusSocial.muted('bob'),false)});
+ test('question answer subscriptions are on demand, bounded, persist parent identity and stop on leave',async()=>{const f=fixture(),qid='Q'.repeat(20);f.put('rooms/'+OPEN,{name:'Room',ownerUid:'alice',locked:false});f.put('rooms/'+OPEN+'/messages/'+qid,{uid:'bob',text:'Question',image:'',question:true,time:{toMillis:()=>1}});await f.login();await f.join(OPEN);let answers=[];const stop=f.ctx.FocusSocial.watchThread(qid,rows=>answers=rows);await f.ctx.FocusSocial.sendAnswer(qid,'My answer');await f.settle();assert.equal(answers.length,1);assert.equal(answers[0].text,'My answer');assert.equal(answers[0].threadId,qid);assert.equal(answers[0].replyTo.id,qid);const sub=f.subscriptions.find(s=>s.q.clauses?.some(c=>c.field==='threadId'));assert.equal(sub.q.clauses.find(c=>c.type==='limit').value,60);stop();assert.equal(sub.active,false);f.ctx.FocusSocial.watchThread(qid,()=>{});await f.ctx.FocusSocial.pauseRoom();assert.equal(f.subscriptions.filter(s=>s.active&&s.q.clauses?.some(c=>c.field==='threadId')).length,0)});

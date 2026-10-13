@@ -33,6 +33,15 @@ export async function eraseSocial({db,uid,assertCurrent}){
  if(!(await readDocs(query(allOwnMessages,limit(1)))).empty)throw Error('social-messages-remain');
  const ownNudges=[query(collectionGroup(db,'nudges'),where('to','==',uid)),query(collectionGroup(db,'nudges'),where('from','==',uid))];
  for(const q of ownNudges)await drain(q);
+ const activityQueries=[];
+ for(const [kind,child] of [['studySessions','participants'],['studyEvents','attendees']]){
+  const own=query(collectionGroup(db,kind),where('ownerUid','==',uid));activityQueries.push(own);
+  const roots=await readDocs(own);for(const root of roots.docs){await drain(collection(db,...root.ref.path.split('/'),child));await remove(root.ref)}
+ }
+ const ownGoals=query(collectionGroup(db,'studyGoals'),where('ownerUid','==',uid));activityQueries.push(ownGoals);
+ for(const goal of (await readDocs(ownGoals)).docs){const path=goal.ref.path.split('/'),rid=path[1],members=await readDocs(query(collection(db,'rooms',rid,'members'),limit(2))),next=members.docs.find(m=>m.id!==uid);if(next)await checked(()=>updateDoc(goal.ref,{ownerUid:next.id}));else{await drain(collection(db,...path,'contributions'));await remove(goal.ref)}}
+ for(const kind of ['participants','attendees','contributions']){const own=query(collectionGroup(db,kind),where('uid','==',uid));activityQueries.push(own);await drain(own)}
+ await drain(collection(db,'users',uid,'controls'));
  const ownRooms=query(collection(db,'rooms'),where('ownerUid','==',uid));
  const owned=await readDocs(ownRooms);
  for(const r of owned.docs){
@@ -40,6 +49,7 @@ export async function eraseSocial({db,uid,assertCurrent}){
   const next=others.docs.find(m=>m.id!==uid);
   if(next)await checked(()=>updateDoc(r.ref,{ownerUid:next.id}));
   else{
+   for(const [kind,child] of [['studySessions','participants'],['studyEvents','attendees'],['studyGoals','contributions']]){const roots=await readDocs(collection(db,'rooms',r.id,kind));for(const root of roots.docs){await drain(collection(db,'rooms',r.id,kind,root.id,child));await remove(root.ref)}}
    await drain(collection(db,'rooms',r.id,'bans'));
    await drain(collection(db,'rooms',r.id,'kicks'));
    await remove(doc(db,'rooms',r.id,'secrets','password'));
@@ -73,7 +83,7 @@ export async function eraseSocial({db,uid,assertCurrent}){
  }
  await remove(profileRef);await remove(doc(db,'entitlements',uid));
  await remove(doc(db,'appBans',uid));await remove(doc(db,'wallets',uid));
- for(const q of [previewRooms,...ownNudges,allOwnMessages,collection(db,'users',uid,'rooms'),collection(db,'users',uid,'roomProofs'),ownRooms,query(collection(db,'friendships'),where('uids','array-contains',uid)),query(collection(db,'roomInvites'),where('from','==',uid)),query(collection(db,'roomInvites'),where('to','==',uid))]){
+ for(const q of [collection(db,'users',uid,'controls'),...activityQueries,previewRooms,...ownNudges,allOwnMessages,collection(db,'users',uid,'rooms'),collection(db,'users',uid,'roomProofs'),ownRooms,query(collection(db,'friendships'),where('uids','array-contains',uid)),query(collection(db,'roomInvites'),where('from','==',uid)),query(collection(db,'roomInvites'),where('to','==',uid))]){
   if(!(await readDocs(query(q,limit(1)))).empty)throw Error('social-cleanup-not-empty');
  }
  if((await readDoc(profileRef)).exists()||(await readDoc(doc(db,'entitlements',uid))).exists()||(await readDoc(doc(db,'appBans',uid))).exists()||(await readDoc(doc(db,'wallets',uid))).exists())throw Error('social-profile-remains');

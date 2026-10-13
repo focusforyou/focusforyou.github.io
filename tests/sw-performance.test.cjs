@@ -4,3 +4,4 @@ test('cached versioned assets avoid reload network round-trips',async()=>{const 
 test('a new asset version loads and saves fresh code instead of another release',async()=>{const s=setup();s.items.set('https://focusforyou.github.io/account.js?v=old',{name:'old'});assert.equal((await s.read('/account.js?v=perf1')).name,'network');assert.equal((await s.read('/account.js?v=perf1')).name,'network');assert.equal(s.requests,1)});
 test('offline versioned startup uses the current release precached shell',async()=>{const s=setup(),cached={name:'shell'};s.items.set('/account.js',cached);s.offline=true;assert.equal(await s.read('/account.js?v=perf1'),cached)});
 test('HTML navigation still checks for the current release online',async()=>{const s=setup();s.items.set('https://focusforyou.github.io/',{name:'old HTML'});assert.equal((await s.read('/','navigate')).name,'network');assert.equal(s.requests,1)});
+

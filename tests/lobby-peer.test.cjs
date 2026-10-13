@@ -64,3 +64,4 @@ assert.equal(model.content({id:'A'.repeat(20),text:'x'.repeat(2001)}),null);
 assert.equal(model.content({id:'A'.repeat(20),text:'',image:'data:image/jpeg;base64,'+'A'.repeat(1500001)}),null);
 });
 
+

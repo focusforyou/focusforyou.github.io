@@ -12,8 +12,8 @@ function fixture(){
  };ctx.window=ctx;vm.createContext(ctx);vm.runInContext(fs.readFileSync('cosmetic-store.js','utf8').replace(/^import .*;\r?\n/gm,'').replace('export function','function'),ctx);const api=ctx.initCosmeticStore({db:{},auth});
  return {api,ctx,records,events,get transactions(){return transactions},async login(uid='buyer',admin=false){auth.currentUser={uid,emailVerified:true,email:admin?'efeozbilgin550@gmail.com':uid+'@example.com'};await api.bind(auth.currentUser)},advance:ms=>clock+=ms,setSession:v=>session=v,async tick(){for(const fn of intervals)fn();for(let i=0;i<20;i++)await Promise.resolve()}};
 }
-test('catalog has eighteen explicit thousand-hour items and normalized inventory never grants free ownership',()=>{
- assert.equal(model.catalog().length,21);for(const item of model.catalog())assert.equal(item.cost,3600000);
+test('catalog has explicit accessible prices and animated theme items and normalized inventory never grants free ownership',()=>{
+ assert.equal(model.catalog().length,35);for(const item of model.catalog())assert.ok(item.cost>=18000&&item.cost<=180000);assert.equal(model.find('frame:robot-gold').cost,180000);assert.equal(model.find('font:orbitron').cost,18000);
  assert.deepEqual(model.normalize(),{fonts:[],nameStyles:[],frames:[],plates:[],tags:[]});assert.equal(model.owned({},'frame:gold'),false);
  assert.equal(model.validTag('custom:Merhaba'),true);assert.equal(model.validTag('custom:\nFake'),false);assert.equal(model.validTag('custom:'+'x'.repeat(25)),false);
  assert.equal(model.balance({earnedSeconds:7200000,spentSeconds:3600000}),3600000);
@@ -22,8 +22,8 @@ test('wallet heartbeat caps offline credit, stops earning during breaks and purc
  const f=fixture();await f.login();await f.api.sync(true);assert.equal(f.records.get('wallets/buyer').earnedSeconds,0);
  f.advance(120000);await f.api.sync(false);assert.equal(f.records.get('wallets/buyer').earnedSeconds,60);assert.equal(f.records.get('wallets/buyer').running,false);
  f.advance(3600000);await f.api.sync(false);assert.equal(f.records.get('wallets/buyer').earnedSeconds,60);
- f.records.set('wallets/buyer',{earnedSeconds:3600000,spentSeconds:0,running:false,checkpoint:{toMillis:()=>1000000},lastPurchase:''});
- await f.api.purchase('frame:emerald');assert.equal(f.records.get('wallets/buyer').spentSeconds,3600000);assert.equal(f.records.get('wallets/buyer').lastPurchase,'frame:emerald');assert.deepEqual(f.records.get('entitlements/buyer').frames,['emerald']);
+ f.records.set('wallets/buyer',{earnedSeconds:72000,spentSeconds:0,running:false,checkpoint:{toMillis:()=>1000000},lastPurchase:''});
+ await f.api.purchase('frame:emerald');assert.equal(f.records.get('wallets/buyer').spentSeconds,72000);assert.equal(f.records.get('wallets/buyer').lastPurchase,'frame:emerald');assert.deepEqual(f.records.get('entitlements/buyer').frames,['emerald']);
  await assert.rejects(f.api.purchase('frame:emerald'),/already-owned/);await assert.rejects(f.api.purchase('plate:ruby'),/insufficient-hours/);
 });
 test('a stop while start sync is pending is coalesced before settling and the final wallet cannot stay running',async()=>{
@@ -44,7 +44,7 @@ test('account changes cancel delayed purchases without writing inventory or bala
 
 test('font purchases and admin gifts preserve colors and only add the chosen font',async()=>{
  const f=fixture();await f.login();f.records.set('wallets/buyer',{earnedSeconds:3600000,spentSeconds:0,running:false,checkpoint:{toMillis:()=>1000000},lastPurchase:''});f.records.set('entitlements/buyer',{nameStyles:['ice'],frames:['gold'],plates:[],tags:[]});
- await f.api.purchase('font:fredoka');assert.deepEqual(f.records.get('entitlements/buyer').fonts,['fredoka']);assert.deepEqual(f.records.get('entitlements/buyer').nameStyles,['ice']);assert.equal(f.records.get('wallets/buyer').spentSeconds,3600000);
+ await f.api.purchase('font:fredoka');assert.deepEqual(f.records.get('entitlements/buyer').fonts,['fredoka']);assert.deepEqual(f.records.get('entitlements/buyer').nameStyles,['ice']);assert.equal(f.records.get('wallets/buyer').spentSeconds,18000);
  assert.deepEqual(model.normalize({fonts:['evil','cinzel','cinzel']}).fonts,['cinzel']);assert.equal(model.owned({},'font:cinzel'),false);
  f.records.set('usernames/friend',{uid:'friendUid'});await f.login('admin',true);await f.api.grant('@friend','font:space-mono');assert.deepEqual(f.records.get('entitlements/friendUid').fonts,['space-mono']);
 });
@@ -67,3 +67,5 @@ test('failed wallet writes expose a recoverable sync error and a successful retr
  const f=fixture();await f.login();const original=f.ctx.runTransaction;f.ctx.runTransaction=async()=>{throw Error('offline')};await f.tick();assert.equal(f.api.snapshot().error,'wallet-sync-failed');
  f.ctx.runTransaction=original;f.advance(30000);await f.tick();assert.equal(f.api.snapshot().error,'');assert.equal(f.records.get('wallets/buyer').running,true);
 });
+
+test('pending artwork is hidden and cannot be bought or gifted through the store API',async()=>{const f=fixture();await f.login('admin',true);f.records.set('usernames/friend',{uid:'friendUid'});for(const id of ['frame:robot-gold','frame:robot-silver','frame:robot-duo']){assert.equal(model.catalog().some(item=>item.id===id),false);await assert.rejects(f.api.purchase(id),/item-not-ready/);await assert.rejects(f.api.grant('friend',id),/item-not-ready/)}assert.equal(f.records.has('entitlements/friendUid'),false)});
