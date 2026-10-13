@@ -1,0 +1,67 @@
+/* Shared sizing for sheets, identity rows and visual cosmetic selectors. */
+:root{color-scheme:dark}html.theme-light{color-scheme:light}
+:is(dialog,.friends-popover,.photo-edit-menu){box-sizing:border-box}
+dialog{max-width:calc(100vw - 24px);overflow-x:hidden;scrollbar-gutter:stable}
+dialog :is(.community-sheet-content,.shop-content,.studio-layout,.studio-panes,.studio-pane,.studio-preview,#accountContent,.member-profile-header,.member-profile-info,.member-profile-stats,.profile-about){min-width:0;box-sizing:border-box;max-width:100%}
+dialog :is(input,select,textarea){box-sizing:border-box;min-width:0;max-width:100%;font-size:16px}
+:is(.social-row,.lobby-owner,.chat-roster-info,.friend-identity){min-width:0;max-width:100%}
+/* A helmet wrapper takes the same anchored position as the original avatar. */
+#memberProfileModal .profile-avatar-wrap>.cosmetic-helmet{position:absolute!important;left:0;right:auto;top:-48px;width:100px!important;height:100px!important;margin:0}
+.studio-preview-face>.cosmetic-helmet{position:absolute!important;left:0;right:auto;top:-35px;width:76px!important;height:76px!important;margin:0}
+#memberProfileModal .profile-avatar-wrap{height:72px;min-width:0}
+#memberProfileModal.member-profile-dialog{width:min(480px,calc(100vw - 24px));max-width:min(480px,calc(100vw - 24px))}
+#memberProfileModal .profile-edit-self{max-width:calc(100% - 116px);white-space:normal;text-align:center;box-sizing:border-box;line-height:1.3}
+#memberProfileModal .member-profile-info h3{max-width:100%;box-sizing:border-box;font-size:22px;line-height:1.4}
+#memberProfileModal #memberProfileTitle:is(.plate-robot-gold,.plate-robot-silver,.plate-robot-duo){--robot-cap:30px;width:100%!important;max-width:100%;font-size:20px}
+#memberProfileModal #memberProfileTitle>:is(.custom-tag,.doctor-tag,.system-tag){flex:0 1 auto;max-width:60%;font-size:12px}
+#memberProfileModal .member-profile-stats{box-sizing:border-box;padding:16px;gap:16px}
+#memberProfileModal .stat-pill{min-width:0;overflow-wrap:anywhere}
+#memberProfileModal .member-showcase{min-width:0;max-width:100%}
+#memberProfileModal .member-showcase p{overflow-wrap:anywhere}
+#studioPreviewName:is(.plate-robot-gold,.plate-robot-silver,.plate-robot-duo){--robot-cap:24px;width:100%!important;font-size:18px}
+#studioPreviewName>:is(.custom-tag,.doctor-tag,.system-tag){flex:0 1 auto;max-width:75%;font-size:10px}
+/* Compact names keep animated end art at its original aspect ratio. */
+.chat-roster-name .username{display:none!important}
+.chat-roster-name{position:relative;display:block;min-width:0;max-width:100%;font-size:16px;line-height:1.4;overflow:visible}
+.chat-roster-name.identity[class*="plate-"]{width:100%!important}
+.chat-roster-name:is(.plate-robot-gold,.plate-robot-silver,.plate-robot-duo){--robot-cap:24px}
+.chat-roster-name:is(.plate-gold,.plate-ice,.plate-violet,.plate-ember,.plate-lunar,.plate-sakura,.plate-cyber,.plate-abyss){padding-left:24px!important;padding-right:24px!important;flex-wrap:nowrap!important;white-space:nowrap}
+.chat-roster-name:is(.plate-gold,.plate-ice,.plate-violet,.plate-ember,.plate-lunar,.plate-sakura,.plate-cyber,.plate-abyss)::before,
+.chat-roster-name:is(.plate-gold,.plate-ice,.plate-violet,.plate-ember,.plate-lunar,.plate-sakura,.plate-cyber,.plate-abyss)::after{width:22px;height:38px;background-size:auto 38px}
+.chat-roster-name:has(>.custom-tag,>.doctor-tag,>.system-tag){margin-top:17px}
+.chat-roster-name>:is(.custom-tag,.doctor-tag,.system-tag){position:absolute;left:0;top:-17px;max-width:100%!important;width:max-content;overflow:hidden;text-overflow:ellipsis;font-size:10px;line-height:14px;white-space:nowrap;margin:0;animation:none}
+.chat-roster-name>.identity-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-roster-status{display:block;margin-top:4px;line-height:1.4}
+#chatMessages .chat-message>strong.identity:is(.plate-robot-gold,.plate-robot-silver,.plate-robot-duo){--robot-cap:28px}
+.cosmetic-grid{grid-template-columns:repeat(auto-fit,minmax(min(140px,100%),1fr));gap:12px}
+.cosmetic-choice{box-sizing:border-box;min-width:0;min-height:132px;padding:14px 10px;gap:10px}
+.cosmetic-choice strong{font-size:12px;line-height:1.4;overflow-wrap:anywhere}
+.cosmetic-choice .cosmetic-sample{box-sizing:border-box;max-width:100%;min-width:0}
+.cosmetic-choice .cosmetic-sample:is(.plate-robot-gold,.plate-robot-silver,.plate-robot-duo){--robot-cap:16px;font-size:13px}
+.shop-items .cosmetic-item{min-width:0;box-sizing:border-box}
+.shop-items .cosmetic-preview{min-width:0;max-width:100%}
+.shop-items .cosmetic-preview>strong{max-width:100%;box-sizing:border-box}
+@media(max-width:899px){
+ .settings-card-header>div:last-child{min-width:0}
+ .settings-toggle-row .segmented-control{max-width:100%;box-sizing:border-box}
+ .settings-card .row>div{min-width:0!important;flex-basis:120px!important}
+ .community-sheet-content{padding:20px;gap:14px}
+ .community-sheet-content h2{font-size:26px;line-height:1.2}
+ .community-sheet-content .pill{min-height:44px;box-sizing:border-box}
+ #accountSheet.profile-studio .cosmetic-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .studio-layout{gap:24px}
+ #accountSheet:has(.studio-tab[data-tab="looks"][aria-selected="true"]) .studio-preview .profile-cover{height:64px}
+ #accountSheet:has(.studio-tab[data-tab="looks"][aria-selected="true"]) .studio-preview-card{min-height:0}
+ #accountSheet:has(.studio-tab[data-tab="looks"][aria-selected="true"]) .studio-preview-body{min-height:0;padding-bottom:14px}
+ #accountSheet:has(.studio-tab[data-tab="looks"][aria-selected="true"]) .studio-preview-body :is(p,.chip){display:none}
+ #memberProfileModal.member-profile-dialog{width:calc(100vw - 24px);max-height:92dvh;border-radius:20px}
+ #memberProfileModal .community-sheet-content{padding:0 18px 20px}
+ #memberProfileModal .profile-cover{height:155px}
+ #memberProfileModal .member-profile-info h3{font-size:20px}
+ #memberProfileModal #memberProfileTitle:is(.plate-robot-gold,.plate-robot-silver,.plate-robot-duo){--robot-cap:24px;font-size:18px}
+ #memberProfileModal #memberProfileTitle>:is(.custom-tag,.doctor-tag,.system-tag){font-size:10px;max-width:62%}
+ #memberProfileModal .profile-about{padding:16px;margin-top:16px}
+ #nudgeNotice{left:16px;right:16px;top:82px;max-width:calc(100vw - 32px);box-sizing:border-box;font-size:14px;overflow-wrap:anywhere}
+}
+@media(max-width:360px){#memberProfileModal #memberProfileTitle:is(.plate-robot-gold,.plate-robot-silver,.plate-robot-duo),#studioPreviewName:is(.plate-robot-gold,.plate-robot-silver,.plate-robot-duo){--robot-cap:20px}}
+
