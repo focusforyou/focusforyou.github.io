@@ -1,0 +1,15 @@
+/* The scroll container must scroll messages, never compress their contents. */
+#chatMessages>.chat-message{flex:0 0 auto;height:auto;max-height:none;min-width:0}
+#chatMessages .chat-message>p{overflow-wrap:anywhere;word-break:normal;white-space:pre-wrap}
+@media(max-width:899px){
+ #chatMessages .chat-message{content-visibility:visible;contain-intrinsic-size:none}
+ #chatMessages .chat-message>strong.identity[class*="plate-"]{display:inline-flex!important;align-items:center;flex-wrap:nowrap!important;white-space:nowrap!important;overflow-wrap:normal!important;box-sizing:border-box!important;width:fit-content!important;max-width:100%!important;height:38px!important;min-height:38px!important;max-height:38px!important;padding:4px 28px!important;gap:5px;line-height:1.2}
+ #chatMessages .chat-message>strong.identity[class*="plate-"]::before,#chatMessages .chat-message>strong.identity[class*="plate-"]::after{width:26px;height:38px;background-size:auto 38px}
+ #chatMessages .identity-name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.3}
+ #chatMessages strong.identity>:is(.custom-tag,.doctor-tag,.system-tag){flex:0 1 auto;min-width:0;max-width:42%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;letter-spacing:0;margin-right:0;line-height:1.3}
+ #chatMessages strong.identity>.username{flex:0 2 auto;min-width:0;max-width:23%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}
+ #chatMessages .chat-message>small{display:block;margin:3px 0 0;font-size:11px;line-height:1.4}
+ #chatMessages .chat-message>p{display:block;margin-top:7px;font-size:15px;line-height:1.55;color:var(--tx)}
+}
+@media(max-width:599px){#chatMessages .chat-message>strong.identity{font-size:13px}#chatMessages strong.identity>.username{display:none}}
+
