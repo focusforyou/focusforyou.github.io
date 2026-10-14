@@ -1,18 +1,18 @@
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js';
 import {getAuth,setPersistence,browserLocalPersistence,GoogleAuthProvider,EmailAuthProvider,reauthenticateWithPopup,reauthenticateWithCredential,signInWithPopup,signInWithCredential,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendEmailVerification,sendPasswordResetEmail,signOut,onAuthStateChanged,reload,getIdToken} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js';
 import {getFirestore,doc,getDocFromServer,getDocsFromServer,collection,onSnapshot,runTransaction,serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js';
-import {initializeAppCheck,ReCaptchaEnterpriseProvider} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-app-check.js';
-import {firebaseConfig,googleClientId,appCheckSiteKey} from './firebase-config.js';
+import {initializeAppCheck,ReCaptchaEnterpriseProvider,onTokenChanged,getToken} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-app-check.js';
+import {firebaseConfig,googleClientId,appCheckSiteKey} from './firebase-config.js?v=appcheck1';
 import {eraseAccount} from './account-delete.js?v=features2';
 import {initCosmeticStore} from './cosmetic-store.js?v=features2';
 import {initSocial} from './social.js?v=room-invite1';
 import {initRoomActivities} from './room-activities.js?v=features2';
-import {initPush} from './push-client.js?v=room-invite1';
+import {initPush} from './push-client.js?v=appcheck1';
 
 const app=initializeApp(firebaseConfig);
 // Enable only after the matching web provider is registered in Firebase.
 // The APK uses this same web app through HTTPS; do not bypass attestation there.
-if(appCheckSiteKey)initializeAppCheck(app,{provider:new ReCaptchaEnterpriseProvider(appCheckSiteKey),isTokenAutoRefreshEnabled:true});
+if(appCheckSiteKey)window.FocusAppProtection.start(app,appCheckSiteKey,{initializeAppCheck,ReCaptchaEnterpriseProvider,onTokenChanged,getToken});
 const by=id=>document.getElementById(id),auth=getAuth(app),db=getFirestore();auth.languageCode='tr';
 const persistenceReady=setPersistence(auth,browserLocalPersistence);persistenceReady.catch(()=>message('Oturum bu tarayıcıda kalıcı saklanamadı. Tarayıcının site verileri iznini kontrol et.'));
 let uid='',cache={days:{},dirty:{}},base=null,devices=new Map(),devicesLoaded=false,unsub=[],generation=0,syncing=false,ready=false,observed={},avatar='',profile={uid:'',name:'',photo:''};
@@ -216,4 +216,3 @@ addEventListener('pagehide',()=>{watchChanges();saveCache()});
 document.addEventListener('visibilitychange',()=>{watchChanges();saveCache();if(!document.hidden)sync()});
 
 addEventListener('focus-moderation',event=>{const was=onlineBanned;onlineBanned=!!event.detail.banned;if(onlineBanned){ready=false;message('Çevrimiçi özelliklerin yasaklandı. Kişisel sayaç ve hesap silme açık.')}else if(was&&auth.currentUser)void bind(auth.currentUser).catch(failure)});
-

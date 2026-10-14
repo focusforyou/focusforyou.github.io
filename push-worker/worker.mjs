@@ -11,23 +11,29 @@ function unpack(fields={}){const out={};for(const [key,value]of Object.entries(f
 
 // Dependencies are injectable for deterministic tests; production uses native
 // Worker fetch/WebCrypto. No Firebase admin credentials are used for reads.
-export function createWorker({fetch:remote=globalThis.fetch,crypto=globalThis.crypto,now=Date.now}={}){
+// The dashboard's editor omits the Workers Web Crypto global from its type definitions.
+/** @typedef {{subtle:{digest:Function,importKey:Function,sign:Function}}} WorkerCrypto */
+/** @type {WorkerCrypto} */
+const runtimeCrypto=Reflect.get(globalThis,'crypto');
+export function createWorker({fetch:remote=globalThis.fetch,crypto=runtimeCrypto,now=Date.now}={}){
+ if(!crypto?.subtle||['digest','importKey','sign'].some(method=>typeof crypto.subtle[method]!=='function'))throw Error('web-crypto-unavailable');
  const inflight=new Map(),recent=new Map(),senderTimes=new Map();let oauth=null,oauthTask=null;
  const hash=async value=>b64(new Uint8Array(await crypto.subtle.digest('SHA-256',encoder.encode(value))));
  const registry=uid=>'devices:'+uid,tombstone=uid=>'deleted:'+uid;
  function configuration(env){if(!env.PUSH_KV||!/^[a-z][a-z0-9-]{4,62}$/.test(env.FIREBASE_PROJECT_ID||'')||!env.FIREBASE_API_KEY)fail(503,'not-configured')}
- function headers(request,env){const origin=request.headers.get('Origin'),allowed=env.SITE_ORIGIN||SITE;const h={'Content-Type':'application/json','Cache-Control':'no-store','Vary':'Origin'};if(origin===allowed)Object.assign(h,{'Access-Control-Allow-Origin':allowed,'Access-Control-Allow-Methods':'POST, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Max-Age':'600'});return h}
+ function headers(request,env){const origin=request.headers.get('Origin'),allowed=env.SITE_ORIGIN||SITE;const h={'Content-Type':'application/json','Cache-Control':'no-store','Vary':'Origin'};if(origin===allowed)Object.assign(h,{'Access-Control-Allow-Origin':allowed,'Access-Control-Allow-Methods':'POST, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type, X-Firebase-AppCheck','Access-Control-Max-Age':'600'});return h}
  async function body(request){if(!/^application\/json(?:;|$)/i.test(request.headers.get('Content-Type')||''))fail(415,'json-required');if(Number(request.headers.get('Content-Length')||0)>MAX_BODY)fail(413,'body-too-large');const reader=request.body?.getReader();if(!reader)fail(400,'invalid-body');let size=0,chunks=[];try{while(true){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>MAX_BODY){await reader.cancel();fail(413,'body-too-large')}chunks.push(value)}}finally{reader.releaseLock()}const bytes=new Uint8Array(size);let offset=0;for(const c of chunks){bytes.set(c,offset);offset+=c.length}try{const value=JSON.parse(new TextDecoder().decode(bytes));if(!value||typeof value!=='object'||Array.isArray(value))fail(400,'invalid-body');return value}catch(e){if(e instanceof Failure)throw e;fail(400,'invalid-body')}}
  function shape(value,keys){if(Object.keys(value).some(k=>!keys.includes(k)))fail(400,'unexpected-field')}
  async function authenticate(request,env){
   const match=/^Bearer ([A-Za-z0-9_.-]{20,8192})$/.exec(request.headers.get('Authorization')||'');if(!match)fail(401,'sign-in-required');const token=match[1];let claims;try{claims=decode(token.split('.')[1])}catch(e){fail(401,'invalid-token')}
   if(claims.aud!==env.FIREBASE_PROJECT_ID||claims.iss!=='https://securetoken.google.com/'+env.FIREBASE_PROJECT_ID||!UID.test(claims.sub||'')||!Number.isFinite(claims.exp)||claims.exp*1000<=now())fail(401,'invalid-token');
-  const response=await remote('https://identitytoolkit.googleapis.com/v1/accounts:lookup?key='+encodeURIComponent(env.FIREBASE_API_KEY),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idToken:token})});
+  const appCheck=request.headers.get('X-Firebase-AppCheck')||'';if(appCheck&&(appCheck.length>8192||! /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(appCheck)))fail(401,'invalid-app-check');
+  const response=await remote('https://identitytoolkit.googleapis.com/v1/accounts:lookup?key='+encodeURIComponent(env.FIREBASE_API_KEY),{method:'POST',headers:{'Content-Type':'application/json',...(appCheck?{'X-Firebase-AppCheck':appCheck}:{})},body:JSON.stringify({idToken:token})});
   if(!response.ok)fail(response.status>=500?503:401,response.status>=500?'auth-unavailable':'invalid-token');const data=await response.json(),user=data.users?.[0];
-  if(data.users?.length!==1||!user||user.localId!==claims.sub||user.disabled)fail(401,'invalid-token');return {uid:user.localId,token,verified:user.emailVerified===true&&claims.email_verified===true,email:user.email||''};
+  if(data.users?.length!==1||!user||user.localId!==claims.sub||user.disabled)fail(401,'invalid-token');return {uid:user.localId,token,appCheck,verified:user.emailVerified===true&&claims.email_verified===true,email:user.email||''};
  }
- async function document(env,token,path,metadata=false){const url='https://firestore.googleapis.com/v1/projects/'+env.FIREBASE_PROJECT_ID+'/databases/(default)/documents/'+path.map(encodeURIComponent).join('/');const response=await remote(url,{headers:{Authorization:'Bearer '+token}});if(response.status===404)return null;if(!response.ok)fail(response.status===403?403:503,response.status===403?'not-allowed':'database-unavailable');const data=await response.json();return metadata?{...unpack(data.fields),_updatedAt:Date.parse(data.updateTime)}:unpack(data.fields)}
- async function allowed(env,auth){if(!auth.verified)fail(403,'verify-email');const [lock,ban,deleted]=await Promise.all([document(env,auth.token,['deletions',auth.uid]),document(env,auth.token,['appBans',auth.uid]),env.PUSH_KV.get(tombstone(auth.uid))]);if(lock||deleted)fail(403,'account-deleting');if(ban&&auth.email!=='efeozbilgin550@gmail.com')fail(403,'account-banned')}
+ async function document(env,auth,path,metadata=false){const url='https://firestore.googleapis.com/v1/projects/'+env.FIREBASE_PROJECT_ID+'/databases/(default)/documents/'+path.map(encodeURIComponent).join('/');const response=await remote(url,{headers:{Authorization:'Bearer '+auth.token,...(auth.appCheck?{'X-Firebase-AppCheck':auth.appCheck}:{})}});if(response.status===404)return null;if(!response.ok)fail(response.status===403?403:503,response.status===403?'not-allowed':'database-unavailable');const data=await response.json();return metadata?{...unpack(data.fields),_updatedAt:Date.parse(data.updateTime)}:unpack(data.fields)}
+ async function allowed(env,auth){if(!auth.verified)fail(403,'verify-email');const [lock,ban,deleted]=await Promise.all([document(env,auth,['deletions',auth.uid]),document(env,auth,['appBans',auth.uid]),env.PUSH_KV.get(tombstone(auth.uid))]);if(lock||deleted)fail(403,'account-deleting');if(ban&&auth.email!=='efeozbilgin550@gmail.com')fail(403,'account-banned')}
  async function devices(env,uid){const data=await env.PUSH_KV.get(registry(uid),'json');if(!data)return {};if(typeof data!=='object'||Array.isArray(data))fail(503,'registry-unavailable');return data}
  async function register(env,auth,data){shape(data,['deviceId','token']);if(!DEVICE.test(data.deviceId||'')||typeof data.token!=='string'||! /^[A-Za-z0-9_.:~\-]{20,4096}$/.test(data.token))fail(400,'invalid-device');await allowed(env,auth);const rows=await devices(env,auth.uid);if(!rows[data.deviceId]&&Object.keys(rows).length>=MAX_DEVICES)fail(409,'device-limit');const tokenHash=await hash(data.token),old=rows[data.deviceId];
   if(old?.token===data.token&&old.hash===tokenHash){const owner=await env.PUSH_KV.get('token:'+tokenHash,'json');if(owner?.uid===auth.uid&&owner.deviceId===data.deviceId)return {ok:true}}
@@ -44,7 +50,7 @@ export function createWorker({fetch:remote=globalThis.fetch,crypto=globalThis.cr
  }
  async function dispatch(env,auth,data){
   shape(data,['roomId','targetUid']);if(!ROOM.test(data.roomId||'')||!UID.test(data.targetUid||'')||data.targetUid===auth.uid)fail(400,'invalid-target');await allowed(env,auth);const rid=data.roomId,target=data.targetUid;
-  const [nudge,sender,recipient,room,profile,senderBan,senderKick]=await Promise.all([document(env,auth.token,['rooms',rid,'nudges',target]),document(env,auth.token,['rooms',rid,'members',auth.uid]),document(env,auth.token,['rooms',rid,'members',target]),document(env,auth.token,['rooms',rid]),document(env,auth.token,['publicProfiles',auth.uid]),document(env,auth.token,['rooms',rid,'bans',auth.uid]),document(env,auth.token,['rooms',rid,'kicks',auth.uid])]);
+  const [nudge,sender,recipient,room,profile,senderBan,senderKick]=await Promise.all([document(env,auth,['rooms',rid,'nudges',target]),document(env,auth,['rooms',rid,'members',auth.uid]),document(env,auth,['rooms',rid,'members',target]),document(env,auth,['rooms',rid]),document(env,auth,['publicProfiles',auth.uid]),document(env,auth,['rooms',rid,'bans',auth.uid]),document(env,auth,['rooms',rid,'kicks',auth.uid])]);
   if(!room||room.deleting||!sender||sender.uid!==auth.uid||!recipient||recipient.uid!==target)fail(403,'not-same-room');if(auth.email!=='efeozbilgin550@gmail.com'&&(senderBan||(senderKick&&(!Number.isFinite(sender.joinedAt)||sender.joinedAt<=senderKick.at))))fail(403,'sender-not-active');const at=nudge?.at;if(!nudge||nudge.from!==auth.uid||nudge.to!==target||!Number.isFinite(at)||now()-at<0||now()-at>RECENT_MS)fail(403,'invalid-nudge');if(!/^[a-z0-9_]{3,24}$/.test(profile?.username||''))fail(403,'profile-required');
   const event=await hash(JSON.stringify([rid,target,auth.uid,at])),eventKey='event:'+event;if(recent.get(event)>now()||await env.PUSH_KV.get(eventKey))return {ok:true,duplicate:true};if(inflight.has(event))return inflight.get(event);
   if((senderTimes.get(auth.uid)||0)>now()-10000)fail(429,'wait-before-nudging');senderTimes.set(auth.uid,now());
@@ -54,7 +60,7 @@ export function createWorker({fetch:remote=globalThis.fetch,crypto=globalThis.cr
     // Recheck after OAuth/network delay: reading this receipt also enforces the recipient's current block/mute controls.
     // The nudge rule gates the recipient,
     // while self member reads require explicit sender sanction verification.
-    const [current,currentSender,currentBan,currentKick,currentRecipient]=await Promise.all([document(env,auth.token,['rooms',rid,'nudges',target]),document(env,auth.token,['rooms',rid,'members',auth.uid]),document(env,auth.token,['rooms',rid,'bans',auth.uid]),document(env,auth.token,['rooms',rid,'kicks',auth.uid]),document(env,auth.token,['rooms',rid,'members',target])]);
+    const [current,currentSender,currentBan,currentKick,currentRecipient]=await Promise.all([document(env,auth,['rooms',rid,'nudges',target]),document(env,auth,['rooms',rid,'members',auth.uid]),document(env,auth,['rooms',rid,'bans',auth.uid]),document(env,auth,['rooms',rid,'kicks',auth.uid]),document(env,auth,['rooms',rid,'members',target])]);
     if(!current||current.from!==auth.uid||current.to!==target||current.at!==at||now()-at>RECENT_MS)fail(409,'nudge-changed');
     if(!currentSender||currentSender.uid!==auth.uid||(auth.email!=='efeozbilgin550@gmail.com'&&(currentBan||(currentKick&&(!Number.isFinite(currentSender.joinedAt)||currentSender.joinedAt<=currentKick.at)))))fail(403,'sender-not-active');
     if(!currentRecipient||currentRecipient.uid!==target)fail(403,'not-same-room');
@@ -67,7 +73,7 @@ export function createWorker({fetch:remote=globalThis.fetch,crypto=globalThis.cr
  async function invite(env,auth,data){
   shape(data,['roomId','targetUid']);if(!ROOM.test(data.roomId||'')||!UID.test(data.targetUid||'')||data.targetUid===auth.uid)fail(400,'invalid-target');
   await allowed(env,auth);const rid=data.roomId,target=data.targetUid,path=['roomInvites',rid+'_'+target];
-  const [receipt,room,profile]=await Promise.all([document(env,auth.token,path,true),document(env,auth.token,['rooms',rid]),document(env,auth.token,['publicProfiles',auth.uid])]);
+  const [receipt,room,profile]=await Promise.all([document(env,auth,path,true),document(env,auth,['rooms',rid]),document(env,auth,['publicProfiles',auth.uid])]);
   function valid(value,currentRoom){
    if(!value||value.from!==auth.uid||value.to!==target||value.roomId!==rid||!Number.isFinite(value._updatedAt)||now()-value._updatedAt<0||now()-value._updatedAt>RECENT_MS)fail(403,'invalid-invitation');
    if(!currentRoom||currentRoom.deleting||(currentRoom.ownerUid!==auth.uid&&auth.email!=='efeozbilgin550@gmail.com'))fail(403,'not-room-leader');
@@ -82,7 +88,7 @@ export function createWorker({fetch:remote=globalThis.fetch,crypto=globalThis.cr
    if(tokens.length){
     const token=await accessToken(env);await allowed(env,auth);if(await env.PUSH_KV.get(tombstone(target)))return {ok:true};
     // Sender reads are gated by Firestore against current block/mute, bans and deletion locks.
-    const [current,currentRoom]=await Promise.all([document(env,auth.token,path,true),document(env,auth.token,['rooms',rid])]);valid(current,currentRoom);
+    const [current,currentRoom]=await Promise.all([document(env,auth,path,true),document(env,auth,['rooms',rid])]);valid(current,currentRoom);
     if(current._updatedAt!==receipt._updatedAt)fail(409,'invitation-changed');
     for(const deviceToken of tokens){const response=await remote('https://fcm.googleapis.com/v1/projects/'+env.FIREBASE_PROJECT_ID+'/messages:send',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({message:{token:deviceToken,notification:{title:'@'+profile.username+' seni odaya davet etti!',body:(typeof currentRoom.name==='string'?currentRoom.name.slice(0,40):'Çalışma odası')+' · Daveti görmek için dokun.'},data:{kind:'invite',roomId:rid,senderUsername:profile.username,nudgeId:event},android:{priority:'high',ttl:'300s',collapse_key:event,notification:{tag:'focus-invite-'+event,channel_id:'focus_nudges'}}}})});if(!response.ok){let result;try{result=await response.json()}catch{}if(!result?.error?.details?.some(v=>v.errorCode==='UNREGISTERED'))fail(503,'messaging-unavailable')}}
    }

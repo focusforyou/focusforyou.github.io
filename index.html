@@ -10,7 +10,7 @@
 <script>(()=>{try{const t=localStorage.getItem('focus_theme'),colors={light:'#EDF2FC',amoled:'#000000',forest:'#081c16',ocean:'#071c2b',dusk:'#1a1029'};if(Object.hasOwn(colors,t)){document.documentElement.classList.add('theme-'+t);document.querySelector('meta[name="theme-color"]').setAttribute('content',colors[t]);}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg">
-<script src="gif-media.js?v=gif-crop1"></script>
+<script src="app-protection.js?v=appcheck1"></script><script src="gif-media.js?v=gif-crop1"></script>
 <script src="planner-model.js?v=features2"></script>
 <script src="cloud-model.js?v=features2"></script>
 <script src="study.js?v=features2"></script>
@@ -471,7 +471,7 @@ window.FocusData={
 <script src="planner-notes.js?v=features2"></script><script src="focus-audio.js?v=features2"></script><script src="spotify.js?v=android1"></script>
 <script src="settings.js?v=themes1"></script><script src="popup-motion.js?v=features2"></script><script src="overlay-performance.js?v=features2"></script>
 <script src="profile-crop.js?v=gif-crop1"></script><script src="profile-edit.js?v=profile-save1"></script>
-<script type="module">import('./account.js?v=gif-crop1').catch(()=>{document.getElementById('accountStatus').textContent='Hesap hizmetine bağlanılamadı. İnternet bağlantın gelince sayfayı yeniden aç; cihaz kayıtların korunuyor.'})</script>
+<script type="module">import('./account.js?v=appcheck1').catch(()=>{document.getElementById('accountStatus').textContent='Hesap hizmetine bağlanılamadı. İnternet bağlantın gelince sayfayı yeniden aç; cihaz kayıtların korunuyor.'})</script>
 <script src="mobile-viewport.js?v=2"></script>
 </body>
 </html>

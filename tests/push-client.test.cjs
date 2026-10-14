@@ -17,6 +17,10 @@ function fixture(endpoint='https://focus-push.example.workers.dev'){
  ctx.window=ctx;vm.createContext(ctx);vm.runInContext(fs.readFileSync('push-client.js','utf8').replace(/^import .*;\r?\n/gm,'').replace('export function','function'),ctx);ctx.initPush({auth:ctx.auth});return f;
 }
 const user=(uid='alice',verified=true)=>({uid,emailVerified:verified,getIdToken:async()=>uid+'-id-token'});
+
+test('notification requests await App Check and send attestation only in the request header',async()=>{const f=fixture();f.ctx.FocusAppProtection={token:async()=> 'header.payload.signature'};await f.bind(user());await f.ctx.FocusPush.invite('YKS','bob');const r=f.requests.at(-1);assert.equal(r.headers['X-Firebase-AppCheck'],'header.payload.signature');assert.deepEqual(JSON.parse(JSON.stringify(r.body)),{roomId:'YKS',targetUid:'bob'})});
+test('App Check failure prevents a notification request and does not bypass protection',async()=>{const f=fixture();f.ctx.FocusAppProtection={token:async()=>{throw Error('app-check-unavailable')}};await f.bind(user());await assert.rejects(f.ctx.FocusPush.invite('YKS','bob'),/app-check-unavailable/);assert.equal(f.requests.length,0)});
+test('account change during attestation cannot send the old account notification',async()=>{const f=fixture(),gate=deferred();f.ctx.FocusAppProtection={token:()=>gate.promise};await f.bind(user());const sending=f.ctx.FocusPush.invite('YKS','bob'),rejected=assert.rejects(sending,/account-changed/);await f.settle();await f.bind(user('bob'));gate.resolve('header.payload.signature');await rejected;assert.equal(f.requests.length,0)});
 test('verified native token registration deduplicates refreshes and never puts the Firebase ID token in the body',async()=>{
  const f=fixture();await f.bind(user());assert.equal(f.requests.length,0);assert.equal(f.bridgeCalls,1);
  f.ctx.FocusPush.receiveToken(TOKEN_A);await f.settle();assert.equal(f.requests.length,1);assert.equal(f.requests[0].path,'/register');
@@ -71,4 +75,3 @@ test('failed unregister surfaces the error and permits an explicit retry while p
  await assert.rejects(f.ctx.FocusPush.unregister(),/push-http-503/);assert.equal(f.ctx.auth.currentUser.uid,'alice');
  await f.ctx.FocusPush.unregister();assert.equal(f.requests.filter(r=>r.path==='/unregister').length,2);
 });
-

@@ -1,4 +1,4 @@
-import {pushEndpoint} from './firebase-config.js';
+import {pushEndpoint} from './firebase-config.js?v=appcheck1';
 
 // FCM tokens stay in the native bridge and the private push service, never Firestore.
 export function initPush({auth}){
@@ -10,8 +10,9 @@ export function initPush({auth}){
  async function request(path,body,user=owner,rev=revision){
   if(!endpoint)throw Error('push-not-configured');if(!user)throw Error('push-no-account');
   const idToken=await user.getIdToken();current(user,rev);
+  const appToken=await window.FocusAppProtection?.token?.()||'';current(user,rev);
   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),12000);
-  try{const response=await fetch(endpoint+path,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+idToken},body:JSON.stringify(body),signal:controller.signal});current(user,rev);if(!response.ok)throw Error('push-http-'+response.status);const result=await response.json();current(user,rev);return result}
+  try{const response=await fetch(endpoint+path,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+idToken,...(appToken?{'X-Firebase-AppCheck':appToken}:{})},body:JSON.stringify(body),signal:controller.signal});current(user,rev);if(!response.ok)throw Error('push-http-'+response.status);const result=await response.json();current(user,rev);return result}
   finally{clearTimeout(timeout)}
  }
  async function register(){
@@ -35,4 +36,3 @@ export function initPush({auth}){
  addEventListener('online',()=>{if(owner?.emailVerified){window.FocusAndroid?.pushToken?.();schedule()}});
  return window.FocusPush;
 }
-
