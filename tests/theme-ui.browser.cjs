@@ -8,15 +8,19 @@ const server=http.createServer((req,res)=>{const url=new URL(req.url,'http://loc
  const browser=await chromium.launch({headless:true});let checks=0;
  try{
   for(const viewport of [{width:1440,height:1000},{width:375,height:900}]){
-   const mobile=viewport.width<900,context=await browser.newContext({viewport,hasTouch:mobile,serviceWorkers:'block'});
+   const mobile=viewport.width<900,context=await browser.newContext({viewport,hasTouch:mobile,reducedMotion:'reduce',serviceWorkers:'block'});
    await context.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
    const page=await context.newPage();await page.goto(origin+'/#calisma',{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>!!window.FocusSettings);
    await page.evaluate(async()=>{await document.fonts.ready;const probe=document.createElement('div');probe.id='cursorProbes';probe.style='position:fixed;left:-10000px;top:0';probe.innerHTML='<button id="probeButton"><span id="probeButtonSpan">Action</span><svg id="probeButtonSvg"></svg></button><button id="probeDisabled" disabled><span id="probeDisabledSpan">Disabled</span></button><input type="email" id="probeEmail"><div role="button" id="probeRole"><span id="probeRoleSpan">Role</span></div><div contenteditable="true" id="probeEdit"><b id="probeEditChild">Text</b></div>';document.body.append(probe)});
    for(const theme of themes){
     await page.evaluate(theme=>{window.FocusSettings.applyTheme(theme);location.hash='#calisma'},theme);await page.waitForTimeout(80);
     await page.evaluate(()=>document.fonts.ready);
-    const skin=await page.evaluate(()=>({theme:window.FocusSettings.theme,font:getComputedStyle(document.querySelector('.logo')).fontFamily,panel:getComputedStyle(document.querySelector('.card.timer')).backgroundColor}));
+    const skin=await page.evaluate(()=>({theme:window.FocusSettings.theme,font:getComputedStyle(document.querySelector('.logo')).fontFamily,panel:getComputedStyle(document.querySelector('.card.timer')).backgroundColor,buttonFont:getComputedStyle(document.querySelector('#tg')).fontFamily}));
     assert.equal(skin.theme,theme);if(!['ais','hoi4'].includes(theme))assert.match(skin.font,/FocusPixel/);
+    if(theme==='hoi4')assert.match(skin.buttonFont,/Arial/);
+    if(theme==='minecraft')assert.equal(skin.panel,'rgb(85, 64, 45)');
+    if(theme==='terraria')assert.equal(skin.panel,'rgb(37, 53, 115)');
+    if(theme==='stardew')assert.equal(skin.panel,'rgb(255, 228, 171)');
     if(theme==='inventory-amoled')assert.equal(skin.panel,'rgb(0, 0, 0)');
     if(!mobile&&theme!=='ais'){
      const cursors=await page.evaluate(()=>Object.fromEntries(['body','#probeButton','#probeButtonSpan','#probeButtonSvg','#probeDisabled','#probeDisabledSpan','#probeEmail','#probeRole','#probeRoleSpan','#probeEdit','#probeEditChild'].map(sel=>[sel,getComputedStyle(document.querySelector(sel)).cursor])));
@@ -36,7 +40,7 @@ const server=http.createServer((req,res)=>{const url=new URL(req.url,'http://loc
      assert.ok(overflow.scroll<=overflow.width+1,theme+' '+route+' overflows at '+viewport.width+': '+JSON.stringify(overflow));checks++;
     }
     await page.evaluate(()=>location.hash='#calisma');await page.waitForTimeout(80);
-    await page.screenshot({path:'theme-ui-proof/'+theme+'-'+viewport.width+'.png'});
+    await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:'theme-ui-proof/'+theme+'-'+viewport.width+'.png'});
    }
    await page.evaluate(()=>{window.FocusSettings.applyTheme('inventory');location.hash='#ayarlar'});await page.waitForTimeout(80);
    await page.screenshot({path:'theme-ui-proof/gallery-'+viewport.width+'.png',fullPage:true});
