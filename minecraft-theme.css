@@ -1,0 +1,32 @@
+/* Original block textures; all changes stay inside the optional Minecraft theme. */
+@font-face{font-family:FocusBlock;src:url('fonts/bungee.ttf') format('truetype');font-display:swap}
+.minecraft-block{display:block;width:36px;height:36px;border:3px solid #222a19;border-radius:0!important;background:linear-gradient(#83b84a 0 26%,#527c34 26% 38%,#826044 38% 70%,#67472f 70%);box-shadow:inset 4px 0 #ffffff20,inset -4px -4px #0003;image-rendering:pixelated}
+html.theme-minecraft{--page:#18261d;--surface:#343c36;--raised:#242d27;--line:#6e7864;--tx:#f0f2df;--mu:#c4ccb4;--pr:#a8d56d;--on:#17290f;color-scheme:dark;background:var(--page)}
+html.theme-minecraft body{background-color:var(--page)!important;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' fill-opacity='.035' d='M0 0h8v8H0zM16 8h8v8h-8zM8 24h8v8H8z'/%3E%3Cpath fill='%23000000' fill-opacity='.08' d='M24 0h8v8h-8zM0 16h8v8H0zM24 24h8v8h-8z'/%3E%3C/svg%3E")!important;color:var(--tx)}
+html.theme-minecraft #sky{opacity:.28}
+html.theme-minecraft :is(header,footer,.mobile-nav,.mobile-timer){background:#283d29!important;color:var(--tx);border-color:var(--line);box-shadow:0 3px 0 #101a12}
+html.theme-minecraft :is(.logo,h1,h2,h3,.ring b,.big){font-family:FocusBlock,Figtree,system-ui,sans-serif;font-weight:400;letter-spacing:0;text-shadow:2px 3px 0 #142019}
+html.theme-minecraft h2{font-size:clamp(22px,3vw,30px);line-height:1.4}
+html.theme-minecraft .card h3{font-size:21px;line-height:1.45}
+html.theme-minecraft .logo{font-size:18px}
+html.theme-minecraft :is(.card,.hero,.verdict,dialog,.account-menu,.community-sheet-content,.studio-preview-card,.studio-preview-body,.member-profile-stats,.profile-about,.lobby-tile,.social-row,.room-chat,.active-room-card,.chat-roster-pane,.chat-roster-item,.question-board,.question-card,.mini-timer,.friends-panel,.cosmetic-item,.shop-wallet,.theme-choice-btn,.photo-edit-menu,.stat-pill,.achievement,.profile-crop-dialog,#accountSheet>form){background-color:var(--surface)!important;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' fill-opacity='.035' d='M0 0h8v8H0zM16 8h8v8h-8zM8 24h8v8H8z'/%3E%3Cpath fill='%23000000' fill-opacity='.08' d='M24 0h8v8h-8zM0 16h8v8H0zM24 24h8v8h-8z'/%3E%3C/svg%3E")!important;color:var(--tx);border:2px solid #141b16;border-radius:4px!important;box-shadow:inset 2px 2px 0 #8d978066,inset -2px -2px 0 #0005,0 4px 0 #0e1712}
+html.theme-minecraft :is(.card,.hero)::after{display:none!important}
+html.theme-minecraft .card{transform:none!important}
+html.theme-minecraft :is(.timer,.mobile-welcome,.hero){border-top:8px solid #78a84a;background-color:#483b2e!important;box-shadow:inset 0 3px 0 #314f24,inset 2px 0 0 #9a795c55,0 4px 0 #0e1712}
+html.theme-minecraft :is(input:not([type=range]),textarea,select,.chip,.tag,.chat-message,.reaction-picker,.reaction-pill,.pinned-messages,.calendar-cell,.showcase-badge,.room-total,.home-lobby-co-workers){background:var(--raised)!important;color:var(--tx);border:2px solid #151d17!important;border-radius:3px!important;box-shadow:inset 2px 2px 0 #0005}
+html.theme-minecraft :is(input,textarea)::placeholder{color:var(--mu);opacity:1}
+html.theme-minecraft :is(.pill,.studio-tab,.cosmetic-choice,.theme-choice-btn){background-color:#525c4e!important;color:var(--tx);border:2px solid #131b14!important;border-radius:3px!important;box-shadow:inset 2px 2px 0 #a4ae8b88,inset -2px -2px 0 #0005,0 3px 0 #101710;text-shadow:1px 1px 0 #0008}
+html.theme-minecraft :is(.pill.p,.cosmetic-choice.selected,.theme-choice-btn.active,.studio-tab[aria-selected=true]){background-color:#577b38!important;color:#f4ffdf;border-color:#b1d778!important;box-shadow:inset 2px 2px 0 #c0e39566,inset -2px -2px 0 #243619,0 3px 0 #101710}
+html.theme-minecraft :is(.pill,.studio-tab,.cosmetic-choice,.theme-choice-btn):active:not(:disabled){box-shadow:inset 2px 2px 0 #0006}
+html.theme-minecraft :is(a,button,input,textarea,select,summary):focus-visible{outline:3px solid #e9cf78!important;outline-offset:3px}
+html.theme-minecraft :is(.muted,.identity-help,.studio-help,.theme-choice-info small,.profile-crop-dialog p,footer){color:var(--mu)}
+html.theme-minecraft :is(.nav-link,.mobile-nav-btn){color:var(--mu)}
+html.theme-minecraft :is(.nav-link.active,.mobile-nav-btn.active){color:var(--pr);background:#3c542c}
+html.theme-minecraft input[type=checkbox]:checked{background:var(--pr)!important;color:var(--on);border-color:var(--pr)!important}
+html.theme-minecraft :is(.profile-cover,.profile-crop-stage){background:var(--raised)}
+html.theme-minecraft .profile-crop-apply{background:var(--pr);color:var(--on)}
+html.theme-minecraft #rg{stroke:var(--pr);stroke-linecap:butt}
+html.theme-minecraft .ring svg circle:first-child{stroke:#252d21}
+html.theme-minecraft .history-fill{background:var(--pr);border-radius:0}
+html.theme-minecraft dialog::backdrop{background:#101b12cc}
+@media(max-width:599px){html.theme-minecraft .logo{font-size:15px}html.theme-minecraft .ring b{font-size:38px}html.theme-minecraft .card h3{font-size:18px}html.theme-minecraft .theme-choice-btn{padding:14px;gap:12px}}

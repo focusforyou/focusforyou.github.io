@@ -3,7 +3,7 @@
  const by=id=>document.getElementById(id);
  const THEME_KEY='focus_theme',ANIM_KEY='focus_bg_anim';
 
- const THEMES={dark:['Siyah Mod (Koyu)','#0A1128','themeDarkBtn'],light:['Beyaz Mod (Açık)','#EDF2FC','themeLightBtn'],amoled:['AMOLED (Tam siyah)','#000000','themeAmoledBtn'],forest:['Orman','#081c16','themeForestBtn'],ocean:['Okyanus','#071c2b','themeOceanBtn'],dusk:['Mor Gece','#1a1029','themeDuskBtn']};
+ const THEMES={dark:['Siyah Mod (Koyu)','#0A1128','themeDarkBtn'],light:['Beyaz Mod (Açık)','#EDF2FC','themeLightBtn'],amoled:['AMOLED (Tam siyah)','#000000','themeAmoledBtn'],forest:['Orman','#081c16','themeForestBtn'],ocean:['Okyanus','#071c2b','themeOceanBtn'],dusk:['Mor Gece','#1a1029','themeDuskBtn'],minecraft:['Minecraft','#18261d','themeMinecraftBtn']};
  let currentTheme='dark';
  function applyTheme(theme,save=true){
   theme=Object.hasOwn(THEMES,theme)?theme:'dark';currentTheme=theme;

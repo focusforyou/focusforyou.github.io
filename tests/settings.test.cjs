@@ -53,7 +53,7 @@ function setup(initialStorage={}){
   themeDarkBtn:darkBtn,
   themeLightBtn:lightBtn,
   themeAmoledBtn:new Element('button'),
-  themeForestBtn:new Element('button'),themeOceanBtn:new Element('button'),themeDuskBtn:new Element('button'),
+  themeForestBtn:new Element('button'),themeOceanBtn:new Element('button'),themeDuskBtn:new Element('button'),themeMinecraftBtn:new Element('button'),
   bgAnimOnBtn:onBtn,
   bgAnimOffBtn:offBtn,
   bgAnimStateLabel:label,
@@ -114,12 +114,12 @@ test('Default settings are dark theme and background animation on', ()=>{
 
 test('colour themes survive reload, deselect previous palettes and keep stars independent',()=>{
  const app=setup({focus_bg_anim:'off'});
- for(const [name,id,color]of [['forest','themeForestBtn','#081c16'],['ocean','themeOceanBtn','#071c2b'],['dusk','themeDuskBtn','#1a1029']]){
+ for(const [name,id,color]of [['forest','themeForestBtn','#081c16'],['ocean','themeOceanBtn','#071c2b'],['dusk','themeDuskBtn','#1a1029'],['minecraft','themeMinecraftBtn','#18261d']]){
   app.elements[id].click();assert.equal(app.ctx.FocusSettings.theme,name);assert.equal(app.metaTheme.attrs.content,color);assert.equal(app.storage.get('focus_theme'),name);assert.equal(app.sky.hidden,true);
-  for(const key of ['forest','ocean','dusk','amoled','light'])assert.equal(app.body.classList.contains('theme-'+key),key===name);
+  for(const key of ['forest','ocean','dusk','minecraft','amoled','light'])assert.equal(app.body.classList.contains('theme-'+key),key===name);
   const restored=setup({focus_theme:name});assert.equal(restored.ctx.FocusSettings.theme,name);assert.equal(restored.docElement.classList.contains('theme-'+name),true);assert.equal(restored.sky.hidden,false);
  }
- app.elements.themeDarkBtn.click();assert.equal(app.body.classList.contains('theme-dusk'),false);assert.equal(app.ctx.FocusSettings.theme,'dark');
+ app.elements.themeDarkBtn.click();assert.equal(app.body.classList.contains('theme-minecraft'),false);assert.equal(app.ctx.FocusSettings.theme,'dark');
 });
 
 test('AMOLED persists independently of animation and switches cleanly to other themes',()=>{
