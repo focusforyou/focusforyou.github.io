@@ -1,0 +1,26 @@
+name: Theme browser checks
+on:
+  push:
+    branches: [main, feature/theme-redesign-20261014]
+    paths: ['game-themes.css', 'minecraft-theme.css', 'settings.js', 'index.html', 'assets/themes/**', 'tests/theme-ui.browser.cjs', '.github/workflows/theme-ui.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  themes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/theme-ui.browser.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: theme-ui-proof
+          path: theme-ui-proof/
+          retention-days: 7

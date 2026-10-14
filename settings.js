@@ -3,7 +3,8 @@
  const by=id=>document.getElementById(id);
  const THEME_KEY='focus_theme',ANIM_KEY='focus_bg_anim';
 
- const THEMES={dark:['Siyah Mod (Koyu)','#0A1128','themeDarkBtn'],light:['Beyaz Mod (Açık)','#EDF2FC','themeLightBtn'],amoled:['AMOLED (Tam siyah)','#000000','themeAmoledBtn'],forest:['Orman','#081c16','themeForestBtn'],ocean:['Okyanus','#071c2b','themeOceanBtn'],dusk:['Mor Gece','#1a1029','themeDuskBtn'],minecraft:['Minecraft','#18261d','themeMinecraftBtn'],'inventory':['Minecraft Envanter · Gri','#292724','themeInventoryBtn'],'inventory-dark':['Minecraft Envanter · Siyah','#161616','themeInventoryDarkBtn'],'inventory-amoled':['Minecraft Envanter · AMOLED','#000000','themeInventoryAmoledBtn'],'terraria':['Terraria','#172349','themeTerrariaBtn'],'stardew':['Stardew Valley','#d1e6ee','themeStardewBtn'],'ais':['ÖSYM AİS','#eef0f3','themeAisBtn'],'hoi4':['Hearts of Iron IV','#202722','themeHoi4Btn']};
+ const THEMES={dark:['Siyah Mod (Koyu)','#0A1128','themeDarkBtn'],light:['Beyaz Mod (Açık)','#EDF2FC','themeLightBtn'],amoled:['AMOLED (Tam siyah)','#000000','themeAmoledBtn'],forest:['Orman','#081c16','themeForestBtn'],ocean:['Okyanus','#071c2b','themeOceanBtn'],dusk:['Mor Gece','#1a1029','themeDuskBtn'],minecraft:['Minecraft','#18241b','themeMinecraftBtn'],'inventory':['Minecraft Envanter · Gri','#25221e','themeInventoryBtn'],'inventory-dark':['Minecraft Envanter · Siyah','#121212','themeInventoryDarkBtn'],'inventory-amoled':['Minecraft Envanter · AMOLED','#000000','themeInventoryAmoledBtn'],'terraria':['Terraria','#101e46','themeTerrariaBtn'],'stardew':['Stardew Valley','#9ecacf','themeStardewBtn'],'ais':['ÖSYM AİS','#ebedf0','themeAisBtn'],'hoi4':['Hearts of Iron IV','#20271f','themeHoi4Btn']};
+ const DEFAULT_ACCENTS={inventory:'#487531','inventory-dark':'#9ace6a','inventory-amoled':'#9ace6a'};
  let currentTheme='dark',customAccent='',gameCursor=true;
  function applyAccent(value,save=true){
   customAccent=/^#[0-9a-f]{6}$/i.test(value||'')?value:'';
@@ -15,7 +16,7 @@
    root.style.setProperty('--inventory-accent',customAccent);
    root.style.setProperty('--inventory-on',luminance>.179?'#000000':'#ffffff');
   }else{root.style.removeProperty('--inventory-accent');root.style.removeProperty('--inventory-on')}
-  const picker=by('inventoryAccentColor');if(picker)picker.value=customAccent||'#77ad48';
+  const picker=by('inventoryAccentColor');if(picker)picker.value=customAccent||DEFAULT_ACCENTS[currentTheme]||'#9ace6a';
   if(save)try{customAccent?localStorage.setItem('focus_inventory_accent',customAccent):localStorage.removeItem('focus_inventory_accent')}catch(e){}
  }
  function applyCursor(enabled,save=true){
@@ -29,6 +30,7 @@
    for(const node of [document.documentElement,document.body])node?.classList.toggle('theme-'+key,key===theme);
    const button=by(value[2]);if(button){button.setAttribute('aria-pressed',String(key===theme));button.classList.toggle('active',key===theme)}
   }
+  const picker=by('inventoryAccentColor');if(picker&&!customAccent)picker.value=DEFAULT_ACCENTS[theme]||'#9ace6a';
   const inventoryControls=by('inventoryColorSettings');if(inventoryControls)inventoryControls.hidden=!theme.startsWith('inventory');
   const meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.setAttribute('content',THEMES[theme][1]);
   const info=by('currentThemeInfo');if(info)info.textContent=THEMES[theme][0];

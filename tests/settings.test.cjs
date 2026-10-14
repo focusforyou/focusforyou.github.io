@@ -114,7 +114,7 @@ test('Default settings are dark theme and background animation on', ()=>{
 
 test('colour themes survive reload, deselect previous palettes and keep stars independent',()=>{
  const app=setup({focus_bg_anim:'off'});
- for(const [name,id,color]of [['forest','themeForestBtn','#081c16'],['ocean','themeOceanBtn','#071c2b'],['dusk','themeDuskBtn','#1a1029'],['minecraft','themeMinecraftBtn','#18261d'],["inventory","themeInventoryBtn","#292724"],["inventory-dark","themeInventoryDarkBtn","#161616"],["inventory-amoled","themeInventoryAmoledBtn","#000000"],["terraria","themeTerrariaBtn","#172349"],["stardew","themeStardewBtn","#d1e6ee"],["ais","themeAisBtn","#eef0f3"],["hoi4","themeHoi4Btn","#202722"]]){
+ for(const [name,id,color]of [['forest','themeForestBtn','#081c16'],['ocean','themeOceanBtn','#071c2b'],['dusk','themeDuskBtn','#1a1029'],['minecraft','themeMinecraftBtn','#18241b'],["inventory","themeInventoryBtn","#25221e"],["inventory-dark","themeInventoryDarkBtn","#121212"],["inventory-amoled","themeInventoryAmoledBtn","#000000"],["terraria","themeTerrariaBtn","#101e46"],["stardew","themeStardewBtn","#9ecacf"],["ais","themeAisBtn","#ebedf0"],["hoi4","themeHoi4Btn","#20271f"]]){
   app.elements[id].click();assert.equal(app.ctx.FocusSettings.theme,name);assert.equal(app.metaTheme.attrs.content,color);assert.equal(app.storage.get('focus_theme'),name);assert.equal(app.sky.hidden,true);
   for(const key of ['forest','ocean','dusk','minecraft','amoled','light','inventory','inventory-dark','inventory-amoled','terraria','stardew','ais','hoi4'])assert.equal(app.body.classList.contains('theme-'+key),key===name);
   const restored=setup({focus_theme:name});assert.equal(restored.ctx.FocusSettings.theme,name);assert.equal(restored.docElement.classList.contains('theme-'+name),true);assert.equal(restored.sky.hidden,false);
@@ -229,7 +229,7 @@ test('inventory palette controls only appear for inventory variants and preserve
 test('invalid stored palette is ignored and cannot become a CSS value',()=>{
  const app=setup({focus_inventory_accent:'url(https://invalid.example)'});
  assert.equal(app.docElement.style['--inventory-accent'],undefined);
- assert.equal(app.elements.inventoryAccentColor.value,'#77ad48');
+ assert.equal(app.elements.inventoryAccentColor.value,'#9ace6a');
 });
 test('system cursor choice survives reload and switching games without changing animation',()=>{
  const app=setup({focus_game_cursor:'off',focus_bg_anim:'off'});
