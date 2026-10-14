@@ -1,5 +1,5 @@
 /* Original block textures; all changes stay inside the optional Minecraft theme. */
-@font-face{font-family:FocusBlock;src:url('fonts/bungee.ttf') format('truetype');font-display:swap}
+@font-face{font-family:FocusBlock;src:url('fonts/pixelify-sans.ttf') format('truetype');font-weight:400 700;font-display:swap}
 .minecraft-block{display:block;width:36px;height:36px;border:3px solid #222a19;border-radius:0!important;background:linear-gradient(#83b84a 0 26%,#527c34 26% 38%,#826044 38% 70%,#67472f 70%);box-shadow:inset 4px 0 #ffffff20,inset -4px -4px #0003;image-rendering:pixelated}
 html.theme-minecraft{--page:#18261d;--surface:#343c36;--raised:#242d27;--line:#6e7864;--tx:#f0f2df;--mu:#c4ccb4;--pr:#a8d56d;--on:#17290f;color-scheme:dark;background:var(--page)}
 html.theme-minecraft body{background-color:var(--page)!important;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' fill-opacity='.035' d='M0 0h8v8H0zM16 8h8v8h-8zM8 24h8v8H8z'/%3E%3Cpath fill='%23000000' fill-opacity='.08' d='M24 0h8v8h-8zM0 16h8v8H0zM24 24h8v8h-8z'/%3E%3C/svg%3E")!important;color:var(--tx)}
@@ -30,3 +30,11 @@ html.theme-minecraft .ring svg circle:first-child{stroke:#252d21}
 html.theme-minecraft .history-fill{background:var(--pr);border-radius:0}
 html.theme-minecraft dialog::backdrop{background:#101b12cc}
 @media(max-width:599px){html.theme-minecraft .logo{font-size:15px}html.theme-minecraft .ring b{font-size:38px}html.theme-minecraft .card h3{font-size:18px}html.theme-minecraft .theme-choice-btn{padding:14px;gap:12px}}
+
+html.theme-minecraft body{font-family:FocusBlock,Figtree,system-ui,sans-serif;font-size:18px}
+html.theme-minecraft :is(button,input,textarea,select,.pill,.nav-link){font-family:inherit!important}
+
+html.theme-minecraft .theme-choice-info small{font-size:15px;line-height:1.35}
+html.theme-minecraft .theme-choice-info strong{font-size:18px}
+html.theme-minecraft :is(.segment-btn,.sheet-close-pill){font-family:inherit!important;border-radius:2px}
+html.theme-minecraft .logo svg{background:var(--raised)!important;stroke:var(--pr);border-radius:2px!important}
