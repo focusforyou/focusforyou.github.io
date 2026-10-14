@@ -10,7 +10,7 @@ const SocialModel=(()=>{
  const cosmetics=input=>({font:fonts.includes(input?.font)?input.font:'default',tag:['doctor','system'].includes(input?.tag)||(typeof input?.tag==='string'&&input.tag.startsWith('custom:')&&input.tag.slice(7).trim().length>0&&input.tag.slice(7).length<=24&&!/[\u0000-\u001f\u007f]/.test(input.tag))?input.tag:'none',nameStyle:palette.includes(input?.nameStyle)?input.nameStyle:'plain',frame:frames.includes(input?.frame)?input.frame:'none',plate:plates.includes(input?.plate)?input.plate:'none'});
  function decorate(node,profile){
   const c=cosmetics(profile?.cosmetics);node.classList.add('identity');for(const font of fonts)node.classList.toggle('font-'+font,c.font===font);for(const value of new Set([...palette,...plates])){node.classList.toggle('name-'+value,c.nameStyle===value);node.classList.toggle('plate-'+value,c.plate===value)}
-  if(c.plate!=='none'){const name=(node.ownerDocument||document).createElement('span');name.className='identity-name';name.textContent=node.textContent;node.textContent='';node.append(name)}
+  if(c.plate!=='none'){const doc=node.ownerDocument||document,name=doc.createElement('span'),text=doc.createElement('span');name.className='identity-name';text.className='identity-text';text.textContent=node.textContent;name.append(text);node.textContent='';node.append(name)}
   if(c.tag==='doctor'){const tag=document.createElement('span');tag.className='doctor-tag';tag.textContent='[DOKTOR]';node.prepend(tag)}
   else if(c.tag==='system'){const tag=document.createElement('span');tag.className='system-tag';tag.textContent='[SİSTEM]';node.prepend(tag)}
   else if(c.tag.startsWith('custom:')){const tag=document.createElement('span');tag.className='custom-tag';tag.textContent='['+c.tag.slice(7)+']';node.prepend(tag)}
@@ -21,5 +21,4 @@ const SocialModel=(()=>{
 })();
 if(typeof module!=='undefined')module.exports=SocialModel;
 else window.SocialModel=SocialModel;
-
 

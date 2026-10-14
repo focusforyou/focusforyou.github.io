@@ -1,0 +1,45 @@
+/* Approved option 2: original ornaments fade into a thin connected centre.
+   The outer identity holds tags; only the inner name has artwork. */
+.plate-gold{--np-art:url('assets/cosmetics/orbit-gold-plate.png')}
+.plate-ice{--np-art:url('assets/cosmetics/ice-blue-plate.png')}
+.plate-violet{--np-art:url('assets/cosmetics/nebula-violet-plate.png')}
+:is(.plate-ember,.plate-lunar,.plate-sakura,.plate-cyber,.plate-abyss){--np-art:var(--plate-cap-art)}
+:is(.plate-robot-gold,.plate-robot-silver,.plate-robot-duo){--np-art:var(--robot-art);--np-height:30px;--np-end:52px;--np-padding:42px}
+:is(#memberProfileModal #memberProfileTitle,#accountSheet #studioPreviewName,#chatMessages strong.identity,.identity)[class*="plate-"]{
+ --np-rgb:var(--plate-rgb,249,214,107);position:relative;isolation:isolate;
+ display:inline-flex!important;flex-direction:column;align-items:flex-start!important;justify-content:center;flex-wrap:nowrap!important;
+ width:fit-content!important;max-width:100%!important;min-width:0;flex:0 1 auto;align-self:flex-start;
+ height:auto!important;min-height:0!important;max-height:none!important;padding:0!important;gap:3px;
+ background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:visible!important;margin-top:0;
+}
+:is(#memberProfileModal #memberProfileTitle,#accountSheet #studioPreviewName,#chatMessages strong.identity,.identity)[class*="plate-"]::before,
+:is(#memberProfileModal #memberProfileTitle,#accountSheet #studioPreviewName,#chatMessages strong.identity,.identity)[class*="plate-"]::after{content:none!important}
+:is(#memberProfileModal #memberProfileTitle,#accountSheet #studioPreviewName,#chatMessages strong.identity,.identity)[class*="plate-"]>.identity-name{
+ position:relative!important;isolation:isolate;display:inline-flex;align-items:center;flex:0 1 auto!important;
+ width:fit-content;min-width:0;max-width:100%;height:30px;min-height:30px;box-sizing:border-box;
+ padding:0 var(--np-padding,40px);overflow:visible!important;white-space:nowrap;
+ background-image:linear-gradient(90deg,transparent,rgba(var(--np-rgb),.48) 20%,rgba(var(--np-rgb),.48) 80%,transparent),linear-gradient(90deg,transparent,rgba(var(--np-rgb),.32) 20%,rgba(var(--np-rgb),.32) 80%,transparent),linear-gradient(90deg,transparent,rgba(var(--np-rgb),.045),transparent);
+ background-size:calc(100% - 46px) 1px,calc(100% - 46px) 1px,calc(100% - 46px) calc(100% - 6px);
+ background-position:center 3px,center calc(100% - 3px),center;background-repeat:no-repeat;
+ line-height:1.3;
+}
+:is(#memberProfileModal #memberProfileTitle,#accountSheet #studioPreviewName,#chatMessages strong.identity,.identity)[class*="plate-"]>.identity-name::before,
+:is(#memberProfileModal #memberProfileTitle,#accountSheet #studioPreviewName,#chatMessages strong.identity,.identity)[class*="plate-"]>.identity-name::after{
+ content:'';position:absolute;inset:auto;top:50%;width:var(--np-end,50px);height:var(--np-height,44px);transform:translateY(-50%);z-index:-1;pointer-events:none;
+ background-image:var(--np-art,radial-gradient(ellipse at center,transparent 34%,rgba(var(--np-rgb),.8) 38%,transparent 46%));
+ background-size:auto var(--np-height,44px);background-repeat:no-repeat;
+ mask-image:linear-gradient(to right,#000 0%,#000 26%,transparent 77%,transparent);opacity:.9;
+}
+:is(#memberProfileModal #memberProfileTitle,#accountSheet #studioPreviewName,#chatMessages strong.identity,.identity)[class*="plate-"]>.identity-name::before{left:0;background-position:left center}
+:is(#memberProfileModal #memberProfileTitle,#accountSheet #studioPreviewName,#chatMessages strong.identity,.identity)[class*="plate-"]>.identity-name::after{right:0;background-position:right center;mask-image:linear-gradient(to left,#000 0%,#000 26%,transparent 77%,transparent)}
+.identity-text{display:block;min-width:0;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
+:is(#memberProfileModal #memberProfileTitle,#accountSheet #studioPreviewName,#chatMessages strong.identity,.identity)[class*="plate-"]>:is(.custom-tag,.doctor-tag,.system-tag){
+ position:static;display:block;flex:0 0 auto;max-width:100%!important;min-width:0;width:auto;margin:0!important;font-size:10px;line-height:14px;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+:is(#memberProfileTitle,#studioPreviewName,.chat-roster-name,#chatMessages .identity)[class*="plate-"]>.username{display:none!important}
+.identity[class*="plate-"]>.username{position:static;max-width:100%;margin:0;font-size:11px;line-height:1.3}
+.chat-roster-name.identity[class*="plate-"]{margin:0!important}
+:is(#memberProfileTitle,#studioPreviewName)[class*="plate-"]>.identity-name{margin:0}
+.cosmetic-sample.identity[class*="plate-"],.cosmetic-preview>.identity[class*="plate-"]{--np-padding:26px;--np-end:34px;--np-height:32px}
+.theme-light .identity[class*="plate-"]{--np-rgb:var(--plate-rgb,143,96,28)}
+@media(max-width:599px){#chatMessages .chat-message>strong.identity[class*="plate-"]{font-size:15px}.identity[class*="plate-"] .identity-text{max-width:100%}}
